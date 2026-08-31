@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ski Predictor – tippe den Ausgang der nächsten Ski-Rennen." />
+    <title>Ski Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/main.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Ski Predictor Startseite">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span></span>
+        <span>Ski<span>Predictor</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Hauptnavigation">
+        <a class="active" href="#rennen">Rennen</a>
+        <a href="#tipp">Mein Tipp</a>
+        <a href="#rangliste">Rangliste</a>
+      </nav>
+      <button class="profile-button" type="button" aria-label="Demo Profil öffnen">GG</button>
+    </header>
+
+    <main id="top">
+      <section class="hero" id="rennen">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-mountain hero-mountain-back" aria-hidden="true"></div>
+        <div class="hero-mountain hero-mountain-front" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <span class="eyebrow light"><span class="live-dot"></span>Nächstes Rennen</span>
+          <p class="hero-meta">Ski Alpin · Herren · Abfahrt</p>
+          <h1>Wer bezwingt<br />die Streif?</h1>
+          <div class="race-place">
+            <span class="flag flag-at" aria-hidden="true"></span>
+            <div><strong>Kitzbühel</strong><span>Österreich · 24. Januar</span></div>
+          </div>
+        </div>
+        <div class="countdown-card" aria-label="Countdown bis zum Tippende">
+          <span>Tippende in</span>
+          <div class="countdown" id="countdown">
+            <div><strong id="days">02</strong><span>Tage</span></div>
+            <i>:</i>
+            <div><strong id="hours">14</strong><span>Std.</span></div>
+            <i>:</i>
+            <div><strong id="minutes">37</strong><span>Min.</span></div>
+          </div>
+          <a class="button button-white" href="#tipp">Jetzt tippen <span>→</span></a>
+        </div>
+      </section>
+
+      <section class="content-grid section" id="tipp">
+        <div class="prediction-panel">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Deine Prognose</span>
+              <h2>Wähle dein Podium</h2>
+              <p>Besetze jeden Platz mit einem anderen Fahrer.</p>
+            </div>
+            <span class="points-pill">Bis zu 30 Punkte</span>
+          </div>
+
+          <div class="podium-picks">
+            <label class="pick-card first">
+              <span class="place-number">1</span>
+              <span class="medal gold">●</span>
+              <span class="place-copy"><strong>Sieger</strong><small>10 Punkte</small></span>
+              <select id="pick-1" aria-label="Fahrer für Platz 1"></select>
+            </label>
+            <label class="pick-card second">
+              <span class="place-number">2</span>
+              <span class="medal silver">●</span>
+              <span class="place-copy"><strong>Zweiter</strong><small>10 Punkte</small></span>
+              <select id="pick-2" aria-label="Fahrer für Platz 2"></select>
+            </label>
+            <label class="pick-card third">
+              <span class="place-number">3</span>
+              <span class="medal bronze">●</span>
+              <span class="place-copy"><strong>Dritter</strong><small>10 Punkte</small></span>
+              <select id="pick-3" aria-label="Fahrer für Platz 3"></select>
+            </label>
+          </div>
+          <div class="prediction-footer">
+            <p id="form-message" role="status">Du kannst deinen Tipp bis zum Tippende ändern.</p>
+            <button class="button button-primary" id="save-prediction" type="button">Tipp speichern <span>→</span></button>
+          </div>
+        </div>
+
+        <aside class="leaderboard-card" id="rangliste">
+          <div class="leaderboard-head">
+            <div><span class="eyebrow">Community</span><h2>Rangliste</h2></div>
+            <button type="button" aria-label="Mehr Ranglistenoptionen">•••</button>
+          </div>
+          <ol class="leaderboard" id="leaderboard-list"></ol>
+          <button class="text-button" type="button">Gesamte Rangliste ansehen <span>→</span></button>
+        </aside>
+      </section>
+
+      <section class="upcoming section">
+        <div class="section-title-row">
+          <div><span class="eyebrow">Weltcup</span><h2>Kommende Rennen</h2></div>
+          <button class="filter-button" type="button">Alle Disziplinen <span>⌄</span></button>
+        </div>
+        <div class="race-list" id="race-list"></div>
+      </section>
+
+      <section class="how-it-works section">
+        <div><span class="eyebrow">Einfach lostippen</span><h2>So funktioniert es</h2></div>
+        <div class="steps">
+          <article><span>01</span><div><strong>Rennen auswählen</strong><p>Sieh dir die kommenden Weltcup Rennen an.</p></div></article>
+          <article><span>02</span><div><strong>Podium tippen</strong><p>Lege deine drei Favoriten vor dem Start fest.</p></div></article>
+          <article><span>03</span><div><strong>Punkte sammeln</strong><p>Vergleiche deine Tipps mit der Community.</p></div></article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><span></span><span></span></span><span>Ski<span>Predictor</span></span></a>
+      <p>Ein früher MVP mit Demo Daten.</p>
+      <div><a href="#">Impressum</a><a href="#">Datenschutz</a></div>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">✓ Dein Tipp wurde gespeichert</div>
+    <script src="src/scripts/app.js"></script>
+  </body>
+</html>
