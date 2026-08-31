@@ -1,10 +1,10 @@
 const athletes = [
-  { name: "Marco Odermatt", country: "SUI" },
-  { name: "Vincent Kriechmayr", country: "AUT" },
-  { name: "Dominik Paris", country: "ITA" },
-  { name: "Aleksander Aamodt Kilde", country: "NOR" },
-  { name: "Cyprien Sarrazin", country: "FRA" },
-  { name: "Franjo von Allmen", country: "SUI" },
+  { name: "Startnummer 7", country: "U12" },
+  { name: "Startnummer 12", country: "U12" },
+  { name: "Startnummer 18", country: "U12" },
+  { name: "Startnummer 23", country: "U12" },
+  { name: "Startnummer 31", country: "U12" },
+  { name: "Startnummer 42", country: "U12" },
 ];
 
 const leaders = [
@@ -16,15 +16,15 @@ const leaders = [
 ];
 
 const races = [
-  { date: "28. Januar · 11:30", place: "Schladming", country: "Österreich", type: "Riesenslalom", flag: "at", deadline: "Tippende in 6 Tagen" },
-  { date: "02. Februar · 10:15", place: "Crans-Montana", country: "Schweiz", type: "Abfahrt Damen", flag: "ch", deadline: "Tippende in 11 Tagen" },
-  { date: "08. Februar · 12:00", place: "Garmisch", country: "Deutschland", type: "Super-G", flag: "de", deadline: "Tippende in 17 Tagen" },
+  { date: "Beispieltermin · 09:30", place: "Zwergerlrennen", country: "Kinder- und Nachwuchsrennen", type: "Skiteam Veranstaltung", deadline: "Tippabgabe offen" },
+  { date: "Beispieltermin · 10:00", place: "SVM Punkterennen", country: "Skiverband München", type: "Nachwuchsrennen", deadline: "Tippabgabe offen" },
+  { date: "Beispieltermin · 11:00", place: "DSV Kids Cross", country: "Bundesweite Nachwuchsserie", type: "U12 Wettbewerb", deadline: "Tippabgabe offen" },
 ];
 
 const picks = [1, 2, 3].map((place, index) => {
   const select = document.querySelector(`#pick-${place}`);
   select.innerHTML = `<option value="">Fahrer auswählen</option>` + athletes.map((athlete) =>
-    `<option value="${athlete.name}" ${index === place - 1 ? "" : ""}>${athlete.name} · ${athlete.country}</option>`
+    `<option value="${athlete.name}">${athlete.name} · ${athlete.country}</option>`
   ).join("");
   return select;
 });
@@ -41,7 +41,7 @@ document.querySelector("#leaderboard-list").innerHTML = leaders.map((leader, ind
 document.querySelector("#race-list").innerHTML = races.map((race) => `
   <article class="race-card">
     <div class="race-card-top"><span class="race-date">${race.date}</span><span class="status">Offen</span></div>
-    <div class="location"><span class="flag flag-${race.flag}" aria-hidden="true"></span><div><strong>${race.place}</strong><span>${race.country}</span></div></div>
+    <div class="location"><span class="event-icon" aria-hidden="true">S</span><div><strong>${race.place}</strong><span>${race.country}</span></div></div>
     <div class="race-card-bottom"><span>${race.type} · ${race.deadline}</span><button type="button" data-race="${race.place}">Tippen →</button></div>
   </article>
 `).join("");
