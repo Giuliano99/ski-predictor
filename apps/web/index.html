@@ -14,7 +14,7 @@
     <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Zur Vereinswebsite ↗</a></div>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
-      <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#tipp">Mein Tipp</a><a href="#rangliste">Rangliste</a><a href="#so-gehts">So geht’s</a></nav>
+      <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#wochenende">Wochenende</a><a href="#tipp">Mein Tipp</a><a href="#auswertung">Auswertung</a><a href="#rangliste">Rangliste</a><a href="#so-gehts">So geht’s</a></nav>
       <button class="profile-button" type="button" aria-label="Demo Profil öffnen">GG</button>
     </header>
 
@@ -25,27 +25,34 @@
           <span class="kicker kicker-light">Nächstes Rennen</span>
           <p class="hero-series">Landkreis-Cup · Riesenslalom</p>
           <h1>Oberhachinger<br />Meisterschaft</h1>
-          <p class="hero-intro">Wer fährt ganz nach vorn? Stelle dein Podium zusammen und sammle Punkte für die Teamrangliste.</p>
+          <p class="hero-intro">Tippe Platzierungen, Podiumsanzahl, interne Ranglisten und direkte Duelle der Oberhachinger Athleten.</p>
           <div class="hero-actions"><a class="button button-primary" href="#tipp">Jetzt tippen <span>→</span></a><span class="hero-date"><strong>Demo-Termin</strong> Sonntag · 10:00 Uhr</span></div>
         </div>
         <div class="hero-badge" aria-hidden="true"><strong>OHA</strong><span>READY TO RACE</span></div>
       </section>
 
       <section class="deadline-strip" aria-label="Tipp Countdown">
-        <div class="deadline-label"><span class="pulse"></span><div><strong>Tippabgabe geöffnet</strong><small>Bis 30 Minuten vor dem Start</small></div></div>
+        <div class="deadline-label"><span class="pulse"></span><div><strong id="deadline-status">Tippabgabe geöffnet</strong><small>Abgabeschluss Samstag um 00:00 Uhr</small></div></div>
         <div class="countdown" id="countdown"><div><strong id="days">02</strong><span>Tage</span></div><i>:</i><div><strong id="hours">14</strong><span>Stunden</span></div><i>:</i><div><strong id="minutes">37</strong><span>Minuten</span></div></div>
         <a href="#tipp">Zum Tippformular ↓</a>
       </section>
 
+      <section class="weekend-overview section" id="wochenende">
+        <div class="section-title-row"><div><span class="kicker">Alles auf einen Blick</span><h2>Das Rennwochenende</h2><p>Bewerbe, veröffentlichte Startlisten und alle gemeldeten Oberhachinger Starter.</p></div><div class="overview-counts"><span><strong id="overview-race-count">0</strong>Bewerbe</span><span><strong id="overview-list-count">0</strong>Startlisten</span><span><strong id="overview-athlete-count">0</strong>OHA Starter</span></div></div>
+        <div class="overview-grid">
+          <article class="overview-card"><div class="overview-card-head"><span>01</span><h3>Bewerbe</h3></div><div id="overview-races"></div></article>
+          <article class="overview-card"><div class="overview-card-head"><span>02</span><h3>Startlisten</h3></div><div id="overview-start-lists"></div></article>
+          <article class="overview-card overview-athletes-card"><div class="overview-card-head"><span>03</span><h3>Oberhachinger Starter</h3></div><div class="overview-athletes" id="overview-athletes"></div></article>
+        </div>
+      </section>
+
       <section class="content-grid section" id="tipp">
         <div class="prediction-panel">
-          <div class="section-heading"><div><span class="kicker">Deine Prognose</span><h2>Wer steht auf dem Podium?</h2><p>Wähle für jeden Platz eine andere Person aus dem Demo-Starterfeld.</p></div><span class="points-pill">30 Punkte möglich</span></div>
-          <div class="podium-picks">
-            <label class="pick-card first"><span class="place-number">1</span><span class="place-copy"><strong>Sieger</strong><small>10 Punkte</small></span><select id="pick-1" aria-label="Person für Platz 1"></select></label>
-            <label class="pick-card second"><span class="place-number">2</span><span class="place-copy"><strong>Zweiter Platz</strong><small>10 Punkte</small></span><select id="pick-2" aria-label="Person für Platz 2"></select></label>
-            <label class="pick-card third"><span class="place-number">3</span><span class="place-copy"><strong>Dritter Platz</strong><small>10 Punkte</small></span><select id="pick-3" aria-label="Person für Platz 3"></select></label>
-          </div>
-          <div class="prediction-footer"><p id="form-message" role="status">Dein Tipp bleibt in diesem MVP nur bis zum Neuladen erhalten.</p><button class="button button-dark" id="save-prediction" type="button">Tipp speichern <span>→</span></button></div>
+          <div class="section-heading"><div><span class="kicker">Deine Tipprunde</span><h2 id="tip-round-title">Tipps werden geladen</h2><p id="tip-round-subtitle">Lokale Demo-Daten ohne Anmeldung</p></div><span class="points-pill" id="question-progress">0 / 0 beantwortet</span></div>
+          <form id="prediction-form" novalidate>
+            <div class="question-list" id="question-list"></div>
+            <div class="prediction-footer"><p id="form-message" role="status">Deine Eingaben werden nach dem Speichern lokal im Browser abgelegt.</p><div class="form-actions"><button class="text-button reset-button" id="reset-prediction" type="button">Tipp zurücksetzen</button><button class="text-button export-button" id="export-prediction" type="button" disabled>Tipp exportieren ↓</button><button class="button button-dark" id="save-prediction" type="submit">Tipp speichern <span>→</span></button></div></div>
+          </form>
         </div>
 
         <aside class="leaderboard-card" id="rangliste">
@@ -53,6 +60,15 @@
           <ol class="leaderboard" id="leaderboard-list"></ol>
           <button class="text-button" type="button">Gesamte Rangliste <span>→</span></button>
         </aside>
+      </section>
+
+      <section class="evaluation-section section" id="auswertung" hidden>
+        <div class="evaluation-summary">
+          <div><span class="kicker kicker-light">Ergebnisse</span><h2>Deine Auswertung</h2><p id="evaluation-status">Die offiziellen Gesamtergebnisse wurden ausgewertet.</p><span class="fixture-badge" id="evaluation-badge" hidden>Technische Testauswertung</span></div>
+          <div class="weekend-score"><strong id="evaluation-weekend-points">0</strong><span>von 1.000<br />Wochenendpunkten</span></div>
+          <div class="raw-score"><strong id="evaluation-raw-points">0 / 0</strong><span>Fragepunkte</span></div>
+        </div>
+        <div class="evaluation-list" id="evaluation-question-list"></div>
       </section>
 
       <section class="upcoming section">

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/start-list.schema.json",
+  "title": "Ski Predictor Start List",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "documentType", "source", "event", "groups", "warnings"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "documentType": { "const": "START_LIST" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileName", "format", "extractedAt"],
+      "properties": {
+        "fileName": { "type": "string", "minLength": 1 },
+        "format": { "enum": ["DSVALPIN", "RACE_HOROLOGY_CODE", "RACE_HOROLOGY_SIMPLE"] },
+        "extractedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "date": { "type": "string", "format": "date" },
+        "location": { "type": "string" },
+        "competitionNumber": { "type": "string" },
+        "discipline": { "enum": ["SL", "GS", "SG", "DH", "KIDS_CROSS", "OTHER"] },
+        "run": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/startGroup" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "startGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "ageClass", "competitionCategory", "starters"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "type": "string", "minLength": 1 },
+        "ageClass": { "enum": ["U8", "U10", "U12", "U14", "U16", "U18", "U21", "ADULT", "OPEN"] },
+        "competitionCategory": { "enum": ["FEMALE", "MALE", "MIXED", "OPEN"] },
+        "birthYears": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1900, "maximum": 2100 }
+        },
+        "starters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/starter" }
+        }
+      }
+    },
+    "starter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startNumber", "fullName", "displayName", "birthYear", "club", "targetClub"],
+      "properties": {
+        "startNumber": { "type": "integer", "minimum": 1 },
+        "externalAthleteId": { "type": "string", "minLength": 1 },
+        "fullName": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 3 },
+        "birthYear": { "type": "integer", "minimum": 1900, "maximum": 2100 },
+        "federation": { "type": "string" },
+        "club": { "type": "string", "minLength": 1 },
+        "targetClub": { "type": "boolean" },
+        "seedPoints": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

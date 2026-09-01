@@ -1,90 +1,435 @@
-const athletes = [
-  { name: "Startnummer 7", country: "U12" },
-  { name: "Startnummer 12", country: "U12" },
-  { name: "Startnummer 18", country: "U12" },
-  { name: "Startnummer 23", country: "U12" },
-  { name: "Startnummer 31", country: "U12" },
-  { name: "Startnummer 42", country: "U12" },
-];
+const DATA_URLS = ["src/data/tip-round.local.json", "src/data/tip-round.json"];
+const EVALUATION_URL = "src/data/evaluation.local.json";
+const STORAGE_PREFIX = "ski-predictor:submission:";
 
 const leaders = [
-  { name: "Lena B.", initials: "LB", detail: "8 richtige Tipps", points: 184, color: "#be6c52" },
-  { name: "Max S.", initials: "MS", detail: "7 richtige Tipps", points: 176, color: "#376c91" },
-  { name: "Sophie K.", initials: "SK", detail: "7 richtige Tipps", points: 169, color: "#657e59" },
-  { name: "Du", initials: "GG", detail: "5 richtige Tipps", points: 142, color: "#0d6e59" },
-  { name: "Jonas R.", initials: "JR", detail: "5 richtige Tipps", points: 138, color: "#80689a" },
+  { name: "Lena B.", initials: "LB", detail: "2 Tipprunden", points: 1840 },
+  { name: "Max S.", initials: "MS", detail: "2 Tipprunden", points: 1760 },
+  { name: "Sophie K.", initials: "SK", detail: "2 Tipprunden", points: 1690 },
+  { name: "Du", initials: "GG", detail: "1 Tipprunde", points: 920 },
+  { name: "Jonas R.", initials: "JR", detail: "1 Tipprunde", points: 880 },
 ];
 
-const races = [
-  { date: "Beispieltermin · 09:30", place: "Zwergerlrennen", country: "Kinder- und Nachwuchsrennen", type: "Skiteam Veranstaltung", deadline: "Tippabgabe offen" },
-  { date: "Beispieltermin · 10:00", place: "SVM Punkterennen", country: "Skiverband München", type: "Nachwuchsrennen", deadline: "Tippabgabe offen" },
-  { date: "Beispieltermin · 11:00", place: "DSV Kids Cross", country: "Bundesweite Nachwuchsserie", type: "U12 Wettbewerb", deadline: "Tippabgabe offen" },
-];
+const dom = {
+  form: document.querySelector("#prediction-form"),
+  questionList: document.querySelector("#question-list"),
+  title: document.querySelector("#tip-round-title"),
+  subtitle: document.querySelector("#tip-round-subtitle"),
+  progress: document.querySelector("#question-progress"),
+  message: document.querySelector("#form-message"),
+  saveButton: document.querySelector("#save-prediction"),
+  resetButton: document.querySelector("#reset-prediction"),
+  exportButton: document.querySelector("#export-prediction"),
+  toast: document.querySelector("#toast"),
+  deadlineStatus: document.querySelector("#deadline-status"),
+  raceList: document.querySelector("#race-list"),
+  overviewRaceCount: document.querySelector("#overview-race-count"),
+  overviewListCount: document.querySelector("#overview-list-count"),
+  overviewAthleteCount: document.querySelector("#overview-athlete-count"),
+  overviewRaces: document.querySelector("#overview-races"),
+  overviewStartLists: document.querySelector("#overview-start-lists"),
+  overviewAthletes: document.querySelector("#overview-athletes"),
+  evaluationSection: document.querySelector("#auswertung"),
+  evaluationStatus: document.querySelector("#evaluation-status"),
+  evaluationBadge: document.querySelector("#evaluation-badge"),
+  evaluationWeekendPoints: document.querySelector("#evaluation-weekend-points"),
+  evaluationRawPoints: document.querySelector("#evaluation-raw-points"),
+  evaluationQuestionList: document.querySelector("#evaluation-question-list"),
+};
 
-const picks = [1, 2, 3].map((place, index) => {
-  const select = document.querySelector(`#pick-${place}`);
-  select.innerHTML = `<option value="">Fahrer auswählen</option>` + athletes.map((athlete) =>
-    `<option value="${athlete.name}">${athlete.name} · ${athlete.country}</option>`
-  ).join("");
-  return select;
-});
+let tipRound;
+let athletesById;
+let countdownTimer;
 
-document.querySelector("#leaderboard-list").innerHTML = leaders.map((leader, index) => `
-  <li>
-    <span class="rank">${index + 1}</span>
-    <span class="avatar" style="background:${leader.color}">${leader.initials}</span>
-    <span class="person"><strong>${leader.name}</strong><span>${leader.detail}</span></span>
-    <span class="score">${leader.points} <small>Pkt.</small></span>
-  </li>
-`).join("");
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-document.querySelector("#race-list").innerHTML = races.map((race) => `
-  <article class="race-card">
-    <div class="race-card-top"><span class="race-date">${race.date}</span><span class="status">Offen</span></div>
-    <div class="location"><span class="event-icon" aria-hidden="true">S</span><div><strong>${race.place}</strong><span>${race.country}</span></div></div>
-    <div class="race-card-bottom"><span>${race.type} · ${race.deadline}</span><button type="button" data-race="${race.place}">Tippen →</button></div>
-  </article>
-`).join("");
+function athleteOptions(athleteIds, selected = "") {
+  return `<option value="">Bitte auswählen</option>${athleteIds.filter((id) => athletesById.has(id)).map((id) => {
+    const athlete = athletesById.get(id);
+    return `<option value="${escapeHtml(id)}" ${selected === id ? "selected" : ""}>${escapeHtml(athlete.displayName)} · ${escapeHtml(athlete.ageClass)}</option>`;
+  }).join("")}`;
+}
 
-const formMessage = document.querySelector("#form-message");
-const toast = document.querySelector("#toast");
+function questionTypeLabel(type) {
+  return {
+    NUMBER: "Anzahl",
+    ATHLETE: "Person",
+    INTERNAL_RANKING: "Reihenfolge",
+    HEAD_TO_HEAD: "Direktvergleich",
+    PLACEMENT: "Platzierung",
+    PODIUM: "Podium",
+  }[type] ?? type;
+}
 
-document.querySelector("#save-prediction").addEventListener("click", () => {
-  const values = picks.map((select) => select.value);
-  const complete = values.every(Boolean);
-  const unique = new Set(values).size === values.length;
+function renderQuestion(question, index) {
+  const questionId = escapeHtml(question.id);
+  let control = "";
 
-  if (!complete) {
-    formMessage.textContent = "Bitte besetze alle drei Plätze.";
-    formMessage.classList.add("error");
-    return;
+  if (question.type === "NUMBER" || question.type === "PLACEMENT") {
+    control = `<label class="single-input"><span>${question.type === "PLACEMENT" ? "Platzierung" : "Dein Tipp"}</span><input type="number" name="answer-${questionId}" data-question-id="${questionId}" min="${question.minimum}" max="${question.maximum}" inputmode="numeric" placeholder="${question.minimum} bis ${question.maximum}" /></label>`;
   }
-  if (!unique) {
-    formMessage.textContent = "Jeder Fahrer darf nur einmal gewählt werden.";
-    formMessage.classList.add("error");
-    return;
+
+  if (question.type === "ATHLETE") {
+    control = `<label class="single-input"><span>Person auswählen</span><select name="answer-${questionId}" data-question-id="${questionId}">${athleteOptions(question.athleteIds)}</select></label>`;
   }
 
-  formMessage.textContent = "Dein Demo Tipp ist für dieses Rennen gespeichert.";
-  formMessage.classList.remove("error");
-  toast.classList.add("show");
-  window.setTimeout(() => toast.classList.remove("show"), 2600);
-});
+  if (question.type === "HEAD_TO_HEAD") {
+    control = `<div class="choice-grid">${question.athleteIds.map((athleteId) => {
+      const athlete = athletesById.get(athleteId);
+      return `<label class="choice-option"><input type="radio" name="answer-${questionId}" data-question-id="${questionId}" value="${escapeHtml(athleteId)}" /><span>${escapeHtml(athlete.displayName)}<small>${escapeHtml(athlete.ageClass)}</small></span></label>`;
+    }).join("")}</div>`;
+  }
 
-picks.forEach((select) => select.addEventListener("change", () => {
-  formMessage.textContent = "Du kannst deinen Tipp bis zum Tippende ändern.";
-  formMessage.classList.remove("error");
-}));
+  if (question.type === "INTERNAL_RANKING" || question.type === "PODIUM") {
+    control = `<div class="ranking-grid">${Array.from({ length: question.positions }, (_, position) => `<label><span>${position + 1}. Platz</span><select name="answer-${questionId}-${position}" data-question-id="${questionId}" data-position="${position}">${athleteOptions(question.athleteIds)}</select></label>`).join("")}</div>`;
+  }
 
-document.querySelectorAll("[data-race]").forEach((button) => button.addEventListener("click", () => {
-  document.querySelector("#tipp").scrollIntoView({ behavior: "smooth" });
-  formMessage.textContent = `${button.dataset.race} ist im MVP noch mit denselben Demo Fahrern verknüpft.`;
-}));
+  return `<fieldset class="question-card" data-question-card="${questionId}">
+    <legend class="visually-hidden">Frage ${index + 1}</legend>
+    <div class="question-head"><span class="question-number">${String(index + 1).padStart(2, "0")}</span><div><div class="question-meta"><span class="question-type">${questionTypeLabel(question.type)} · 100 Punkte</span><span class="question-scope">Rennen: ${escapeHtml(question.raceLabel ?? "gesamtes Wochenende")}</span></div><h3>${escapeHtml(question.prompt)}</h3><p>${escapeHtml(question.hint)}</p></div></div>
+    <div class="answer-control">${control}</div>
+    <p class="question-error" data-question-error="${questionId}"></p>
+  </fieldset>`;
+}
 
-let remainingMinutes = 2 * 24 * 60 + 14 * 60 + 37;
-window.setInterval(() => {
-  remainingMinutes = Math.max(0, remainingMinutes - 1);
+function renderWeekendOverview() {
+  const groups = tipRound.groups ?? [];
+  const racesById = new Map(tipRound.races.map((race) => [race.id, race]));
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
+  const startLists = new Map();
+
+  tipRound.races.forEach((race) => {
+    const source = race.sourceFile ?? `Startliste ${race.name}`;
+    const current = startLists.get(source) ?? [];
+    current.push(race);
+    startLists.set(source, current);
+  });
+
+  dom.overviewRaceCount.textContent = String(tipRound.races.length);
+  dom.overviewListCount.textContent = String(startLists.size);
+  dom.overviewAthleteCount.textContent = String(tipRound.athletes.length);
+
+  dom.overviewRaces.innerHTML = tipRound.races.map((race) => {
+    const raceGroups = groups.filter((group) => group.raceId === race.id);
+    const groupSummary = raceGroups.length
+      ? raceGroups.map((group) => `${group.label} (${group.athleteIds.length} OHA)`).join(" · ")
+      : "Wertungsgruppen werden aus der Startliste übernommen";
+    return `<div class="overview-entry"><strong>${escapeHtml(race.name)}</strong><span>${escapeHtml(race.day)} · ${escapeHtml(race.discipline)}</span><small>${escapeHtml(groupSummary)}</small></div>`;
+  }).join("");
+
+  dom.overviewStartLists.innerHTML = Array.from(startLists.entries()).map(([source, races]) => `<div class="overview-entry"><strong>${escapeHtml(source)}</strong><span>${races.length} ${races.length === 1 ? "Bewerb" : "Bewerbe"}</span><small>${races.map((race) => escapeHtml(race.name)).join(" · ")}</small></div>`).join("");
+
+  const athletesByAgeClass = new Map();
+  tipRound.athletes.forEach((athlete) => {
+    const current = athletesByAgeClass.get(athlete.ageClass) ?? [];
+    current.push(athlete);
+    athletesByAgeClass.set(athlete.ageClass, current);
+  });
+  const sortedAgeClasses = Array.from(athletesByAgeClass.keys()).sort((left, right) => Number(left.match(/\d+/)?.[0] ?? 99) - Number(right.match(/\d+/)?.[0] ?? 99));
+  dom.overviewAthletes.innerHTML = sortedAgeClasses.map((ageClass) => `<div class="athlete-group"><h4>${escapeHtml(ageClass)}</h4><ul>${athletesByAgeClass.get(ageClass).map((athlete) => {
+    const starts = (athlete.starts ?? []).map((start) => {
+      const race = racesById.get(start.raceId);
+      const group = groupsById.get(start.groupId);
+      return `${race?.name ?? "Bewerb"}${start.startNumber ? ` · Stnr. ${start.startNumber}` : ""}${group?.label ? ` · ${group.label}` : ""}`;
+    });
+    return `<li><strong>${escapeHtml(athlete.displayName)}</strong><small>${escapeHtml(starts.join(" | ") || "Für dieses Wochenende gemeldet")}</small></li>`;
+  }).join("")}</ul></div>`).join("");
+}
+
+function renderTipRound() {
+  dom.title.textContent = tipRound.title;
+  dom.subtitle.textContent = `${tipRound.subtitle} · ${tipRound.questions.length} Fragen · maximal 1.000 Wochenendpunkte`;
+  dom.questionList.innerHTML = tipRound.questions.map(renderQuestion).join("");
+  dom.raceList.innerHTML = tipRound.races.map((race) => `<article class="race-card">
+    <div class="race-card-top"><span class="race-date">${escapeHtml(race.day)}</span><span class="status">In dieser Runde</span></div>
+    <div class="location"><span class="event-icon" aria-hidden="true">S</span><div><strong>${escapeHtml(race.name)}</strong><span>${escapeHtml(race.discipline)}</span></div></div>
+    <div class="race-card-bottom"><span>Offizielles Gesamtergebnis zählt</span><button type="button" data-scroll-to-tip>Tippen →</button></div>
+  </article>`).join("");
+  document.querySelectorAll("[data-scroll-to-tip]").forEach((button) => button.addEventListener("click", () => dom.form.scrollIntoView({ behavior: "smooth" })));
+}
+
+function athleteName(athleteId) {
+  return athletesById.get(athleteId)?.displayName ?? athleteId;
+}
+
+function formatRanking(ranking) {
+  return ranking.map((athleteId, index) => `${index + 1}. ${athleteName(athleteId)}`).join(" · ");
+}
+
+function formatEvaluationAnswer(answer) {
+  if (answer === null || answer === undefined || answer === "") return "Nicht wertbar";
+  if (Array.isArray(answer)) return answer.length ? formatRanking(answer) : "Keine gewerteten Athleten";
+  if (typeof answer === "object") {
+    if (Array.isArray(answer.ranking)) {
+      const ranking = formatRanking(answer.ranking);
+      const unclassified = (answer.unclassified ?? []).map(athleteName);
+      return `${ranking || "Keine gewerteten Athleten"}${unclassified.length ? ` · Nicht gewertet: ${unclassified.join(", ")}` : ""}`;
+    }
+    return JSON.stringify(answer);
+  }
+  if (typeof answer === "string") return athleteName(answer);
+  return String(answer);
+}
+
+function renderEvaluation(evaluation) {
+  const questionsById = new Map(tipRound.questions.map((question) => [question.id, question]));
+  const isFixture = evaluation.testFixture || evaluation.submissionId === "perfect-fixture-submission";
+  const scoredCount = evaluation.questionEvaluations.filter((item) => item.status === "SCORED").length;
+  const annulledCount = evaluation.questionEvaluations.length - scoredCount;
+
+  dom.evaluationWeekendPoints.textContent = String(evaluation.weekendPoints);
+  dom.evaluationRawPoints.textContent = `${evaluation.rawPoints} / ${evaluation.maximumRawPoints}`;
+  dom.evaluationStatus.textContent = `${scoredCount} Fragen gewertet${annulledCount ? ` · ${annulledCount} annulliert` : ""}.`;
+  dom.evaluationBadge.hidden = !isFixture;
+  dom.evaluationQuestionList.innerHTML = evaluation.questionEvaluations.map((item, index) => {
+    const question = questionsById.get(item.questionId);
+    const annulled = item.status === "ANNULLED";
+    const percentage = item.maximumPoints ? Math.round(item.points / item.maximumPoints * 100) : 0;
+    return `<article class="evaluation-card${annulled ? " annulled" : ""}">
+      <div class="evaluation-card-head"><span class="question-number">${String(index + 1).padStart(2, "0")}</span><div><span class="question-scope">Rennen: ${escapeHtml(question?.raceLabel ?? "gesamtes Wochenende")}</span><h3>${escapeHtml(question?.prompt ?? item.questionId)}</h3></div><strong class="evaluation-points">${annulled ? "Annulliert" : `${item.points} / ${item.maximumPoints}`}</strong></div>
+      <div class="answer-comparison"><div><span>Dein Tipp</span><strong>${escapeHtml(formatEvaluationAnswer(item.submittedAnswer))}</strong></div><div><span>Ergebnis</span><strong>${escapeHtml(formatEvaluationAnswer(item.actualAnswer))}</strong></div></div>
+      <div class="score-bar" aria-label="${percentage} Prozent der Fragepunkte"><span style="width:${percentage}%"></span></div>
+    </article>`;
+  }).join("");
+  dom.evaluationSection.hidden = false;
+}
+
+async function loadEvaluation() {
+  try {
+    const response = await fetch(EVALUATION_URL);
+    if (!response.ok) return;
+    const evaluation = await response.json();
+    if (evaluation.tipRoundId === tipRound.id) renderEvaluation(evaluation);
+  } catch {
+    // Die Auswertung ist optional und erscheint erst nach dem Ergebnisimport.
+  }
+}
+
+function valuesForQuestion(question) {
+  if (question.type === "HEAD_TO_HEAD") {
+    return dom.form.querySelector(`input[name="answer-${question.id}"]:checked`)?.value ?? "";
+  }
+  if (question.type === "INTERNAL_RANKING" || question.type === "PODIUM") {
+    return Array.from(dom.form.querySelectorAll(`[data-question-id="${question.id}"][data-position]`)).map((element) => element.value);
+  }
+  return dom.form.querySelector(`[data-question-id="${question.id}"]`)?.value ?? "";
+}
+
+function validateQuestion(question, showErrors = false) {
+  const value = valuesForQuestion(question);
+  let error = "";
+
+  if (Array.isArray(value)) {
+    if (value.some((item) => !item)) error = "Bitte alle Positionen besetzen.";
+    else if (new Set(value).size !== value.length) error = "Jede Person darf nur einmal gewählt werden.";
+  } else if (!value) {
+    error = "Bitte diese Frage beantworten.";
+  } else if (question.type === "NUMBER" || question.type === "PLACEMENT") {
+    const numericValue = Number(value);
+    if (!Number.isInteger(numericValue) || numericValue < question.minimum || numericValue > question.maximum) {
+      error = `Bitte eine ganze Zahl zwischen ${question.minimum} und ${question.maximum} eingeben.`;
+    }
+  }
+
+  const card = dom.form.querySelector(`[data-question-card="${question.id}"]`);
+  const errorElement = dom.form.querySelector(`[data-question-error="${question.id}"]`);
+  card.classList.toggle("invalid", Boolean(error) && showErrors);
+  errorElement.textContent = showErrors ? error : "";
+  return { valid: !error, value };
+}
+
+function updateProgress() {
+  const answered = tipRound.questions.filter((question) => validateQuestion(question).valid).length;
+  dom.progress.textContent = `${answered} / ${tipRound.questions.length} beantwortet`;
+}
+
+function storageKey() {
+  return `${STORAGE_PREFIX}${tipRound.id}`;
+}
+
+function storedSubmission() {
+  const rawSubmission = localStorage.getItem(storageKey());
+  if (!rawSubmission) return null;
+  try {
+    return JSON.parse(rawSubmission);
+  } catch {
+    localStorage.removeItem(storageKey());
+    return null;
+  }
+}
+
+function exportableSubmission(submission) {
+  const submittedAt = submission.submittedAt ?? submission.savedAt ?? new Date().toISOString();
+  return {
+    schemaVersion: 1,
+    id: submission.id ?? `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`,
+    tipRoundId: tipRound.id,
+    submittedAt,
+    answers: submission.answers,
+  };
+}
+
+function updateExportState() {
+  dom.exportButton.disabled = !storedSubmission();
+}
+
+function collectSubmission() {
+  const answers = {};
+  let firstInvalidCard;
+
+  tipRound.questions.forEach((question) => {
+    const validation = validateQuestion(question, true);
+    answers[question.id] = validation.value;
+    if (!validation.valid && !firstInvalidCard) firstInvalidCard = dom.form.querySelector(`[data-question-card="${question.id}"]`);
+  });
+
+  return { answers, firstInvalidCard };
+}
+
+function restoreSubmission() {
+  const submission = storedSubmission();
+  if (!submission) return;
+  try {
+    Object.entries(submission.answers ?? {}).forEach(([questionId, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item, position) => {
+          const field = dom.form.querySelector(`[data-question-id="${questionId}"][data-position="${position}"]`);
+          if (field) field.value = item;
+        });
+      } else {
+        const radio = dom.form.querySelector(`input[data-question-id="${questionId}"][value="${value}"]`);
+        const field = dom.form.querySelector(`[data-question-id="${questionId}"]:not([type="radio"])`);
+        if (radio) radio.checked = true;
+        else if (field) field.value = value;
+      }
+    });
+    const savedAt = new Date(submission.submittedAt ?? submission.savedAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+    dom.message.textContent = `Gespeicherter Tipp geladen · zuletzt gespeichert am ${savedAt}`;
+  } catch {
+    localStorage.removeItem(storageKey());
+  }
+  updateExportState();
+}
+
+function setLocked(locked) {
+  dom.form.querySelectorAll("input, select, #save-prediction, #reset-prediction").forEach((element) => { element.disabled = locked; });
+  dom.deadlineStatus.textContent = locked ? "Tippabgabe geschlossen" : "Tippabgabe geöffnet";
+  if (locked) dom.message.textContent = "Der Abgabeschluss ist erreicht. Der Tipp kann nicht mehr geändert werden.";
+}
+
+function updateCountdown() {
+  const remainingMilliseconds = new Date(tipRound.closesAt).getTime() - Date.now();
+  const remainingMinutes = Math.max(0, Math.floor(remainingMilliseconds / 60_000));
   document.querySelector("#days").textContent = String(Math.floor(remainingMinutes / 1440)).padStart(2, "0");
   document.querySelector("#hours").textContent = String(Math.floor((remainingMinutes % 1440) / 60)).padStart(2, "0");
   document.querySelector("#minutes").textContent = String(remainingMinutes % 60).padStart(2, "0");
-}, 60_000);
+  setLocked(remainingMilliseconds <= 0);
+}
+
+function showToast() {
+  dom.toast.classList.add("show");
+  window.setTimeout(() => dom.toast.classList.remove("show"), 2600);
+}
+
+function bindEvents() {
+  dom.form.addEventListener("input", () => {
+    dom.message.textContent = "Ungespeicherte Änderungen vorhanden.";
+    dom.message.classList.remove("error");
+    updateProgress();
+  });
+
+  dom.form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (Date.now() >= new Date(tipRound.closesAt).getTime()) return;
+
+    const { answers, firstInvalidCard } = collectSubmission();
+    if (firstInvalidCard) {
+      dom.message.textContent = "Bitte alle Fragen vollständig und gültig beantworten.";
+      dom.message.classList.add("error");
+      firstInvalidCard.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    const submittedAt = new Date().toISOString();
+    const submission = { schemaVersion: 1, id: `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`, tipRoundId: tipRound.id, submittedAt, answers };
+    localStorage.setItem(storageKey(), JSON.stringify(submission));
+    dom.message.textContent = "Dein Tipp wurde lokal gespeichert und kann bis zum Abgabeschluss geändert werden.";
+    dom.message.classList.remove("error");
+    updateExportState();
+    showToast();
+  });
+
+  dom.resetButton.addEventListener("click", () => {
+    if (!window.confirm("Möchtest du alle Antworten dieser Tipprunde zurücksetzen?")) return;
+    localStorage.removeItem(storageKey());
+    dom.form.reset();
+    tipRound.questions.forEach((question) => validateQuestion(question));
+    dom.message.textContent = "Der lokale Tipp wurde zurückgesetzt.";
+    dom.message.classList.remove("error");
+    updateProgress();
+    updateExportState();
+  });
+
+  dom.exportButton.addEventListener("click", () => {
+    const submission = storedSubmission();
+    if (!submission) return;
+    const exportData = exportableSubmission(submission);
+    const blob = new Blob([`${JSON.stringify(exportData, null, 2)}\n`], { type: "application/json" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `tipp-${tipRound.id}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+    dom.message.textContent = "Tipp exportiert. Lege die JSON Datei für die Auswertung im Submission Inbox Ordner ab.";
+    dom.message.classList.remove("error");
+  });
+}
+
+function renderLeaderboard() {
+  document.querySelector("#leaderboard-list").innerHTML = leaders.map((leader, index) => `<li>
+    <span class="rank">${index + 1}</span><span class="avatar">${escapeHtml(leader.initials)}</span>
+    <span class="person"><strong>${escapeHtml(leader.name)}</strong><span>${escapeHtml(leader.detail)}</span></span>
+    <span class="score">${leader.points} <small>Pkt.</small></span>
+  </li>`).join("");
+}
+
+async function initialize() {
+  try {
+    let response;
+    for (const url of DATA_URLS) {
+      response = await fetch(url);
+      if (response.ok) break;
+    }
+    if (!response?.ok) throw new Error(`Tipprunde konnte nicht geladen werden: ${response?.status ?? "keine Antwort"}`);
+    tipRound = await response.json();
+    athletesById = new Map(tipRound.athletes.map((athlete) => [athlete.id, athlete]));
+    renderWeekendOverview();
+    renderTipRound();
+    await loadEvaluation();
+    renderLeaderboard();
+    bindEvents();
+    restoreSubmission();
+    updateExportState();
+    updateProgress();
+    updateCountdown();
+    countdownTimer = window.setInterval(updateCountdown, 60_000);
+  } catch (error) {
+    dom.title.textContent = "Tipprunde konnte nicht geladen werden";
+    dom.subtitle.textContent = "Bitte die Website über den lokalen HTTP-Server öffnen.";
+    dom.message.textContent = error.message;
+    dom.message.classList.add("error");
+  }
+}
+
+window.addEventListener("beforeunload", () => window.clearInterval(countdownTimer));
+initialize();

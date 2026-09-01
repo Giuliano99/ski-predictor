@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/tip-evaluation.schema.json",
+  "title": "Ski Predictor Tip Evaluation",
+  "type": "object",
+  "required": ["schemaVersion", "tipRoundId", "submissionId", "questionEvaluations", "rawPoints", "maximumRawPoints", "weekendPoints"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "tipRoundId": { "type": "string" },
+    "submissionId": { "type": "string" },
+    "testFixture": { "type": "boolean" },
+    "questionEvaluations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["questionId", "status", "points", "maximumPoints"],
+        "properties": {
+          "questionId": { "type": "string" },
+          "status": { "enum": ["SCORED", "ANNULLED"] },
+          "submittedAnswer": {},
+          "actualAnswer": {},
+          "points": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "maximumPoints": { "enum": [0, 100] }
+        }
+      }
+    },
+    "rawPoints": { "type": "integer", "minimum": 0 },
+    "maximumRawPoints": { "type": "integer", "minimum": 0 },
+    "weekendPoints": { "type": "integer", "minimum": 0, "maximum": 1000 }
+  }
+}

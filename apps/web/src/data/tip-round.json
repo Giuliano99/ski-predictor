@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "id": "svm-demo-weekend-1",
+  "title": "SVM Rennwochenende Demo",
+  "subtitle": "U8 bis U16 · Slalom und Riesenslalom",
+  "opensAt": "2026-09-01T08:00:00+02:00",
+  "closesAt": "2027-01-16T00:00:00+01:00",
+  "timeZone": "Europe/Berlin",
+  "athletes": [
+    { "id": "athlete-anna-m", "displayName": "Anna M.", "ageClass": "U10" },
+    { "id": "athlete-lea-k", "displayName": "Lea K.", "ageClass": "U10" },
+    { "id": "athlete-emilia-s", "displayName": "Emilia S.", "ageClass": "U10" },
+    { "id": "athlete-ben-h", "displayName": "Ben H.", "ageClass": "U12" },
+    { "id": "athlete-max-r", "displayName": "Max R.", "ageClass": "U12" },
+    { "id": "athlete-paul-t", "displayName": "Paul T.", "ageClass": "U14" },
+    { "id": "athlete-lena-w", "displayName": "Lena W.", "ageClass": "U14" },
+    { "id": "athlete-jonas-b", "displayName": "Jonas B.", "ageClass": "U16" }
+  ],
+  "races": [
+    { "id": "race-u8-u10-sl", "name": "SVM U8/U10 Cup", "discipline": "Slalom", "day": "Samstag" },
+    { "id": "race-u12-gs", "name": "SVM U12 Cup", "discipline": "Riesenslalom", "day": "Samstag" },
+    { "id": "race-u14-u16-gs", "name": "MINI München Cup", "discipline": "Riesenslalom", "day": "Sonntag" }
+  ],
+  "questions": [
+    {
+      "id": "podium-count",
+      "type": "NUMBER",
+      "prompt": "Wie viele Podiumsplätze erreicht das Skiteam am gesamten Wochenende?",
+      "hint": "Alle Altersklassen und alle drei Rennen zusammen",
+      "minimum": 0,
+      "maximum": 15
+    },
+    {
+      "id": "top-ten-count",
+      "type": "NUMBER",
+      "prompt": "Wie viele Top-10-Ergebnisse erzielt Oberhaching?",
+      "hint": "Maßgeblich ist jeweils das offizielle Gesamtergebnis",
+      "minimum": 0,
+      "maximum": 24
+    },
+    {
+      "id": "best-result",
+      "type": "ATHLETE",
+      "prompt": "Wer erzielt das beste Ergebnis des Wochenendes?",
+      "hint": "Verglichen wird die offizielle Platzierung",
+      "athleteIds": ["athlete-anna-m", "athlete-lea-k", "athlete-emilia-s", "athlete-ben-h", "athlete-max-r", "athlete-paul-t", "athlete-lena-w", "athlete-jonas-b"]
+    },
+    {
+      "id": "lowest-gap",
+      "type": "ATHLETE",
+      "prompt": "Wer hat den geringsten prozentualen Rückstand?",
+      "hint": "So bleiben unterschiedliche Rennen vergleichbar",
+      "athleteIds": ["athlete-anna-m", "athlete-lea-k", "athlete-emilia-s", "athlete-ben-h", "athlete-max-r", "athlete-paul-t", "athlete-lena-w", "athlete-jonas-b"]
+    },
+    {
+      "id": "u10-ranking",
+      "type": "INTERNAL_RANKING",
+      "prompt": "Wie lautet die interne Reihenfolge der U10?",
+      "hint": "Ordne die drei Oberhachinger Athletinnen ein",
+      "positions": 3,
+      "athleteIds": ["athlete-anna-m", "athlete-lea-k", "athlete-emilia-s"]
+    },
+    {
+      "id": "u12-head-to-head",
+      "type": "HEAD_TO_HEAD",
+      "prompt": "Wer gewinnt den direkten U12-Vergleich?",
+      "hint": "Es zählt das offizielle Gesamtergebnis",
+      "athleteIds": ["athlete-ben-h", "athlete-max-r"]
+    },
+    {
+      "id": "jonas-placement",
+      "type": "PLACEMENT",
+      "prompt": "Welche Platzierung erreicht Jonas B.?",
+      "hint": "Tippe die offizielle Platzierung in seiner Wertungsgruppe",
+      "athleteId": "athlete-jonas-b",
+      "minimum": 1,
+      "maximum": 40
+    },
+    {
+      "id": "internal-podium",
+      "type": "PODIUM",
+      "prompt": "Wie sieht das interne Oberhachinger Podium aus?",
+      "hint": "Über alle Rennen nach bestem prozentualen Rückstand",
+      "positions": 3,
+      "athleteIds": ["athlete-anna-m", "athlete-lea-k", "athlete-emilia-s", "athlete-ben-h", "athlete-max-r", "athlete-paul-t", "athlete-lena-w", "athlete-jonas-b"]
+    }
+  ]
+}

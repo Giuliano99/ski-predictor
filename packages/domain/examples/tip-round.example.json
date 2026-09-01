@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "season": {
+    "id": "season-2026-27",
+    "name": "2026/27",
+    "startsOn": "2026-10-01",
+    "endsOn": "2027-05-31"
+  },
+  "athletes": [
+    {
+      "id": "athlete-demo-7",
+      "displayName": "Startnummer 7",
+      "club": "Skiteam Oberhaching",
+      "birthYear": 2015,
+      "ageClass": "U12",
+      "active": true
+    },
+    {
+      "id": "athlete-demo-12",
+      "displayName": "Startnummer 12",
+      "club": "Skiteam Oberhaching",
+      "birthYear": 2015,
+      "ageClass": "U12",
+      "active": true
+    }
+  ],
+  "event": {
+    "id": "event-demo-svm",
+    "seasonId": "season-2026-27",
+    "name": "SVM Rennwochenende Demo",
+    "series": "SVM",
+    "location": "Beispielort",
+    "startsOn": "2027-01-16",
+    "endsOn": "2027-01-17"
+  },
+  "races": [
+    {
+      "id": "race-demo-u12-gs",
+      "eventId": "event-demo-svm",
+      "name": "U12 Riesenslalom",
+      "ageClasses": ["U12"],
+      "discipline": "GS",
+      "scheduledStart": "2027-01-16T09:30:00+01:00",
+      "runs": 2,
+      "status": "SCHEDULED",
+      "athleteIds": ["athlete-demo-7", "athlete-demo-12"]
+    }
+  ],
+  "tipRound": {
+    "id": "tip-round-demo-svm",
+    "title": "SVM Rennwochenende Demo",
+    "raceIds": ["race-demo-u12-gs"],
+    "opensAt": "2027-01-11T08:00:00+01:00",
+    "closesAt": "2027-01-16T00:00:00+01:00",
+    "timeZone": "Europe/Berlin",
+    "status": "OPEN",
+    "questions": [
+      { "id": "q-1", "type": "NUMBER", "prompt": "Wie viele Podiumsplätze erreicht Oberhaching?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "evaluationMetric": "PODIUM_COUNT" },
+      { "id": "q-2", "type": "ATHLETE", "prompt": "Wer erzielt das beste Oberhachinger Ergebnis?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "athleteIds": ["athlete-demo-7", "athlete-demo-12"], "evaluationMetric": "BEST_RESULT" },
+      { "id": "q-3", "type": "ATHLETE", "prompt": "Wer hat den geringsten prozentualen Rückstand?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "athleteIds": ["athlete-demo-7", "athlete-demo-12"], "evaluationMetric": "LOWEST_PERCENTAGE_GAP" },
+      { "id": "q-4", "type": "INTERNAL_RANKING", "prompt": "Wie lautet die interne U12 Reihenfolge?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "ageClass": "U12", "athleteIds": ["athlete-demo-7", "athlete-demo-12"], "evaluationMetric": "INTERNAL_ORDER" },
+      { "id": "q-5", "type": "HEAD_TO_HEAD", "prompt": "Wer gewinnt den direkten Vergleich?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "athleteIds": ["athlete-demo-7", "athlete-demo-12"], "evaluationMetric": "DIRECT_COMPARISON" },
+      { "id": "q-6", "type": "PLACEMENT", "prompt": "Welche Platzierung erreicht Startnummer 7?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "athleteIds": ["athlete-demo-7"], "evaluationMetric": "EXACT_PLACEMENT" }
+    ]
+  }
+}

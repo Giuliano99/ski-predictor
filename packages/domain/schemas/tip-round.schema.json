@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/tip-round.schema.json",
+  "title": "Ski Predictor Tip Round",
+  "type": "object",
+  "required": ["schemaVersion", "season", "athletes", "event", "races", "tipRound"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "season": { "$ref": "#/$defs/season" },
+    "athletes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/athlete" }
+    },
+    "event": { "$ref": "#/$defs/event" },
+    "races": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/race" }
+    },
+    "tipRound": { "$ref": "#/$defs/tipRound" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "season": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "startsOn", "endsOn"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "name": { "type": "string", "minLength": 1 },
+        "startsOn": { "type": "string", "format": "date" },
+        "endsOn": { "type": "string", "format": "date" }
+      }
+    },
+    "athlete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "club", "ageClass", "active"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "displayName": { "type": "string", "minLength": 1 },
+        "club": { "const": "Skiteam Oberhaching" },
+        "birthYear": { "type": "integer", "minimum": 2000, "maximum": 2100 },
+        "ageClass": { "$ref": "#/$defs/ageClass" },
+        "externalIds": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "active": { "type": "boolean" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "seasonId", "name", "series", "startsOn", "endsOn"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "seasonId": { "$ref": "#/$defs/identifier" },
+        "name": { "type": "string", "minLength": 1 },
+        "competitionNumber": { "type": "string" },
+        "series": { "enum": ["SVM", "LANDKREIS", "BAYERNLIGA", "DSV", "OTHER"] },
+        "location": { "type": "string" },
+        "startsOn": { "type": "string", "format": "date" },
+        "endsOn": { "type": "string", "format": "date" }
+      }
+    },
+    "race": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "eventId", "name", "ageClasses", "discipline", "scheduledStart", "runs", "status", "athleteIds"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "eventId": { "$ref": "#/$defs/identifier" },
+        "name": { "type": "string", "minLength": 1 },
+        "ageClasses": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/ageClass" }
+        },
+        "discipline": { "enum": ["SL", "GS", "SG", "DH", "KIDS_CROSS", "OTHER"] },
+        "scheduledStart": { "type": "string", "format": "date-time" },
+        "runs": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "status": { "enum": ["DRAFT", "SCHEDULED", "RUNNING", "OFFICIAL", "CANCELLED"] },
+        "athleteIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "result": { "$ref": "#/$defs/raceResult" }
+      }
+    },
+    "raceResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["official", "groups"],
+      "properties": {
+        "official": { "type": "boolean" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/resultGroup" }
+        }
+      }
+    },
+    "resultGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "ageClass", "competitionCategory", "classificationMethod", "winnerTimeSeconds", "slowestClassifiedTimeSeconds", "entries"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "type": "string", "minLength": 1 },
+        "ageClass": { "$ref": "#/$defs/ageClass" },
+        "competitionCategory": { "$ref": "#/$defs/competitionCategory" },
+        "birthYears": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1900, "maximum": 2100 }
+        },
+        "classificationMethod": { "enum": ["BEST_VALID_RUN", "SUM_OF_RUNS", "SINGLE_RUN", "OFFICIAL_OTHER"] },
+        "winnerTimeSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "slowestClassifiedTimeSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "entries": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/resultEntry" }
+        }
+      }
+    },
+    "resultEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["athleteId", "status"],
+      "properties": {
+        "athleteId": { "$ref": "#/$defs/identifier" },
+        "externalAthleteId": { "type": "string" },
+        "startNumber": { "type": "integer", "minimum": 1 },
+        "status": { "enum": ["CLASSIFIED", "DNS", "DNF", "DSQ"] },
+        "rank": { "type": "integer", "minimum": 1 },
+        "officialTimeSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "percentageGap": { "type": "number", "minimum": 0 },
+        "federationPoints": { "type": "number", "minimum": 0 },
+        "runResults": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/runResult" }
+        }
+      }
+    },
+    "runResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runNumber", "status"],
+      "properties": {
+        "runNumber": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "status": { "enum": ["CLASSIFIED", "DNS", "DNF", "DSQ"] },
+        "timeSeconds": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "tipRound": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "raceIds", "opensAt", "closesAt", "timeZone", "status", "questions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1 },
+        "raceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "opensAt": { "type": "string", "format": "date-time" },
+        "closesAt": { "type": "string", "format": "date-time" },
+        "timeZone": { "const": "Europe/Berlin" },
+        "status": { "enum": ["DRAFT", "OPEN", "CLOSED", "EVALUATED", "CANCELLED"] },
+        "questions": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 10,
+          "items": { "$ref": "#/$defs/tipQuestion" }
+        }
+      }
+    },
+    "tipQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "prompt", "maximumPoints", "raceIds", "evaluationMetric"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "enum": ["NUMBER", "ATHLETE", "INTERNAL_RANKING", "PLACEMENT", "HEAD_TO_HEAD", "PODIUM"] },
+        "prompt": { "type": "string", "minLength": 1 },
+        "maximumPoints": { "const": 100 },
+        "raceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "ageClass": { "$ref": "#/$defs/ageClass" },
+        "competitionCategory": { "$ref": "#/$defs/competitionCategory" },
+        "birthYears": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1900, "maximum": 2100 }
+        },
+        "athleteIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "evaluationMetric": { "enum": ["PODIUM_COUNT", "TOP_N_COUNT", "CLASSIFIED_COUNT", "BEST_RESULT", "LOWEST_PERCENTAGE_GAP", "INTERNAL_ORDER", "EXACT_PLACEMENT", "DIRECT_COMPARISON", "PODIUM_ORDER"] }
+      }
+    },
+    "ageClass": {
+      "enum": ["U8", "U10", "U12", "U14", "U16", "U18", "U21", "ADULT", "OPEN"]
+    },
+    "competitionCategory": {
+      "enum": ["FEMALE", "MALE", "MIXED", "OPEN"]
+    }
+  }
+}

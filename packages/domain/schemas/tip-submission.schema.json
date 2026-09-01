@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/tip-submission.schema.json",
+  "title": "Ski Predictor Tip Submission",
+  "type": "object",
+  "required": ["schemaVersion", "id", "tipRoundId", "submittedAt", "answers"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "tipRoundId": { "type": "string", "minLength": 1 },
+    "submittedAt": { "type": "string", "format": "date-time" },
+    "answers": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}
