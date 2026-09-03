@@ -3,10 +3,11 @@
   "$id": "https://ski-predictor.local/schemas/tip-evaluation.schema.json",
   "title": "Ski Predictor Tip Evaluation",
   "type": "object",
-  "required": ["schemaVersion", "tipRoundId", "submissionId", "questionEvaluations", "rawPoints", "maximumRawPoints", "weekendPoints"],
+  "required": ["schemaVersion", "tipRoundId", "tipRoundVersion", "submissionId", "questionEvaluations", "rawPoints", "maximumRawPoints", "weekendPoints"],
   "properties": {
     "schemaVersion": { "const": 1 },
     "tipRoundId": { "type": "string" },
+    "tipRoundVersion": { "type": "string", "pattern": "^sha256-[a-f0-9]{64}$" },
     "submissionId": { "type": "string" },
     "testFixture": { "type": "boolean" },
     "questionEvaluations": {

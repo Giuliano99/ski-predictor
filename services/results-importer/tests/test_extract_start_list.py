@@ -10,6 +10,7 @@ from extract_start_list import (  # noqa: E402
     FORMAT_DSVALPIN,
     FORMAT_RACE_CODE,
     FORMAT_RACE_SIMPLE,
+    FORMAT_RECONSTRUCTED,
     detect_format,
     name_from_comma,
     name_without_comma,
@@ -17,6 +18,7 @@ from extract_start_list import (  # noqa: E402
     parse_code_entry,
     parse_dsvalpin_entry,
     parse_group,
+    parse_reconstructed,
     parse_simple_entry,
 )
 
@@ -40,11 +42,31 @@ class ExtractStartListTests(unittest.TestCase):
         self.assertEqual(first["competitionCategory"], "FEMALE")
         self.assertEqual(first["birthYears"], [2014])
         self.assertEqual(second["competitionCategory"], "MALE")
+        third = parse_group("U8 2019 Mädchen | 5 Starter")
+        self.assertEqual(third["competitionCategory"], "FEMALE")
+        self.assertEqual(third["birthYears"], [2019])
+        self.assertEqual(third["label"], "U8 2019 Mädchen")
 
     def test_format_detection(self):
         self.assertEqual(detect_format("DSValpin V6.1.0"), FORMAT_DSVALPIN)
         self.assertEqual(detect_format("Stnr Code Teilnehmer"), FORMAT_RACE_CODE)
         self.assertEqual(detect_format("Stnr Teilnehmer JG Verein"), FORMAT_RACE_SIMPLE)
+        self.assertEqual(
+            detect_format("Aus der offiziellen Ergebnisliste rekonstruiert - Laufzeiten bleiben leer"),
+            FORMAT_RECONSTRUCTED,
+        )
+
+    def test_reconstructed_rows(self):
+        groups, warnings = parse_reconstructed([
+            "U14 weiblich | 2 Starter",
+            "Stnr", "Code", "Teilnehmer", "JG", "VB", "Verein", "Laufzeit",
+            "1", "12345", "MUSTERMANN, Anna", "2013", "BSV-MU", "Skiteam Oberhaching",
+            "2", "67890", "BEISPIEL, Lea", "2013", "BSV-MU", "WSV Glonn",
+        ], "Skiteam Oberhaching")
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(groups[0]["starters"]), 2)
+        self.assertEqual(groups[0]["starters"][0]["displayName"], "Anna M.")
+        self.assertTrue(groups[0]["starters"][0]["targetClub"])
 
     def test_dsvalpin_row(self):
         row = parse_dsvalpin_entry(

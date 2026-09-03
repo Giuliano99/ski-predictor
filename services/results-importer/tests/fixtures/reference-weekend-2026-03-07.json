@@ -1,0 +1,1869 @@
+{
+  "description": "Fachlicher Referenzfall Rennwochenende 7. und 8. März 2026",
+  "tipRound": {
+    "id": "tip-round-2026-03-07",
+    "contentVersion": "sha256-8f7255b133db71f3469367514837cf4c23cd8476b9d134cf4e2b69e3e1593467",
+    "races": [
+      {
+        "id": "race-startliste-u8-u10-2026-03-07",
+        "name": "10. Sport Gürteler U8/U10 Cup",
+        "discipline": "Riesenslalom",
+        "day": "Samstag",
+        "date": "2026-03-07",
+        "sourceFile": "startliste_u8-u10_2026-03-07.pdf",
+        "location": "Fügen - Spieljoch"
+      },
+      {
+        "id": "race-startliste-u12-2026-03-07",
+        "name": "Stumbaum Hausfreunde Cup U12",
+        "discipline": "Slalom",
+        "day": "Samstag",
+        "date": "2026-03-07",
+        "sourceFile": "startliste_u12_2026-03-07.pdf",
+        "location": "Fügen - Spieljoch"
+      },
+      {
+        "id": "race-startliste-u14-u16-2026-03-07",
+        "name": "Sechzger-Pokal - MINI München Cup U14/U16",
+        "discipline": "Riesenslalom",
+        "day": "Samstag",
+        "date": "2026-03-07",
+        "sourceFile": "startliste_u14-u16_2026-03-07.pdf",
+        "location": "Pass Thurn"
+      },
+      {
+        "id": "race-startliste-u8-u10-2026-03-08",
+        "name": "11. Sport Gürteler U8/U10 Cup",
+        "discipline": "Slalom",
+        "day": "Sonntag",
+        "date": "2026-03-08",
+        "sourceFile": "startliste_u8-u10_2026-03-08.pdf",
+        "location": "Fügen - Spieljoch"
+      },
+      {
+        "id": "race-startliste-u12-2026-03-08",
+        "name": "Stumbaum Hausfreunde Cup U12",
+        "discipline": "Riesenslalom",
+        "day": "Sonntag",
+        "date": "2026-03-08",
+        "sourceFile": "startliste_u12_2026-03-08.pdf",
+        "location": "Fügen - Spieljoch"
+      },
+      {
+        "id": "race-startliste-u14-u16-2026-03-08",
+        "name": "Kitz-Pokal - MINI München Cup U14/U16",
+        "discipline": "Riesenslalom",
+        "day": "Sonntag",
+        "date": "2026-03-08",
+        "sourceFile": "startliste_u14-u16_2026-03-08.pdf",
+        "location": "Pass Thurn"
+      }
+    ],
+    "athletes": [
+      {
+        "id": "athlete-local-876ee52e867c",
+        "displayName": "Benedict B.",
+        "ageClass": "U10",
+        "birthYear": 2017,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-male-2017",
+            "ageClass": "U10",
+            "startNumber": 48
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u10-male-2017",
+            "ageClass": "U10",
+            "startNumber": 52
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-f337c6a7024e",
+        "displayName": "Charles D.",
+        "ageClass": "U10",
+        "birthYear": 2016,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-male-2016",
+            "ageClass": "U10",
+            "startNumber": 83
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-08b48b944dba",
+        "displayName": "Jonas S.",
+        "ageClass": "U10",
+        "birthYear": 2016,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-male-2016",
+            "ageClass": "U10",
+            "startNumber": 109
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-2d1d178738e3",
+        "displayName": "Julia K.",
+        "ageClass": "U10",
+        "birthYear": 2017,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-female-2017",
+            "ageClass": "U10",
+            "startNumber": 45
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u10-female-2017",
+            "ageClass": "U10",
+            "startNumber": 43
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-3ed8f5775b83",
+        "displayName": "Julius R.",
+        "ageClass": "U10",
+        "birthYear": 2016,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-male-2016",
+            "ageClass": "U10",
+            "startNumber": 93
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-01eb55cc7607",
+        "displayName": "Lukas R.",
+        "ageClass": "U10",
+        "birthYear": 2017,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-male-2017",
+            "ageClass": "U10",
+            "startNumber": 63
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u10-male-2017",
+            "ageClass": "U10",
+            "startNumber": 56
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-e3ac8aa914b6",
+        "displayName": "Philipp G.",
+        "ageClass": "U10",
+        "birthYear": 2017,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u10-male-2017",
+            "ageClass": "U10",
+            "startNumber": 50
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u10-male-2017",
+            "ageClass": "U10",
+            "startNumber": 62
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-4fea3e2d6404",
+        "displayName": "Antoine D.",
+        "ageClass": "U12",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-startliste-u12-2026-03-07",
+            "groupId": "race-startliste-u12-2026-03-07-u12-male",
+            "ageClass": "U12",
+            "startNumber": 69
+          },
+          {
+            "raceId": "race-startliste-u12-2026-03-08",
+            "groupId": "race-startliste-u12-2026-03-08-u12-male",
+            "ageClass": "U12",
+            "startNumber": 59
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-2e162c10ec53",
+        "displayName": "Anton E.",
+        "ageClass": "U12",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-startliste-u12-2026-03-07",
+            "groupId": "race-startliste-u12-2026-03-07-u12-male",
+            "ageClass": "U12",
+            "startNumber": 47
+          },
+          {
+            "raceId": "race-startliste-u12-2026-03-08",
+            "groupId": "race-startliste-u12-2026-03-08-u12-male",
+            "ageClass": "U12",
+            "startNumber": 47
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-79ad01469a6d",
+        "displayName": "Carolina T.",
+        "ageClass": "U12",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-startliste-u12-2026-03-07",
+            "groupId": "race-startliste-u12-2026-03-07-u12-female",
+            "ageClass": "U12",
+            "startNumber": 4
+          },
+          {
+            "raceId": "race-startliste-u12-2026-03-08",
+            "groupId": "race-startliste-u12-2026-03-08-u12-female",
+            "ageClass": "U12",
+            "startNumber": 10
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-0fe1ef8096ab",
+        "displayName": "Felix R.",
+        "ageClass": "U12",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-startliste-u12-2026-03-07",
+            "groupId": "race-startliste-u12-2026-03-07-u12-male",
+            "ageClass": "U12",
+            "startNumber": 41
+          },
+          {
+            "raceId": "race-startliste-u12-2026-03-08",
+            "groupId": "race-startliste-u12-2026-03-08-u12-male",
+            "ageClass": "U12",
+            "startNumber": 45
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-37c26bef4a61",
+        "displayName": "Mira C.",
+        "ageClass": "U12",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-startliste-u12-2026-03-07",
+            "groupId": "race-startliste-u12-2026-03-07-u12-female",
+            "ageClass": "U12",
+            "startNumber": 24
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-0d4955e42c76",
+        "displayName": "Theresa E.",
+        "ageClass": "U12",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-startliste-u12-2026-03-07",
+            "groupId": "race-startliste-u12-2026-03-07-u12-female",
+            "ageClass": "U12",
+            "startNumber": 8
+          },
+          {
+            "raceId": "race-startliste-u12-2026-03-08",
+            "groupId": "race-startliste-u12-2026-03-08-u12-female",
+            "ageClass": "U12",
+            "startNumber": 11
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-30246",
+        "displayName": "Alexander T.",
+        "ageClass": "U14",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-male",
+            "ageClass": "U14",
+            "startNumber": 68
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-male",
+            "ageClass": "U14",
+            "startNumber": 57
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-28220",
+        "displayName": "Anton V.",
+        "ageClass": "U14",
+        "birthYear": 2012,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-male",
+            "ageClass": "U14",
+            "startNumber": 102
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-male",
+            "ageClass": "U14",
+            "startNumber": 83
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-27983",
+        "displayName": "Clara S.",
+        "ageClass": "U14",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-female",
+            "ageClass": "U14",
+            "startNumber": 9
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-female",
+            "ageClass": "U14",
+            "startNumber": 13
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-33432",
+        "displayName": "Josephine L.",
+        "ageClass": "U14",
+        "birthYear": 2012,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-female",
+            "ageClass": "U14",
+            "startNumber": 34
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-33759",
+        "displayName": "Julian G.",
+        "ageClass": "U14",
+        "birthYear": 2012,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-male",
+            "ageClass": "U14",
+            "startNumber": 96
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-male",
+            "ageClass": "U14",
+            "startNumber": 86
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-28219",
+        "displayName": "Lea R.",
+        "ageClass": "U14",
+        "birthYear": 2012,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-female",
+            "ageClass": "U14",
+            "startNumber": 21
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-female",
+            "ageClass": "U14",
+            "startNumber": 23
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-29887",
+        "displayName": "Marlene E.",
+        "ageClass": "U14",
+        "birthYear": 2012,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-female",
+            "ageClass": "U14",
+            "startNumber": 22
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-female",
+            "ageClass": "U14",
+            "startNumber": 17
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-32303",
+        "displayName": "Marlene W.",
+        "ageClass": "U14",
+        "birthYear": 2012,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-female",
+            "ageClass": "U14",
+            "startNumber": 33
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-female",
+            "ageClass": "U14",
+            "startNumber": 21
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-32939",
+        "displayName": "Simon P.",
+        "ageClass": "U14",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u14-male",
+            "ageClass": "U14",
+            "startNumber": 85
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u14-male",
+            "ageClass": "U14",
+            "startNumber": 59
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-29881",
+        "displayName": "Intira F.",
+        "ageClass": "U16",
+        "birthYear": 2011,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-female",
+            "ageClass": "U16",
+            "startNumber": 63
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-female",
+            "ageClass": "U16",
+            "startNumber": 56
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-29880",
+        "displayName": "Maximilian F.",
+        "ageClass": "U16",
+        "birthYear": 2011,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-male",
+            "ageClass": "U16",
+            "startNumber": 140
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-male",
+            "ageClass": "U16",
+            "startNumber": 123
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-28218",
+        "displayName": "Moritz B.",
+        "ageClass": "U16",
+        "birthYear": 2011,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-male",
+            "ageClass": "U16",
+            "startNumber": 130
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-male",
+            "ageClass": "U16",
+            "startNumber": 114
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-32386",
+        "displayName": "Oliver G.",
+        "ageClass": "U16",
+        "birthYear": 2010,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-male",
+            "ageClass": "U16",
+            "startNumber": 142
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-32823",
+        "displayName": "Pauline S.",
+        "ageClass": "U16",
+        "birthYear": 2011,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-female",
+            "ageClass": "U16",
+            "startNumber": 59
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-female",
+            "ageClass": "U16",
+            "startNumber": 52
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-25267",
+        "displayName": "Sebastian L.",
+        "ageClass": "U16",
+        "birthYear": 2010,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-male",
+            "ageClass": "U16",
+            "startNumber": 123
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-male",
+            "ageClass": "U16",
+            "startNumber": 107
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-33111",
+        "displayName": "Sören K.",
+        "ageClass": "U16",
+        "birthYear": 2011,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-male",
+            "ageClass": "U16",
+            "startNumber": 141
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-male",
+            "ageClass": "U16",
+            "startNumber": 124
+          }
+        ]
+      },
+      {
+        "id": "athlete-ext-32916",
+        "displayName": "Valentin S.",
+        "ageClass": "U16",
+        "birthYear": 2011,
+        "starts": [
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-07",
+            "groupId": "race-startliste-u14-u16-2026-03-07-u16-male",
+            "ageClass": "U16",
+            "startNumber": 136
+          },
+          {
+            "raceId": "race-startliste-u14-u16-2026-03-08",
+            "groupId": "race-startliste-u14-u16-2026-03-08-u16-male",
+            "ageClass": "U16",
+            "startNumber": 120
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-691b839a59e7",
+        "displayName": "Bruno C.",
+        "ageClass": "U8",
+        "birthYear": 2019,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u8-male-2019",
+            "ageClass": "U8",
+            "startNumber": 6
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-07fd427ba7ba",
+        "displayName": "Leonard B.",
+        "ageClass": "U8",
+        "birthYear": 2019,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u8-male-2019",
+            "ageClass": "U8",
+            "startNumber": 11
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u8-male-2019",
+            "ageClass": "U8",
+            "startNumber": 13
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-d4bc39d2b69e",
+        "displayName": "Lukas S.",
+        "ageClass": "U8",
+        "birthYear": 2018,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u8-male-2018",
+            "ageClass": "U8",
+            "startNumber": 31
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-ae4a29f153ae",
+        "displayName": "Noah S.",
+        "ageClass": "U8",
+        "birthYear": 2018,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u8-male-2018",
+            "ageClass": "U8",
+            "startNumber": 32
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u8-male-2018",
+            "ageClass": "U8",
+            "startNumber": 30
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-a81a40120b66",
+        "displayName": "Victoria E.",
+        "ageClass": "U8",
+        "birthYear": 2019,
+        "starts": [
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-07",
+            "groupId": "race-startliste-u8-u10-2026-03-07-u8-female-2019",
+            "ageClass": "U8",
+            "startNumber": 5
+          },
+          {
+            "raceId": "race-startliste-u8-u10-2026-03-08",
+            "groupId": "race-startliste-u8-u10-2026-03-08-u8-female-2019",
+            "ageClass": "U8",
+            "startNumber": 7
+          }
+        ]
+      }
+    ],
+    "questions": [
+      {
+        "id": "manual-01-wie-viele-podiumsplatze-erreicht-oberhaching-am-gesamten-wochenende",
+        "type": "NUMBER",
+        "prompt": "Wie viele Podiumsplätze erreicht Oberhaching in allen sechs Rennen am 7. und 8. März?",
+        "hint": "Alle sechs Rennen und alle Wertungsgruppen zusammen",
+        "evaluationMetric": "PODIUM_COUNT",
+        "raceIds": [
+          "race-startliste-u8-u10-2026-03-07",
+          "race-startliste-u12-2026-03-07",
+          "race-startliste-u14-u16-2026-03-07",
+          "race-startliste-u8-u10-2026-03-08",
+          "race-startliste-u12-2026-03-08",
+          "race-startliste-u14-u16-2026-03-08"
+        ],
+        "raceLabel": "Alle 6 Rennen des Wochenendes",
+        "minimum": 0,
+        "maximum": 52
+      },
+      {
+        "id": "manual-02-wie-viele-top-10-ergebnisse-erzielt-oberhaching",
+        "type": "NUMBER",
+        "prompt": "Wie viele Top 10 Ergebnisse erzielt Oberhaching am Samstag im Riesenslalom des 10. Sport Gürteler U8/U10 Cups in der U10?",
+        "hint": "Es zählt nur das Rennen am Samstag, 7. März, im Riesenslalom und nur die Altersklasse U10",
+        "evaluationMetric": "TOP_N_COUNT",
+        "threshold": 10,
+        "raceIds": [
+          "race-startliste-u8-u10-2026-03-07"
+        ],
+        "raceLabel": "10. Sport Gürteler U8/U10 Cup · U10",
+        "ageClasses": [
+          "U10"
+        ],
+        "minimum": 0,
+        "maximum": 7,
+        "athleteIds": [
+          "athlete-local-876ee52e867c",
+          "athlete-local-f337c6a7024e",
+          "athlete-local-08b48b944dba",
+          "athlete-local-2d1d178738e3",
+          "athlete-local-3ed8f5775b83",
+          "athlete-local-01eb55cc7607",
+          "athlete-local-e3ac8aa914b6"
+        ]
+      },
+      {
+        "id": "manual-03-wer-erzielt-das-beste-ergebnis-des-rennwochenendes",
+        "type": "ATHLETE",
+        "prompt": "Wer erzielt das beste Ergebnis aus allen sechs Rennen am 7. und 8. März?",
+        "hint": "Pro Person zählt nur ihr bestes offizielles Ergebnis des Wochenendes",
+        "evaluationMetric": "BEST_RESULT",
+        "raceIds": [
+          "race-startliste-u8-u10-2026-03-07",
+          "race-startliste-u12-2026-03-07",
+          "race-startliste-u14-u16-2026-03-07",
+          "race-startliste-u8-u10-2026-03-08",
+          "race-startliste-u12-2026-03-08",
+          "race-startliste-u14-u16-2026-03-08"
+        ],
+        "raceLabel": "Alle 6 Rennen des Wochenendes",
+        "athleteIds": [
+          "athlete-local-876ee52e867c",
+          "athlete-local-f337c6a7024e",
+          "athlete-local-08b48b944dba",
+          "athlete-local-2d1d178738e3",
+          "athlete-local-3ed8f5775b83",
+          "athlete-local-01eb55cc7607",
+          "athlete-local-e3ac8aa914b6",
+          "athlete-local-4fea3e2d6404",
+          "athlete-local-2e162c10ec53",
+          "athlete-local-79ad01469a6d",
+          "athlete-local-0fe1ef8096ab",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-0d4955e42c76",
+          "athlete-ext-30246",
+          "athlete-ext-28220",
+          "athlete-ext-27983",
+          "athlete-ext-33432",
+          "athlete-ext-33759",
+          "athlete-ext-28219",
+          "athlete-ext-29887",
+          "athlete-ext-32303",
+          "athlete-ext-32939",
+          "athlete-ext-29881",
+          "athlete-ext-29880",
+          "athlete-ext-28218",
+          "athlete-ext-32386",
+          "athlete-ext-32823",
+          "athlete-ext-25267",
+          "athlete-ext-33111",
+          "athlete-ext-32916",
+          "athlete-local-691b839a59e7",
+          "athlete-local-07fd427ba7ba",
+          "athlete-local-d4bc39d2b69e",
+          "athlete-local-ae4a29f153ae",
+          "athlete-local-a81a40120b66"
+        ]
+      },
+      {
+        "id": "manual-04-wer-hat-den-geringsten-prozentualen-ruckstand",
+        "type": "ATHLETE",
+        "prompt": "Wer hat am Sonntag im Riesenslalom des Stumbaum Hausfreunde Cups in der U12 den geringsten prozentualen Rückstand auf den Sieger?",
+        "hint": "Es zählt ausschließlich das U12 Rennen am Sonntag, 8. März, im Riesenslalom. Verglichen wird der prozentuale Rückstand auf die Siegerzeit der jeweiligen offiziellen Wertungsgruppe. Das Samstagsrennen fließt nicht ein.",
+        "evaluationMetric": "LOWEST_PERCENTAGE_GAP",
+        "raceIds": [
+          "race-startliste-u12-2026-03-08"
+        ],
+        "raceLabel": "Stumbaum Hausfreunde Cup U12 · U12",
+        "ageClasses": [
+          "U12"
+        ],
+        "athleteIds": [
+          "athlete-local-4fea3e2d6404",
+          "athlete-local-2e162c10ec53",
+          "athlete-local-79ad01469a6d",
+          "athlete-local-0fe1ef8096ab",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-0d4955e42c76"
+        ]
+      },
+      {
+        "id": "manual-05-wie-sieht-das-interne-oberhachinger-podium-des-wochenendes-aus",
+        "type": "PODIUM",
+        "prompt": "Wie sieht am Samstag im Riesenslalom des Sechzger-Pokals das interne Oberhachinger Podium der U14 nach prozentualem Rückstand aus?",
+        "hint": "Es zählt ausschließlich das U14 Rennen am Samstag, 7. März, im Riesenslalom des Sechzger-Pokals. Jungs und Mädchen werden anhand ihres prozentualen Rückstands auf die Siegerzeit ihrer jeweiligen offiziellen Wertungsgruppe verglichen. Absolute Zeit und Platzierung sind nicht ausschlaggebend.",
+        "evaluationMetric": "PODIUM_ORDER",
+        "raceIds": [
+          "race-startliste-u14-u16-2026-03-07"
+        ],
+        "raceLabel": "Sechzger-Pokal - MINI München Cup U14/U16 · U14",
+        "ageClasses": [
+          "U14"
+        ],
+        "positions": 3,
+        "athleteIds": [
+          "athlete-ext-30246",
+          "athlete-ext-28220",
+          "athlete-ext-27983",
+          "athlete-ext-33432",
+          "athlete-ext-33759",
+          "athlete-ext-28219",
+          "athlete-ext-29887",
+          "athlete-ext-32303",
+          "athlete-ext-32939"
+        ]
+      },
+      {
+        "id": "manual-07-welche-platzierung-erreicht-clara-s-beim-sechzger-pokal",
+        "type": "PLACEMENT",
+        "prompt": "Welche Platzierung erreicht Clara S. am Samstag im Riesenslalom des Sechzger-Pokals?",
+        "hint": "Samstag, 7. März, Sechzger-Pokal, Riesenslalom, U14 weiblich",
+        "evaluationMetric": "EXACT_PLACEMENT",
+        "raceIds": [
+          "race-startliste-u14-u16-2026-03-07"
+        ],
+        "raceLabel": "Sechzger-Pokal - MINI München Cup U14/U16",
+        "athleteId": "athlete-ext-27983",
+        "minimum": 1,
+        "maximum": 36
+      },
+      {
+        "id": "manual-08-wer-gewinnt-beim-sechzger-pokal-den-vergleich-zwischen-alexander-t-und-simon-p",
+        "type": "HEAD_TO_HEAD",
+        "prompt": "Wer ist am Samstag im Riesenslalom des Sechzger-Pokals besser: Alexander T. oder Simon P.?",
+        "hint": "Samstag, 7. März, Sechzger-Pokal, Riesenslalom, U14 männlich",
+        "evaluationMetric": "DIRECT_COMPARISON",
+        "raceIds": [
+          "race-startliste-u14-u16-2026-03-07"
+        ],
+        "raceLabel": "Sechzger-Pokal - MINI München Cup U14/U16",
+        "athleteIds": [
+          "athlete-ext-30246",
+          "athlete-ext-32939"
+        ]
+      },
+      {
+        "id": "manual-09-wie-lautet-beim-kitz-pokal-die-interne-reihenfolge-der-u14-starterinnen",
+        "type": "INTERNAL_RANKING",
+        "prompt": "Wie lautet am Sonntag im Riesenslalom des Kitz-Pokals die interne Reihenfolge der U14 Starterinnen?",
+        "hint": "Sonntag, 8. März, Kitz-Pokal, Riesenslalom, U14 weiblich",
+        "evaluationMetric": "INTERNAL_ORDER",
+        "raceIds": [
+          "race-startliste-u14-u16-2026-03-08"
+        ],
+        "raceLabel": "Kitz-Pokal - MINI München Cup U14/U16",
+        "positions": 4,
+        "athleteIds": [
+          "athlete-ext-27983",
+          "athlete-ext-29887",
+          "athlete-ext-32303",
+          "athlete-ext-28219"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "raceId": "race-startliste-u8-u10-2026-03-07",
+      "official": true,
+      "groups": [
+        {
+          "id": "u8-female-2019",
+          "winnerTimeSeconds": 57.22,
+          "slowestClassifiedTimeSeconds": 61.26,
+          "entries": [
+            {
+              "startNumber": 5,
+              "status": "CLASSIFIED",
+              "rank": 1,
+              "officialTimeSeconds": 57.22,
+              "percentageGap": 0.0,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 5,
+              "officialTimeSeconds": 61.26,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2019",
+          "winnerTimeSeconds": 48.8,
+          "slowestClassifiedTimeSeconds": 57.98,
+          "entries": [
+            {
+              "startNumber": 11,
+              "status": "CLASSIFIED",
+              "rank": 6,
+              "officialTimeSeconds": 54.55,
+              "percentageGap": 11.782787,
+              "targetClub": true
+            },
+            {
+              "startNumber": 6,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 57.85,
+              "percentageGap": 18.545082,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 57.98,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-female-2018",
+          "winnerTimeSeconds": 46.92,
+          "slowestClassifiedTimeSeconds": 52.62,
+          "entries": [
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 9,
+              "officialTimeSeconds": 52.62,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2018",
+          "winnerTimeSeconds": 45.01,
+          "slowestClassifiedTimeSeconds": 60.3,
+          "entries": [
+            {
+              "startNumber": 32,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 46.24,
+              "percentageGap": 2.732726,
+              "targetClub": true
+            },
+            {
+              "startNumber": 31,
+              "status": "CLASSIFIED",
+              "rank": 6,
+              "officialTimeSeconds": 47.87,
+              "percentageGap": 6.354144,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900003,
+              "status": "CLASSIFIED",
+              "rank": 12,
+              "officialTimeSeconds": 60.3,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2017",
+          "winnerTimeSeconds": 45.27,
+          "slowestClassifiedTimeSeconds": 54.94,
+          "entries": [
+            {
+              "startNumber": 45,
+              "status": "CLASSIFIED",
+              "rank": 1,
+              "officialTimeSeconds": 45.27,
+              "percentageGap": 0.0,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900004,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 54.94,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2017",
+          "winnerTimeSeconds": 41.47,
+          "slowestClassifiedTimeSeconds": 51.13,
+          "entries": [
+            {
+              "startNumber": 50,
+              "status": "CLASSIFIED",
+              "rank": 4,
+              "officialTimeSeconds": 43.49,
+              "percentageGap": 4.870991,
+              "targetClub": true
+            },
+            {
+              "startNumber": 48,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 45.52,
+              "percentageGap": 9.766096,
+              "targetClub": true
+            },
+            {
+              "startNumber": 63,
+              "status": "CLASSIFIED",
+              "rank": 13,
+              "officialTimeSeconds": 46.01,
+              "percentageGap": 10.947673,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900005,
+              "status": "CLASSIFIED",
+              "rank": 19,
+              "officialTimeSeconds": 51.13,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2016",
+          "winnerTimeSeconds": 43.91,
+          "slowestClassifiedTimeSeconds": 50.77,
+          "entries": [
+            {
+              "startNumber": 900006,
+              "status": "CLASSIFIED",
+              "rank": 13,
+              "officialTimeSeconds": 50.77,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2016",
+          "winnerTimeSeconds": 41.79,
+          "slowestClassifiedTimeSeconds": 51.89,
+          "entries": [
+            {
+              "startNumber": 93,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 45.57,
+              "percentageGap": 9.045226,
+              "targetClub": true
+            },
+            {
+              "startNumber": 83,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 109,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900007,
+              "status": "CLASSIFIED",
+              "rank": 26,
+              "officialTimeSeconds": 51.89,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raceId": "race-startliste-u12-2026-03-07",
+      "official": true,
+      "groups": [
+        {
+          "id": "u12-female",
+          "winnerTimeSeconds": 86.33,
+          "slowestClassifiedTimeSeconds": 106.7,
+          "entries": [
+            {
+              "startNumber": 8,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 89.41,
+              "percentageGap": 3.567705,
+              "targetClub": true
+            },
+            {
+              "startNumber": 4,
+              "status": "CLASSIFIED",
+              "rank": 21,
+              "officialTimeSeconds": 104.64,
+              "percentageGap": 21.209313,
+              "targetClub": true
+            },
+            {
+              "startNumber": 24,
+              "status": "DSQ",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 106.7,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u12-male",
+          "winnerTimeSeconds": 80.46000000000001,
+          "slowestClassifiedTimeSeconds": 113.00999999999999,
+          "entries": [
+            {
+              "startNumber": 47,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 94.93,
+              "percentageGap": 17.984091,
+              "targetClub": true
+            },
+            {
+              "startNumber": 41,
+              "status": "CLASSIFIED",
+              "rank": 26,
+              "officialTimeSeconds": 110.53,
+              "percentageGap": 37.372608,
+              "targetClub": true
+            },
+            {
+              "startNumber": 69,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 27,
+              "officialTimeSeconds": 113.00999999999999,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raceId": "race-startliste-u14-u16-2026-03-07",
+      "official": true,
+      "groups": [
+        {
+          "id": "u14-female",
+          "winnerTimeSeconds": 135.42,
+          "slowestClassifiedTimeSeconds": 172.18,
+          "entries": [
+            {
+              "startNumber": 33,
+              "status": "CLASSIFIED",
+              "rank": 16,
+              "officialTimeSeconds": 150.57999999999998,
+              "percentageGap": 11.194801,
+              "targetClub": true
+            },
+            {
+              "startNumber": 22,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 151.05,
+              "percentageGap": 11.54187,
+              "targetClub": true
+            },
+            {
+              "startNumber": 21,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 158.62,
+              "percentageGap": 17.131886,
+              "targetClub": true
+            },
+            {
+              "startNumber": 9,
+              "status": "DNF",
+              "targetClub": true
+            },
+            {
+              "startNumber": 34,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 26,
+              "officialTimeSeconds": 172.18,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u16-female",
+          "winnerTimeSeconds": 135.08,
+          "slowestClassifiedTimeSeconds": 178.22,
+          "entries": [
+            {
+              "startNumber": 59,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 156.57,
+              "percentageGap": 15.909091,
+              "targetClub": true
+            },
+            {
+              "startNumber": 63,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 174.06,
+              "percentageGap": 28.856974,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 23,
+              "officialTimeSeconds": 178.22,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u14-male",
+          "winnerTimeSeconds": 134.36,
+          "slowestClassifiedTimeSeconds": 161.28,
+          "entries": [
+            {
+              "startNumber": 96,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 141.16,
+              "percentageGap": 5.06103,
+              "targetClub": true
+            },
+            {
+              "startNumber": 68,
+              "status": "CLASSIFIED",
+              "rank": 9,
+              "officialTimeSeconds": 142.12,
+              "percentageGap": 5.775528,
+              "targetClub": true
+            },
+            {
+              "startNumber": 85,
+              "status": "DNF",
+              "targetClub": true
+            },
+            {
+              "startNumber": 102,
+              "status": "DNF",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 23,
+              "officialTimeSeconds": 161.28,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u16-male",
+          "winnerTimeSeconds": 125.26,
+          "slowestClassifiedTimeSeconds": 178.76,
+          "entries": [
+            {
+              "startNumber": 123,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 139.82999999999998,
+              "percentageGap": 11.631806,
+              "targetClub": true
+            },
+            {
+              "startNumber": 130,
+              "status": "CLASSIFIED",
+              "rank": 19,
+              "officialTimeSeconds": 140.56,
+              "percentageGap": 12.214594,
+              "targetClub": true
+            },
+            {
+              "startNumber": 136,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 146.17000000000002,
+              "percentageGap": 16.693278,
+              "targetClub": true
+            },
+            {
+              "startNumber": 140,
+              "status": "CLASSIFIED",
+              "rank": 23,
+              "officialTimeSeconds": 155.18,
+              "percentageGap": 23.886316,
+              "targetClub": true
+            },
+            {
+              "startNumber": 142,
+              "status": "CLASSIFIED",
+              "rank": 24,
+              "officialTimeSeconds": 178.76,
+              "percentageGap": 42.711161,
+              "targetClub": true
+            },
+            {
+              "startNumber": 141,
+              "status": "DNF",
+              "targetClub": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raceId": "race-startliste-u8-u10-2026-03-08",
+      "official": true,
+      "groups": [
+        {
+          "id": "u8-female-2019",
+          "winnerTimeSeconds": 55.63,
+          "slowestClassifiedTimeSeconds": 66.41,
+          "entries": [
+            {
+              "startNumber": 7,
+              "status": "DSQ",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 66.41,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2019",
+          "winnerTimeSeconds": 49.83,
+          "slowestClassifiedTimeSeconds": 59.61,
+          "entries": [
+            {
+              "startNumber": 13,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 59.61,
+              "percentageGap": 19.626731,
+              "targetClub": true
+            }
+          ]
+        },
+        {
+          "id": "u8-female-2018",
+          "winnerTimeSeconds": 48.93,
+          "slowestClassifiedTimeSeconds": 56.69,
+          "entries": [
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 56.69,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2018",
+          "winnerTimeSeconds": 45.21,
+          "slowestClassifiedTimeSeconds": 61.22,
+          "entries": [
+            {
+              "startNumber": 30,
+              "status": "CLASSIFIED",
+              "rank": 4,
+              "officialTimeSeconds": 47.26,
+              "percentageGap": 4.534395,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900003,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 61.22,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2017",
+          "winnerTimeSeconds": 46.28,
+          "slowestClassifiedTimeSeconds": 58.95,
+          "entries": [
+            {
+              "startNumber": 43,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900004,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 58.95,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2017",
+          "winnerTimeSeconds": 41.85,
+          "slowestClassifiedTimeSeconds": 53.86,
+          "entries": [
+            {
+              "startNumber": 62,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 42.76,
+              "percentageGap": 2.174432,
+              "targetClub": true
+            },
+            {
+              "startNumber": 56,
+              "status": "CLASSIFIED",
+              "rank": 5,
+              "officialTimeSeconds": 45.3,
+              "percentageGap": 8.243728,
+              "targetClub": true
+            },
+            {
+              "startNumber": 52,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 46.37,
+              "percentageGap": 10.800478,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900005,
+              "status": "CLASSIFIED",
+              "rank": 17,
+              "officialTimeSeconds": 53.86,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2016",
+          "winnerTimeSeconds": 44.99,
+          "slowestClassifiedTimeSeconds": 51.4,
+          "entries": [
+            {
+              "startNumber": 900006,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 51.4,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2016",
+          "winnerTimeSeconds": 41.99,
+          "slowestClassifiedTimeSeconds": 55.33,
+          "entries": [
+            {
+              "startNumber": 900007,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 55.33,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raceId": "race-startliste-u12-2026-03-08",
+      "official": true,
+      "groups": [
+        {
+          "id": "u12-female",
+          "winnerTimeSeconds": 86.43,
+          "slowestClassifiedTimeSeconds": 107.28,
+          "entries": [
+            {
+              "startNumber": 11,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 94.47999999999999,
+              "percentageGap": 9.313896,
+              "targetClub": true
+            },
+            {
+              "startNumber": 10,
+              "status": "CLASSIFIED",
+              "rank": 25,
+              "officialTimeSeconds": 103.45,
+              "percentageGap": 19.692236,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 26,
+              "officialTimeSeconds": 107.28,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u12-male",
+          "winnerTimeSeconds": 86.56,
+          "slowestClassifiedTimeSeconds": 108.15,
+          "entries": [
+            {
+              "startNumber": 47,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 95.85,
+              "percentageGap": 10.73244,
+              "targetClub": true
+            },
+            {
+              "startNumber": 45,
+              "status": "CLASSIFIED",
+              "rank": 27,
+              "officialTimeSeconds": 106.08,
+              "percentageGap": 22.550832,
+              "targetClub": true
+            },
+            {
+              "startNumber": 59,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 28,
+              "officialTimeSeconds": 108.15,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raceId": "race-startliste-u14-u16-2026-03-08",
+      "official": true,
+      "groups": [
+        {
+          "id": "u14-female",
+          "winnerTimeSeconds": 133.29,
+          "slowestClassifiedTimeSeconds": 164.52,
+          "entries": [
+            {
+              "startNumber": 13,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 141.28,
+              "percentageGap": 5.994448,
+              "targetClub": true
+            },
+            {
+              "startNumber": 21,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 143.01,
+              "percentageGap": 7.29237,
+              "targetClub": true
+            },
+            {
+              "startNumber": 17,
+              "status": "CLASSIFIED",
+              "rank": 17,
+              "officialTimeSeconds": 145.8,
+              "percentageGap": 9.38555,
+              "targetClub": true
+            },
+            {
+              "startNumber": 23,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 24,
+              "officialTimeSeconds": 164.52,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u16-female",
+          "winnerTimeSeconds": 132.39,
+          "slowestClassifiedTimeSeconds": 170.32,
+          "entries": [
+            {
+              "startNumber": 52,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 149.69,
+              "percentageGap": 13.067452,
+              "targetClub": true
+            },
+            {
+              "startNumber": 56,
+              "status": "CLASSIFIED",
+              "rank": 21,
+              "officialTimeSeconds": 167.44,
+              "percentageGap": 26.474809,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 170.32,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u14-male",
+          "winnerTimeSeconds": 135.02,
+          "slowestClassifiedTimeSeconds": 153.21,
+          "entries": [
+            {
+              "startNumber": 86,
+              "status": "CLASSIFIED",
+              "rank": 4,
+              "officialTimeSeconds": 138.82,
+              "percentageGap": 2.814398,
+              "targetClub": true
+            },
+            {
+              "startNumber": 59,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 142.76,
+              "percentageGap": 5.732484,
+              "targetClub": true
+            },
+            {
+              "startNumber": 57,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 144.77,
+              "percentageGap": 7.221152,
+              "targetClub": true
+            },
+            {
+              "startNumber": 83,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 149.69,
+              "percentageGap": 10.865057,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 21,
+              "officialTimeSeconds": 153.21,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u16-male",
+          "winnerTimeSeconds": 125.05,
+          "slowestClassifiedTimeSeconds": 154.71,
+          "entries": [
+            {
+              "startNumber": 107,
+              "status": "CLASSIFIED",
+              "rank": 17,
+              "officialTimeSeconds": 136.88,
+              "percentageGap": 9.460216,
+              "targetClub": true
+            },
+            {
+              "startNumber": 114,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 138.23,
+              "percentageGap": 10.539784,
+              "targetClub": true
+            },
+            {
+              "startNumber": 123,
+              "status": "CLASSIFIED",
+              "rank": 21,
+              "officialTimeSeconds": 154.71,
+              "percentageGap": 23.718513,
+              "targetClub": true
+            },
+            {
+              "startNumber": 120,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 124,
+              "status": "DNS",
+              "targetClub": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "submissions": [
+    {
+      "id": "local-tip-round-2026-03-07-20260903072319",
+      "tipRoundId": "tip-round-2026-03-07",
+      "tipRoundVersion": "sha256-8f7255b133db71f3469367514837cf4c23cd8476b9d134cf4e2b69e3e1593467",
+      "player": {
+        "id": "local-bw",
+        "displayName": "BW"
+      },
+      "submittedAt": "2026-09-03T07:23:19.437Z",
+      "answers": {
+        "manual-01-wie-viele-podiumsplatze-erreicht-oberhaching-am-gesamten-wochenende": "3",
+        "manual-02-wie-viele-top-10-ergebnisse-erzielt-oberhaching": "4",
+        "manual-03-wer-erzielt-das-beste-ergebnis-des-rennwochenendes": "athlete-local-a81a40120b66",
+        "manual-04-wer-hat-den-geringsten-prozentualen-ruckstand": "athlete-local-37c26bef4a61",
+        "manual-05-wie-sieht-das-interne-oberhachinger-podium-des-wochenendes-aus": [
+          "athlete-ext-27983",
+          "athlete-ext-32939",
+          "athlete-ext-32303"
+        ],
+        "manual-07-welche-platzierung-erreicht-clara-s-beim-sechzger-pokal": "9",
+        "manual-08-wer-gewinnt-beim-sechzger-pokal-den-vergleich-zwischen-alexander-t-und-simon-p": "athlete-ext-30246",
+        "manual-09-wie-lautet-beim-kitz-pokal-die-interne-reihenfolge-der-u14-starterinnen": [
+          "athlete-ext-27983",
+          "athlete-ext-29887",
+          "athlete-ext-32303",
+          "athlete-ext-28219"
+        ]
+      }
+    },
+    {
+      "id": "local-tip-round-2026-03-07-20260903072256",
+      "tipRoundId": "tip-round-2026-03-07",
+      "tipRoundVersion": "sha256-8f7255b133db71f3469367514837cf4c23cd8476b9d134cf4e2b69e3e1593467",
+      "player": {
+        "id": "local-gg",
+        "displayName": "GG"
+      },
+      "submittedAt": "2026-09-03T07:22:56.566Z",
+      "answers": {
+        "manual-01-wie-viele-podiumsplatze-erreicht-oberhaching-am-gesamten-wochenende": "2",
+        "manual-02-wie-viele-top-10-ergebnisse-erzielt-oberhaching": "0",
+        "manual-03-wer-erzielt-das-beste-ergebnis-des-rennwochenendes": "athlete-local-a81a40120b66",
+        "manual-04-wer-hat-den-geringsten-prozentualen-ruckstand": "athlete-local-0d4955e42c76",
+        "manual-05-wie-sieht-das-interne-oberhachinger-podium-des-wochenendes-aus": [
+          "athlete-ext-27983",
+          "athlete-ext-32939",
+          "athlete-ext-32303"
+        ],
+        "manual-07-welche-platzierung-erreicht-clara-s-beim-sechzger-pokal": "11",
+        "manual-08-wer-gewinnt-beim-sechzger-pokal-den-vergleich-zwischen-alexander-t-und-simon-p": "athlete-ext-30246",
+        "manual-09-wie-lautet-beim-kitz-pokal-die-interne-reihenfolge-der-u14-starterinnen": [
+          "athlete-ext-27983",
+          "athlete-ext-29887",
+          "athlete-ext-32303",
+          "athlete-ext-28219"
+        ]
+      }
+    }
+  ],
+  "expected": {
+    "standings": [
+      {
+        "rank": 1,
+        "playerId": "local-gg",
+        "displayName": "GG",
+        "weekendPoints": 650
+      },
+      {
+        "rank": 2,
+        "playerId": "local-bw",
+        "displayName": "BW",
+        "weekendPoints": 550
+      }
+    ],
+    "questionPointsByPlayer": {
+      "local-bw": {
+        "manual-01-wie-viele-podiumsplatze-erreicht-oberhaching-am-gesamten-wochenende": 60,
+        "manual-02-wie-viele-top-10-ergebnisse-erzielt-oberhaching": 60,
+        "manual-03-wer-erzielt-das-beste-ergebnis-des-rennwochenendes": 100,
+        "manual-04-wer-hat-den-geringsten-prozentualen-ruckstand": 0,
+        "manual-05-wie-sieht-das-interne-oberhachinger-podium-des-wochenendes-aus": 33,
+        "manual-07-welche-platzierung-erreicht-clara-s-beim-sechzger-pokal": 0,
+        "manual-08-wer-gewinnt-beim-sechzger-pokal-den-vergleich-zwischen-alexander-t-und-simon-p": 100,
+        "manual-09-wie-lautet-beim-kitz-pokal-die-interne-reihenfolge-der-u14-starterinnen": 87
+      },
+      "local-gg": {
+        "manual-01-wie-viele-podiumsplatze-erreicht-oberhaching-am-gesamten-wochenende": 40,
+        "manual-02-wie-viele-top-10-ergebnisse-erzielt-oberhaching": 60,
+        "manual-03-wer-erzielt-das-beste-ergebnis-des-rennwochenendes": 100,
+        "manual-04-wer-hat-den-geringsten-prozentualen-ruckstand": 100,
+        "manual-05-wie-sieht-das-interne-oberhachinger-podium-des-wochenendes-aus": 33,
+        "manual-07-welche-platzierung-erreicht-clara-s-beim-sechzger-pokal": 0,
+        "manual-08-wer-gewinnt-beim-sechzger-pokal-den-vergleich-zwischen-alexander-t-und-simon-p": 100,
+        "manual-09-wie-lautet-beim-kitz-pokal-die-interne-reihenfolge-der-u14-starterinnen": 87
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "tip-round-2026-01-03",
+  "seasonId": "2026-2027",
+  "questionsFile": "data/questions/weekend-questions.md",
+  "startLists": [
+    {
+      "pdf": "storage://archiv/repo-altbestand/data/result-lists/inbox/example-weekend/startliste3.pdf",
+      "output": "data/result-lists/processed/startliste3.json"
+    }
+  ],
+  "tipRound": {
+    "output": "data/result-lists/processed/tip-round-startliste3.json",
+    "websiteOutput": "apps/web/src/data/tip-round.local.json",
+    "testMode": true
+  },
+  "results": [
+    {
+      "pdf": "storage://archiv/repo-altbestand/data/result-lists/inbox/example-weekend/rennen3.pdf",
+      "startList": "data/result-lists/processed/startliste3.json",
+      "output": "data/result-lists/processed/rennen3.json"
+    }
+  ],
+  "submissionsDir": "data/submissions/inbox/tip-round-2026-01-03",
+  "weekendEvaluation": {
+    "output": "data/submissions/processed/weekend-tip-round-2026-01-03.json",
+    "websiteOutput": "apps/web/src/data/weekend-evaluation.local.json"
+  },
+  "seasonLeaderboard": {
+    "weekendPattern": "data/submissions/processed/weekend-*.json",
+    "output": "data/submissions/processed/season-2026-2027.json",
+    "websiteOutput": "apps/web/src/data/season-leaderboard.local.json"
+  }
+}

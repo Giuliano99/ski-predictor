@@ -163,7 +163,7 @@
     "tipRound": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "title", "raceIds", "opensAt", "closesAt", "timeZone", "status", "questions"],
+      "required": ["id", "title", "raceIds", "opensAt", "closesAt", "timeZone", "status", "contentVersion", "questions"],
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "title": { "type": "string", "minLength": 1 },
@@ -176,7 +176,8 @@
         "opensAt": { "type": "string", "format": "date-time" },
         "closesAt": { "type": "string", "format": "date-time" },
         "timeZone": { "const": "Europe/Berlin" },
-        "status": { "enum": ["DRAFT", "OPEN", "CLOSED", "EVALUATED", "CANCELLED"] },
+        "status": { "enum": ["DRAFT", "OPEN", "CLOSED", "EVALUATED", "ARCHIVED", "CANCELLED"] },
+        "contentVersion": { "type": "string", "pattern": "^sha256-[a-f0-9]{64}$" },
         "questions": {
           "type": "array",
           "minItems": 6,

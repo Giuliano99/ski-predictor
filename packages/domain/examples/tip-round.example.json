@@ -54,6 +54,7 @@
     "closesAt": "2027-01-16T00:00:00+01:00",
     "timeZone": "Europe/Berlin",
     "status": "OPEN",
+    "contentVersion": "sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "questions": [
       { "id": "q-1", "type": "NUMBER", "prompt": "Wie viele Podiumsplätze erreicht Oberhaching?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "evaluationMetric": "PODIUM_COUNT" },
       { "id": "q-2", "type": "ATHLETE", "prompt": "Wer erzielt das beste Oberhachinger Ergebnis?", "maximumPoints": 100, "raceIds": ["race-demo-u12-gs"], "athleteIds": ["athlete-demo-7", "athlete-demo-12"], "evaluationMetric": "BEST_RESULT" },

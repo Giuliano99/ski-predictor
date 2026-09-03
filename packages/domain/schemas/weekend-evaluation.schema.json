@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/weekend-evaluation.schema.json",
+  "title": "Ski Predictor Weekend Evaluation",
+  "type": "object",
+  "required": ["schemaVersion", "seasonId", "tipRoundId", "tipRoundVersion", "generatedAt", "standings", "evaluations"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "seasonId": { "type": "string" },
+    "tipRoundId": { "type": "string" },
+    "tipRoundVersion": { "type": "string", "pattern": "^sha256-[a-f0-9]{64}$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "standings": { "type": "array", "items": { "$ref": "#/$defs/standing" } },
+    "evaluations": { "type": "array", "items": { "type": "object" } }
+  },
+  "$defs": {
+    "standing": {
+      "type": "object",
+      "required": ["rank", "submissionId", "playerId", "displayName", "weekendPoints"],
+      "properties": {
+        "rank": { "type": "integer", "minimum": 1 },
+        "submissionId": { "type": "string" },
+        "playerId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "weekendPoints": { "type": "integer", "minimum": 0, "maximum": 1000 }
+      }
+    }
+  }
+}

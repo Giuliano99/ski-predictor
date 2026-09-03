@@ -18,12 +18,15 @@ python services\results-importer\src\generate_tip_round.py data\result-lists\pro
 
 Jede Frage benötigt zusätzlich `Rennen`. Mit `Rennen: ALLE` gilt sie für alle Rennen des Wochenendes. Mehrere konkrete Rennen werden mit `|` getrennt. Die Namen müssen exakt den Rennnamen aus der Wochenendübersicht entsprechen.
 
+Formuliere zusätzlich bereits in der Überschrift eindeutig, ob die Frage das ganze Wochenende oder einen bestimmten Tag, Bewerb und eine bestimmte Disziplin betrifft. Eine optionale feste `ID` verhindert, dass bereits exportierte Tipps ungültig werden, wenn nur der Fragetext präzisiert wird. Nach Beginn der Tippabgabe darf diese ID nicht mehr geändert werden.
+
 `Auswertung` legt fest, welche offizielle Kennzahl verwendet wird. Für Anzahl sind `PODIUMSPLAETZE`, `TOP_10` und `GEWERTETE` möglich. Für Person sind `BESTES_ERGEBNIS` und `GERINGSTER_RUECKSTAND` möglich. Die übrigen Typen verwenden die gleichnamige Auswertung aus den Vorlagen.
 
 ### Anzahl
 
 ```markdown
 ## Wie viele Podiumsplätze erreicht Oberhaching?
+ID: podium-count-weekend
 Typ: ANZAHL
 Auswertung: PODIUMSPLAETZE
 Rennen: ALLE

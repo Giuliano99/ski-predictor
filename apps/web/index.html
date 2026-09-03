@@ -23,10 +23,10 @@
         <div class="hero-overlay"></div>
         <div class="hero-content">
           <span class="kicker kicker-light">Nächstes Rennen</span>
-          <p class="hero-series">Landkreis-Cup · Riesenslalom</p>
-          <h1>Oberhachinger<br />Meisterschaft</h1>
+          <p class="hero-series" id="hero-series">Rennwochenende · Skiteam Oberhaching</p>
+          <h1 id="hero-title">Aktuelle Tipprunde</h1>
           <p class="hero-intro">Tippe Platzierungen, Podiumsanzahl, interne Ranglisten und direkte Duelle der Oberhachinger Athleten.</p>
-          <div class="hero-actions"><a class="button button-primary" href="#tipp">Jetzt tippen <span>→</span></a><span class="hero-date"><strong>Demo-Termin</strong> Sonntag · 10:00 Uhr</span></div>
+          <div class="hero-actions"><a class="button button-primary" href="#tipp">Jetzt tippen <span>→</span></a><span class="hero-date" id="hero-date"><strong>Renntermin</strong> Wird aus den Startlisten geladen</span></div>
         </div>
         <div class="hero-badge" aria-hidden="true"><strong>OHA</strong><span>READY TO RACE</span></div>
       </section>
@@ -50,13 +50,14 @@
         <div class="prediction-panel">
           <div class="section-heading"><div><span class="kicker">Deine Tipprunde</span><h2 id="tip-round-title">Tipps werden geladen</h2><p id="tip-round-subtitle">Lokale Demo-Daten ohne Anmeldung</p></div><span class="points-pill" id="question-progress">0 / 0 beantwortet</span></div>
           <form id="prediction-form" novalidate>
+            <label class="player-input"><span>Dein Name für die Rangliste</span><input id="player-name" name="player-name" type="text" minlength="2" maxlength="40" autocomplete="name" placeholder="z. B. Giuliano G." required /><small>Wird nur zusammen mit deinem Tipp exportiert.</small></label>
             <div class="question-list" id="question-list"></div>
             <div class="prediction-footer"><p id="form-message" role="status">Deine Eingaben werden nach dem Speichern lokal im Browser abgelegt.</p><div class="form-actions"><button class="text-button reset-button" id="reset-prediction" type="button">Tipp zurücksetzen</button><button class="text-button export-button" id="export-prediction" type="button" disabled>Tipp exportieren ↓</button><button class="button button-dark" id="save-prediction" type="submit">Tipp speichern <span>→</span></button></div></div>
           </form>
         </div>
 
         <aside class="leaderboard-card" id="rangliste">
-          <div class="leaderboard-head"><div><span class="kicker kicker-light">Teamwertung</span><h2>Rangliste</h2></div><span class="season">Saison 26/27</span></div>
+          <div class="leaderboard-head"><div><span class="kicker kicker-light">Saisonwertung</span><h2>Rangliste</h2></div><span class="season" id="season-label">Saison</span></div>
           <ol class="leaderboard" id="leaderboard-list"></ol>
           <button class="text-button" type="button">Gesamte Rangliste <span>→</span></button>
         </aside>
@@ -86,6 +87,6 @@
 
     <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Demo MVP</span></div><div><a href="https://www.skiteam-oberhaching.de/impressum/" target="_blank" rel="noreferrer">Impressum ↗</a><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Vereinswebsite ↗</a></div></footer>
     <div class="toast" id="toast" role="status" aria-live="polite">✓ Dein Demo-Tipp wurde gespeichert</div>
-    <script src="src/scripts/app.js"></script>
+    <script src="src/scripts/app.js?v=20260902b"></script>
   </body>
 </html>

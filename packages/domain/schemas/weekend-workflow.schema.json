@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/weekend-workflow.schema.json",
+  "title": "Ski Predictor Weekend Workflow",
+  "type": "object",
+  "required": ["schemaVersion", "id", "seasonId", "questionsFile", "startLists", "tipRound", "results", "submissionsDir", "weekendEvaluation", "seasonLeaderboard"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "seasonId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["DRAFT", "OPEN", "CLOSED", "EVALUATED", "ARCHIVED", "CANCELLED"] },
+    "statusHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["status", "changedAt"],
+        "properties": {
+          "status": { "enum": ["DRAFT", "OPEN", "CLOSED", "EVALUATED", "ARCHIVED", "CANCELLED"] },
+          "changedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "questionsFile": { "type": "string", "minLength": 1 },
+    "startListsDirectory": { "type": "string", "minLength": 1 },
+    "startLists": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/startList" }
+    },
+    "tipRound": { "$ref": "#/$defs/tipRound" },
+    "results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/result" }
+    },
+    "resultsDirectory": { "type": "string", "minLength": 1 },
+    "submissionsDir": { "type": "string", "minLength": 1 },
+    "reviewReport": { "type": "string", "minLength": 1 },
+    "resultReviewReport": { "type": "string", "minLength": 1 },
+    "weekendEvaluation": { "$ref": "#/$defs/outputPair" },
+    "seasonLeaderboard": {
+      "allOf": [
+        { "$ref": "#/$defs/outputPair" },
+        {
+          "type": "object",
+          "required": ["weekendPattern"],
+          "properties": { "weekendPattern": { "type": "string", "minLength": 1 } }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "startList": {
+      "type": "object",
+      "required": ["pdf", "output"],
+      "properties": {
+        "pdf": { "type": "string", "minLength": 1 },
+        "output": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["pdf", "startList", "output"],
+      "properties": {
+        "pdf": { "type": "string", "minLength": 1 },
+        "startList": { "type": "string", "minLength": 1 },
+        "output": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "outputPair": {
+      "type": "object",
+      "required": ["output", "websiteOutput"],
+      "properties": {
+        "output": { "type": "string", "minLength": 1 },
+        "websiteOutput": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tipRound": {
+      "allOf": [
+        { "$ref": "#/$defs/outputPair" },
+        {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "testWeekendDate": { "type": "string", "format": "date" },
+            "testMode": { "type": "boolean" }
+          }
+        }
+      ]
+    }
+  }
+}

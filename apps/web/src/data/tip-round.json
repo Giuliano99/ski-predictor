@@ -6,6 +6,8 @@
   "opensAt": "2026-09-01T08:00:00+02:00",
   "closesAt": "2027-01-16T00:00:00+01:00",
   "timeZone": "Europe/Berlin",
+  "status": "OPEN",
+  "contentVersion": "sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
   "athletes": [
     { "id": "athlete-anna-m", "displayName": "Anna M.", "ageClass": "U10" },
     { "id": "athlete-lea-k", "displayName": "Lea K.", "ageClass": "U10" },

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from extract_start_list import (
+    FORMAT_DSVALPIN,
     FORMAT_RACE_CODE,
     FORMAT_RACE_SIMPLE,
     TARGET_CLUB,
@@ -19,6 +20,7 @@ from extract_start_list import (
     extract_pdf_text,
     is_target_club,
     name_from_comma,
+    name_without_comma,
     normalize_club,
     slugify,
 )
@@ -40,22 +42,29 @@ def seconds(value: str) -> float:
 
 def group_from_line(line: str, event_name: str) -> dict[str, Any] | None:
     normalized = line.casefold()
+    birth_years: list[int] = []
     if normalized in {"mädchen", "maedchen", "buben"}:
         age_match = re.search(r"\bU(\d+)\b", event_name, re.IGNORECASE)
         age_class = f"U{age_match.group(1)}" if age_match else "OPEN"
         category = "FEMALE" if normalized in {"mädchen", "maedchen"} else "MALE"
     else:
-        age_match = re.fullmatch(r"U(\d+)\s+(weiblich|männlich|maennlich)", line, re.IGNORECASE)
+        age_match = re.fullmatch(r"U(\d+)(?:\s+((?:19|20)\d{2}))?\s+(weiblich|männlich|maennlich|mädchen|maedchen|buben)", line, re.IGNORECASE)
         if not age_match:
             return None
         age_class = f"U{age_match.group(1)}"
-        category = "FEMALE" if age_match.group(2).casefold() == "weiblich" else "MALE"
+        if age_match.group(2):
+            birth_years = [int(age_match.group(2))]
+        category = "FEMALE" if age_match.group(3).casefold() in {"weiblich", "mädchen", "maedchen"} else "MALE"
+    group_id = f"{age_class}-{category}"
+    if birth_years:
+        group_id += f"-{birth_years[0]}"
     return {
-        "id": slugify(f"{age_class}-{category}"),
+        "id": slugify(group_id),
         "label": line,
         "ageClass": age_class,
         "competitionCategory": category,
-        "classificationMethod": "SUM_OF_RUNS",
+        "birthYears": birth_years,
+        "classificationMethod": "BEST_VALID_RUN" if age_class in {"U8", "U10"} else "SUM_OF_RUNS",
         "entries": [],
     }
 
@@ -95,7 +104,7 @@ def base_entry(start_number: str, last_name: str, first_name: str, birth_year: s
 
 
 def parse_simple_classified(line: str, target_club: str) -> dict[str, Any] | None:
-    pattern = rf"^(\d+)\s+(\d+)\s+(.+?),\s*(.+?)\s+((?:19|20)\d{{2}})\s+(.+?)\s+({TIME_PATTERN})\s+({TIME_PATTERN})\s+({TIME_PATTERN})(?:\s+({TIME_PATTERN}))?$"
+    pattern = rf"^(\d+)\s+(\d+)\s+(.+?),\s*(.+?)\s+((?:19|20)\d{{2}})\s+(.+?)\s+({RUN_TOKEN_PATTERN})\s+({RUN_TOKEN_PATTERN})\s+({TIME_PATTERN})(?:\s+({TIME_PATTERN}))?$"
     match = re.match(pattern, line)
     if not match:
         return None
@@ -106,7 +115,7 @@ def parse_simple_classified(line: str, target_club: str) -> dict[str, Any] | Non
         "rank": int(match.group(1)),
         "officialTimeSeconds": seconds(match.group(9)),
         "gapSeconds": seconds(match.group(10)) if match.group(10) else 0.0,
-        "runResults": [run_result(index, token) for index, token in enumerate(run_tokens, 1)],
+        "runResults": [result for index, token in enumerate(run_tokens, 1) if (result := run_result(index, token))],
     })
     return entry
 
@@ -167,6 +176,123 @@ def parse_entry(line: str, source_format: str, target_club: str) -> dict[str, An
     return parse_simple_classified(line, target_club) or parse_simple_unclassified(line, target_club)
 
 
+def dsvalpin_group_from_start_list(group: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": group["id"],
+        "label": group["label"],
+        "ageClass": group["ageClass"],
+        "competitionCategory": group["competitionCategory"],
+        "birthYears": group.get("birthYears", []),
+        "classificationMethod": "SUM_OF_RUNS",
+        "entries": [],
+    }
+
+
+def parse_dsvalpin_detail(detail: str, previous_entry: dict[str, Any] | None, position: int) -> dict[str, Any] | None:
+    tokens = re.sub(r"^\.+\s*", "", detail).split()
+    rank_index = next((index for index, token in enumerate(tokens) if re.fullmatch(r"\d+\.", token)), None)
+    time_tokens = [token for token in tokens if re.fullmatch(TIME_PATTERN, token)]
+    if len(time_tokens) < 3:
+        return None
+
+    if rank_index is not None:
+        rank = int(tokens[rank_index].rstrip("."))
+        total = tokens[rank_index - 1]
+        run_tokens = tokens[rank_index + 1:rank_index + 3]
+    else:
+        total = time_tokens[-3]
+        run_tokens = time_tokens[-2:]
+        previous_total = previous_entry.get("officialTimeSeconds") if previous_entry else None
+        rank = previous_entry["rank"] if previous_total == seconds(total) else position
+
+    if len(run_tokens) != 2 or not all(re.fullmatch(TIME_PATTERN, token) for token in run_tokens):
+        return None
+    total_seconds = seconds(total)
+    return {
+        "status": "CLASSIFIED",
+        "rank": rank,
+        "officialTimeSeconds": total_seconds,
+        "runResults": [run_result(index, token) for index, token in enumerate(run_tokens, 1)],
+    }
+
+
+def parse_dsvalpin(lines: list[str], start_list: dict[str, Any], target_club: str) -> tuple[list[dict[str, Any]], list[str]]:
+    groups = [dsvalpin_group_from_start_list(group) for group in start_list["groups"]]
+    groups_by_id = {group["id"]: group for group in groups}
+    group_by_start_number = {
+        starter["startNumber"]: groups_by_id[group["id"]]
+        for group in start_list["groups"]
+        for starter in group["starters"]
+    }
+    current_group: dict[str, Any] | None = None
+    current_status: str | None = None
+    current_run = 1
+    warnings: list[str] = []
+    person_pattern = re.compile(r"^(\d+)\s+(.+?)\s+\.{3,}\s+(\d{2})$")
+    status_pattern = re.compile(r"^(Nicht am Start|Nicht im Ziel|Disqualifiziert)\s+(\d+)\.\s+Durchgang$", re.IGNORECASE)
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        start_group = group_from_line(line, start_list["event"]["name"])
+        if start_group:
+            current_group = groups_by_id.get(start_group["id"])
+            current_status = None
+            index += 1
+            continue
+
+        status_match = status_pattern.match(line)
+        if status_match:
+            current_status = {
+                "nicht am start": "DNS",
+                "nicht im ziel": "DNF",
+                "disqualifiziert": "DSQ",
+            }[status_match.group(1).casefold()]
+            current_run = int(status_match.group(2))
+            index += 1
+            continue
+
+        person_match = person_pattern.match(line)
+        if not person_match or index + 2 >= len(lines):
+            index += 1
+            continue
+
+        start_number = int(person_match.group(1))
+        raw_name = person_match.group(2)
+        birth_year = 2000 + int(person_match.group(3))
+        club = normalize_club(lines[index + 1])
+        detail = lines[index + 2]
+        target_group = group_by_start_number.get(start_number) or current_group
+        if target_group is None:
+            warnings.append(f"Keine Wertungsgruppe für Startnummer {start_number} gefunden")
+            index += 3
+            continue
+
+        person = name_without_comma(raw_name)
+        entry: dict[str, Any] = {
+            "startNumber": start_number,
+            "fullName": person.full_name,
+            "displayName": person.display_name,
+            "birthYear": birth_year,
+            "club": club,
+            "targetClub": is_target_club(club, target_club),
+        }
+        if current_status:
+            entry["status"] = current_status
+            entry["runResults"] = [{"runNumber": current_run, "status": current_status}]
+        else:
+            classified = parse_dsvalpin_detail(detail, target_group["entries"][-1] if target_group["entries"] else None, len(target_group["entries"]) + 1)
+            if not classified:
+                warnings.append(f"Ergebnis für Startnummer {start_number} nicht erkannt: {detail[:100]}")
+                index += 3
+                continue
+            entry.update(classified)
+        target_group["entries"].append(entry)
+        index += 3
+
+    return [group for group in groups if group["entries"]], warnings
+
+
 def finalize_group(group: dict[str, Any]) -> None:
     classified = [entry for entry in group["entries"] if entry["status"] == "CLASSIFIED"]
     if not classified:
@@ -189,7 +315,7 @@ def race_id_for(start_list: dict[str, Any] | None, result_path: Path, event: dic
 def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, target_club: str = TARGET_CLUB) -> dict[str, Any]:
     lines, text = extract_pdf_text(path)
     source_format = detect_format(text)
-    if source_format not in {FORMAT_RACE_CODE, FORMAT_RACE_SIMPLE}:
+    if source_format not in {FORMAT_DSVALPIN, FORMAT_RACE_CODE, FORMAT_RACE_SIMPLE}:
         raise ValueError(f"Unsupported result format in {path.name}")
     event = event_metadata(lines, text)
     groups: list[dict[str, Any]] = []
@@ -197,22 +323,27 @@ def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, ta
     in_results = False
     warnings: list[str] = []
 
-    for line in lines:
-        group = group_from_line(line, event["name"])
-        if group:
-            current_group = group
-            groups.append(group)
-            in_results = True
-            continue
-        if in_results and line.startswith(("Nicht am Start", "Nicht im Ziel", "Disqualifiziert", "Bewerbsstatistik")):
-            break
-        if not in_results or current_group is None:
-            continue
-        entry = parse_entry(line, source_format, target_club)
-        if entry:
-            current_group["entries"].append(entry)
-        elif re.match(r"^(?:---|\d+)\s+\d+\s+", line):
-            warnings.append(f"Nicht erkannte Ergebniszeile in {current_group['label']}: {line[:140]}")
+    if source_format == FORMAT_DSVALPIN:
+        if not start_list:
+            raise ValueError("DSValpin result lists require --start-list for group assignment")
+        groups, warnings = parse_dsvalpin(lines, start_list, target_club)
+    else:
+        for line in lines:
+            group = group_from_line(line, event["name"])
+            if group:
+                current_group = group
+                groups.append(group)
+                in_results = True
+                continue
+            if in_results and line.startswith(("Nicht am Start", "Nicht im Ziel", "Disqualifiziert", "Bewerbsstatistik")):
+                break
+            if not in_results or current_group is None:
+                continue
+            entry = parse_entry(line, source_format, target_club)
+            if entry:
+                current_group["entries"].append(entry)
+            elif re.match(r"^(?:---|\d+)\s+\d+\s+", line):
+                warnings.append(f"Nicht erkannte Ergebniszeile in {current_group['label']}: {line[:140]}")
 
     groups = [group for group in groups if group["entries"]]
     if not groups:

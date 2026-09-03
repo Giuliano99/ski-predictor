@@ -3,11 +3,21 @@
   "$id": "https://ski-predictor.local/schemas/tip-submission.schema.json",
   "title": "Ski Predictor Tip Submission",
   "type": "object",
-  "required": ["schemaVersion", "id", "tipRoundId", "submittedAt", "answers"],
+  "required": ["schemaVersion", "id", "tipRoundId", "tipRoundVersion", "player", "submittedAt", "answers"],
   "properties": {
     "schemaVersion": { "const": 1 },
     "id": { "type": "string", "minLength": 1 },
     "tipRoundId": { "type": "string", "minLength": 1 },
+    "tipRoundVersion": { "type": "string", "pattern": "^sha256-[a-f0-9]{64}$" },
+    "player": {
+      "type": "object",
+      "required": ["id", "displayName"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 40 }
+      },
+      "additionalProperties": false
+    },
     "submittedAt": { "type": "string", "format": "date-time" },
     "answers": {
       "type": "object",

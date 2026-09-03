@@ -12,6 +12,7 @@ sys.path.insert(0, str(MODULE_ROOT))
 from generate_tip_round import (  # noqa: E402
     athlete_id,
     build_snapshot,
+    content_version,
     deadline_for_event,
     generate_questions,
     parse_question_markdown,
@@ -19,6 +20,23 @@ from generate_tip_round import (  # noqa: E402
 
 
 class GenerateTipRoundTests(unittest.TestCase):
+    def test_content_version_protects_questions_but_not_lifecycle_status(self):
+        document = {
+            "id": "round-1",
+            "status": "DRAFT",
+            "opensAt": "2027-01-11T08:00:00+01:00",
+            "closesAt": "2027-01-16T00:00:00+01:00",
+            "athletes": [{"id": "athlete-1"}],
+            "races": [{"id": "race-1"}],
+            "groups": [],
+            "questions": [{"id": "question-1", "prompt": "Wer gewinnt?"}],
+        }
+        draft_version = content_version(document)
+        document["status"] = "OPEN"
+        self.assertEqual(content_version(document), draft_version)
+        document["questions"][0]["prompt"] = "Wer gewinnt das Rennen?"
+        self.assertNotEqual(content_version(document), draft_version)
+
     def test_external_id_is_preferred_for_stable_id(self):
         starter = {
             "externalAthleteId": "12345",
@@ -81,6 +99,7 @@ class GenerateTipRoundTests(unittest.TestCase):
         content = """# Fragen
 
 ## Wie viele Podiumsplätze gibt es?
+ID: podium-count-stable
 Typ: ANZAHL
 Auswertung: PODIUMSPLAETZE
 Rennen: ALLE
@@ -129,6 +148,7 @@ Maximum: 40
             questions = parse_question_markdown(path, athletes, races)
 
         self.assertEqual(len(questions), 6)
+        self.assertEqual(questions[0]["id"], "podium-count-stable")
         self.assertEqual(questions[1]["athleteIds"], ["athlete-anna", "athlete-lea"])
         self.assertEqual(questions[5]["athleteId"], "athlete-anna")
         self.assertTrue(all(question["raceIds"] == ["race-demo"] for question in questions))
@@ -142,6 +162,45 @@ Maximum: 40
             path.write_text(content, encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "between 6 and 10"):
                 parse_question_markdown(path, athletes, races)
+
+    def test_manual_question_can_be_limited_to_age_class(self):
+        athletes = [
+            {"id": "athlete-u10", "displayName": "Anna M.", "ageClass": "U10"},
+            {"id": "athlete-u12", "displayName": "Lea K.", "ageClass": "U12"},
+        ]
+        races = [{"id": "race-demo", "name": "SVM Cup"}]
+        blocks = []
+        for index in range(1, 7):
+            blocks.append(
+                f"## Frage {index}\nTyp: ANZAHL\nAuswertung: TOP_10\nRennen: SVM Cup\n"
+                "Altersklasse: U10\nMinimum: 0\nMaximum: 10"
+            )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "questions.md"
+            path.write_text("\n\n".join(blocks), encoding="utf-8")
+            questions = parse_question_markdown(path, athletes, races)
+
+        self.assertEqual(questions[0]["athleteIds"], ["athlete-u10"])
+        self.assertEqual(questions[0]["ageClasses"], ["U10"])
+        self.assertEqual(questions[0]["raceLabel"], "SVM Cup · U10")
+
+    def test_race_date_disambiguates_repeated_race_name(self):
+        athletes = [{"id": "athlete-u12", "displayName": "Anna M.", "ageClass": "U12"}]
+        races = [
+            {"id": "race-saturday", "name": "Hausfreunde Cup U12", "date": "2027-01-16"},
+            {"id": "race-sunday", "name": "Hausfreunde Cup U12", "date": "2027-01-17"},
+        ]
+        content = "\n\n".join(
+            f"## Frage {index}\nTyp: ANZAHL\nAuswertung: TOP_10\nRennen: Hausfreunde Cup U12\n"
+            "Renndatum: 2027-01-17\nMinimum: 0\nMaximum: 10"
+            for index in range(1, 7)
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "questions.md"
+            path.write_text(content, encoding="utf-8")
+            questions = parse_question_markdown(path, athletes, races)
+
+        self.assertEqual(questions[0]["raceIds"], ["race-sunday"])
 
     def test_manual_markdown_requires_race_scope(self):
         athletes = [{"id": "athlete-anna", "displayName": "Anna M.", "ageClass": "U12"}]

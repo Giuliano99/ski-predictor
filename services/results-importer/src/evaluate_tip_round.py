@@ -10,6 +10,8 @@ from typing import Any, Iterable
 
 POINTS_BY_DISTANCE = (100, 80, 60, 40, 20)
 CLASSIFIED = "CLASSIFIED"
+DNS = "DNS"
+LAST_PLACE_STATUSES = {"DNF", "DSQ"}
 
 
 def distance_points(distance: int) -> int:
@@ -29,36 +31,49 @@ def build_outcomes(tip_round: dict[str, Any], result_documents: list[dict[str, A
             winner = group.get("winnerTimeSeconds")
             slowest = group.get("slowestClassifiedTimeSeconds")
             penalty_time = max(winner * 1.30, slowest * 1.05) if winner and slowest else None
+            classified_ranks = [entry["rank"] for entry in group["entries"] if entry.get("status") == CLASSIFIED and entry.get("rank") is not None]
+            last_place_rank = max(classified_ranks, default=0) + 1
             for entry in group["entries"]:
                 athlete_id = athlete_by_start.get((race_id, entry["startNumber"]))
                 if not athlete_id:
                     continue
+                status = entry["status"]
                 effective_gap = entry.get("percentageGap")
-                if entry["status"] != CLASSIFIED and penalty_time and winner:
+                if status in LAST_PLACE_STATUSES and penalty_time and winner:
                     effective_gap = (penalty_time - winner) / winner * 100
                 outcomes.append({
                     "athleteId": athlete_id,
                     "raceId": race_id,
                     "resultGroupId": group["id"],
-                    "status": entry["status"],
+                    "status": status,
                     "rank": entry.get("rank"),
+                    "effectiveRank": entry.get("rank") if status == CLASSIFIED else last_place_rank if status in LAST_PLACE_STATUSES else None,
                     "officialTimeSeconds": entry.get("officialTimeSeconds"),
                     "percentageGap": entry.get("percentageGap"),
                     "effectivePercentageGap": effective_gap,
-                    "penaltyApplied": entry["status"] != CLASSIFIED and effective_gap is not None,
+                    "penaltyApplied": status in LAST_PLACE_STATUSES and effective_gap is not None,
                 })
     return outcomes
 
 
-def scoped_outcomes(question: dict[str, Any], outcomes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def scoped_outcomes(question: dict[str, Any], outcomes: list[dict[str, Any]], include_dns: bool = False) -> list[dict[str, Any]]:
     race_ids = set(question["raceIds"])
     athlete_ids = set(question.get("athleteIds", []))
     if question.get("athleteId"):
         athlete_ids.add(question["athleteId"])
     return [
         outcome for outcome in outcomes
-        if outcome["raceId"] in race_ids and (not athlete_ids or outcome["athleteId"] in athlete_ids)
+        if outcome["raceId"] in race_ids
+        and (not athlete_ids or outcome["athleteId"] in athlete_ids)
+        and (include_dns or outcome["status"] != DNS)
     ]
+
+
+def dns_only_athletes(outcomes: list[dict[str, Any]]) -> set[str]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for outcome in outcomes:
+        grouped.setdefault(outcome["athleteId"], []).append(outcome)
+    return {athlete_id for athlete_id, values in grouped.items() if values and all(value["status"] == DNS for value in values)}
 
 
 def best_by_athlete(outcomes: list[dict[str, Any]], metric: str) -> dict[str, dict[str, Any]]:
@@ -71,38 +86,79 @@ def best_by_athlete(outcomes: list[dict[str, Any]], metric: str) -> dict[str, di
         if metric == "LOWEST_PERCENTAGE_GAP":
             eligible = [outcome for outcome in athlete_outcomes if outcome["effectivePercentageGap"] is not None]
             if eligible:
-                selected[athlete_id] = min(eligible, key=lambda outcome: outcome["effectivePercentageGap"])
+                selected[athlete_id] = min(eligible, key=lambda outcome: (
+                    outcome["status"] != CLASSIFIED,
+                    outcome["effectivePercentageGap"],
+                ))
         else:
             selected[athlete_id] = min(
                 athlete_outcomes,
                 key=lambda outcome: (
                     outcome["status"] != CLASSIFIED,
-                    outcome["rank"] if outcome["rank"] is not None else 10_000,
+                    outcome["effectiveRank"] if outcome["effectiveRank"] is not None else 10_000,
                     outcome["effectivePercentageGap"] if outcome["effectivePercentageGap"] is not None else 10_000,
                 ),
             )
     return selected
 
 
-def ordered_athletes(question: dict[str, Any], outcomes: list[dict[str, Any]], metric: str, classified_only: bool = False) -> list[str]:
-    selected = best_by_athlete(scoped_outcomes(question, outcomes), metric)
-    values = list(selected.values())
-    if classified_only:
-        values = [outcome for outcome in values if outcome["status"] == CLASSIFIED]
+def outcome_order_key(outcome: dict[str, Any], metric: str) -> tuple[Any, ...]:
+    if outcome["status"] in LAST_PLACE_STATUSES:
+        return (1,)
     if metric == "LOWEST_PERCENTAGE_GAP":
-        values.sort(key=lambda outcome: outcome["effectivePercentageGap"] if outcome["effectivePercentageGap"] is not None else 10_000)
-    else:
-        values.sort(key=lambda outcome: (
-            outcome["status"] != CLASSIFIED,
-            outcome["rank"] if outcome["rank"] is not None else 10_000,
-            outcome["effectivePercentageGap"] if outcome["effectivePercentageGap"] is not None else 10_000,
-        ))
-    return [outcome["athleteId"] for outcome in values]
+        return (0, outcome["effectivePercentageGap"] if outcome["effectivePercentageGap"] is not None else 10_000)
+    return (
+        0,
+        outcome["effectiveRank"] if outcome["effectiveRank"] is not None else 10_000,
+        outcome["effectivePercentageGap"] if outcome["effectivePercentageGap"] is not None else 10_000,
+    )
+
+
+def ranked_athlete_groups(question: dict[str, Any], outcomes: list[dict[str, Any]], metric: str) -> tuple[list[list[str]], dict[str, dict[str, Any]]]:
+    selected = best_by_athlete(scoped_outcomes(question, outcomes), metric)
+    grouped: dict[tuple[Any, ...], list[str]] = {}
+    for athlete_id, outcome in selected.items():
+        grouped.setdefault(outcome_order_key(outcome, metric), []).append(athlete_id)
+    groups = [sorted(grouped[key]) for key in sorted(grouped)]
+    return groups, selected
+
+
+def flatten_groups(groups: list[list[str]]) -> list[str]:
+    return [athlete_id for group in groups for athlete_id in group]
+
+
+def groups_through_position(groups: list[list[str]], positions: int) -> list[list[str]]:
+    selected: list[list[str]] = []
+    occupied = 0
+    for group in groups:
+        if occupied >= positions:
+            break
+        selected.append(group)
+        occupied += len(group)
+    return selected
+
+
+def has_classified(selected: dict[str, dict[str, Any]]) -> bool:
+    return any(outcome["status"] == CLASSIFIED for outcome in selected.values())
+
+
+def rank_distance(athlete_id: str, predicted_position: int, groups: list[list[str]]) -> int | None:
+    first_position = 0
+    for group in groups:
+        last_position = first_position + len(group) - 1
+        if athlete_id in group:
+            if first_position <= predicted_position <= last_position:
+                return 0
+            return min(abs(predicted_position - first_position), abs(predicted_position - last_position))
+        first_position = last_position + 1
+    return None
 
 
 def actual_for_question(question: dict[str, Any], outcomes: list[dict[str, Any]]) -> Any:
     metric = question["evaluationMetric"]
+    raw_scoped = scoped_outcomes(question, outcomes, include_dns=True)
     scoped = scoped_outcomes(question, outcomes)
+    dns_athletes = sorted(dns_only_athletes(raw_scoped))
     if metric == "PODIUM_COUNT":
         return sum(outcome["status"] == CLASSIFIED and outcome["rank"] <= 3 for outcome in scoped)
     if metric == "TOP_N_COUNT":
@@ -111,24 +167,43 @@ def actual_for_question(question: dict[str, Any], outcomes: list[dict[str, Any]]
     if metric == "CLASSIFIED_COUNT":
         return sum(outcome["status"] == CLASSIFIED for outcome in scoped)
     if metric in {"BEST_RESULT", "LOWEST_PERCENTAGE_GAP"}:
-        ranking = ordered_athletes(question, outcomes, metric)
-        if not ranking:
+        groups, selected = ranked_athlete_groups(question, outcomes, metric)
+        if not groups or not has_classified(selected):
             return None
-        unclassified = [outcome["athleteId"] for outcome in scoped if outcome["status"] != CLASSIFIED]
-        return {"winner": ranking[0], "ranking": ranking, "unclassified": list(dict.fromkeys(unclassified))}
+        ranking = flatten_groups(groups)
+        unclassified = [athlete_id for athlete_id, outcome in selected.items() if outcome["status"] != CLASSIFIED]
+        return {"winner": ranking[0], "winners": groups[0], "ranking": ranking, "rankGroups": groups, "unclassified": sorted(unclassified), "dns": dns_athletes}
     if metric == "EXACT_PLACEMENT":
-        classified = [outcome for outcome in scoped if outcome["status"] == CLASSIFIED and outcome["rank"] is not None]
-        return min((outcome["rank"] for outcome in classified), default=None)
+        selected = best_by_athlete(scoped, "BEST_RESULT")
+        if not selected:
+            return None
+        outcome = next(iter(selected.values()))
+        return outcome.get("effectiveRank")
     if metric == "DIRECT_COMPARISON":
-        ranking = ordered_athletes(question, outcomes, "BEST_RESULT")
-        classified_ids = [athlete_id for athlete_id in ranking if any(outcome["athleteId"] == athlete_id and outcome["status"] == CLASSIFIED for outcome in scoped)]
-        return classified_ids[0] if classified_ids else None
+        selected = best_by_athlete(scoped, "BEST_RESULT")
+        if len(selected) != len(question.get("athleteIds", [])) or not has_classified(selected):
+            return None
+        groups, _ = ranked_athlete_groups(question, outcomes, "BEST_RESULT")
+        return groups[0][0] if len(groups[0]) == 1 else None
     if metric == "INTERNAL_ORDER":
-        ranking = ordered_athletes(question, outcomes, "BEST_RESULT")[:question["positions"]]
-        unclassified = [outcome["athleteId"] for outcome in scoped if outcome["status"] != CLASSIFIED]
-        return {"ranking": ranking, "unclassified": list(dict.fromkeys(unclassified))}
+        groups, selected = ranked_athlete_groups(question, outcomes, "BEST_RESULT")
+        if not groups or not has_classified(selected):
+            return None
+        relevant_groups = groups_through_position(groups, question["positions"])
+        ranking = flatten_groups(relevant_groups)[:question["positions"]]
+        unclassified = [athlete_id for athlete_id, outcome in selected.items() if outcome["status"] != CLASSIFIED]
+        return {"ranking": ranking, "rankGroups": relevant_groups, "unclassified": sorted(unclassified), "dns": dns_athletes}
     if metric == "PODIUM_ORDER":
-        return ordered_athletes(question, outcomes, "LOWEST_PERCENTAGE_GAP", classified_only=True)[:question["positions"]]
+        groups, selected = ranked_athlete_groups(question, outcomes, "LOWEST_PERCENTAGE_GAP")
+        if not groups or not has_classified(selected):
+            return None
+        relevant_groups = groups_through_position(groups, question["positions"])
+        return {
+            "ranking": flatten_groups(relevant_groups)[:question["positions"]],
+            "rankGroups": relevant_groups,
+            "unclassified": sorted(athlete_id for athlete_id, outcome in selected.items() if outcome["status"] != CLASSIFIED),
+            "dns": dns_athletes,
+        }
     raise ValueError(f"Unsupported evaluation metric: {metric}")
 
 
@@ -142,21 +217,28 @@ def score_question(question: dict[str, Any], submitted: Any, actual: Any) -> tup
     if metric in {"PODIUM_COUNT", "TOP_N_COUNT", "CLASSIFIED_COUNT", "EXACT_PLACEMENT"}:
         return "SCORED", distance_points(abs(int(submitted) - int(actual)))
     if metric in {"BEST_RESULT", "LOWEST_PERCENTAGE_GAP"}:
-        ranking = actual["ranking"]
-        if metric == "BEST_RESULT" and submitted in actual.get("unclassified", []):
-            return "SCORED", 0
-        return "SCORED", distance_points(ranking.index(submitted)) if submitted in ranking else 0
+        distance = rank_distance(submitted, 0, actual["rankGroups"])
+        return "SCORED", distance_points(distance) if distance is not None else 0
     if metric == "DIRECT_COMPARISON":
         return "SCORED", 100 if submitted == actual else 0
     if metric == "INTERNAL_ORDER":
-        ranking = actual["ranking"]
-        unclassified = set(actual.get("unclassified", []))
-        position_by_athlete = {athlete_id: index for index, athlete_id in enumerate(ranking)}
-        values = [distance_points(abs(index - position_by_athlete[athlete_id])) if athlete_id in position_by_athlete and athlete_id not in unclassified else 0 for index, athlete_id in enumerate(submitted)]
+        filtered_submission = [athlete_id for athlete_id in submitted if athlete_id not in set(actual.get("dns", []))]
+        if not filtered_submission:
+            return "ANNULLED", 0
+        values = []
+        for index, athlete_id in enumerate(filtered_submission):
+            distance = rank_distance(athlete_id, index, actual["rankGroups"])
+            values.append(distance_points(distance) if distance is not None else 0)
         return "SCORED", round(sum(values) / len(values)) if values else 0
     if metric == "PODIUM_ORDER":
-        actual_set = set(actual)
-        values = [100 if index < len(actual) and athlete_id == actual[index] else 60 if athlete_id in actual_set else 0 for index, athlete_id in enumerate(submitted)]
+        filtered_submission = [athlete_id for athlete_id in submitted if athlete_id not in set(actual.get("dns", []))]
+        if not filtered_submission:
+            return "ANNULLED", 0
+        actual_set = set(flatten_groups(actual["rankGroups"]))
+        values = []
+        for index, athlete_id in enumerate(filtered_submission):
+            distance = rank_distance(athlete_id, index, actual["rankGroups"])
+            values.append(100 if distance == 0 else 60 if athlete_id in actual_set else 0)
         return "SCORED", round(sum(values) / len(values)) if values else 0
     raise ValueError(f"Unsupported evaluation metric: {metric}")
 
@@ -191,6 +273,7 @@ def evaluate(tip_round: dict[str, Any], result_documents: list[dict[str, Any]], 
     return {
         "schemaVersion": 1,
         "tipRoundId": tip_round["id"],
+        "tipRoundVersion": tip_round["contentVersion"],
         "submissionId": submission.get("id", "local-submission"),
         "testFixture": submission.get("id") == "perfect-fixture-submission",
         "questionEvaluations": evaluations,
@@ -205,6 +288,18 @@ def validate_submission(tip_round: dict[str, Any], submission: dict[str, Any]) -
         raise ValueError("Submission is missing an id")
     if submission.get("tipRoundId") != tip_round["id"]:
         raise ValueError(f"Submission belongs to tip round {submission.get('tipRoundId')!r}, expected {tip_round['id']!r}")
+    expected_version = tip_round.get("contentVersion")
+    if not expected_version:
+        raise ValueError("Tip round is missing its content version")
+    if submission.get("tipRoundVersion") != expected_version:
+        raise ValueError(
+            f"Submission has content version {submission.get('tipRoundVersion')!r}, expected {expected_version!r}"
+        )
+    player = submission.get("player")
+    if submission.get("id") != "perfect-fixture-submission" and (
+        not isinstance(player, dict) or not player.get("id") or not player.get("displayName")
+    ):
+        raise ValueError("Submission is missing player information")
     answers = submission.get("answers")
     if not isinstance(answers, dict):
         raise ValueError("Submission answers must be an object")
@@ -249,7 +344,7 @@ def perfect_fixture_submission(tip_round: dict[str, Any], result_documents: list
             answers[question["id"]] = actual["ranking"]
         else:
             answers[question["id"]] = actual
-    return {"id": "perfect-fixture-submission", "tipRoundId": tip_round["id"], "answers": answers}
+    return {"id": "perfect-fixture-submission", "tipRoundId": tip_round["id"], "tipRoundVersion": tip_round["contentVersion"], "answers": answers}
 
 
 def main(argv: Iterable[str] | None = None) -> int:

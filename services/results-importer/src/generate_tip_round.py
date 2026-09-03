@@ -136,8 +136,10 @@ def build_snapshot(documents: list[tuple[Path, dict[str, Any]]]) -> tuple[list[d
             "discipline": discipline_label(event.get("discipline", "OTHER")),
             "day": weekday_de(event_date),
             "date": event["date"],
-            "sourceFile": source_path.name,
+            "sourceFile": document.get("source", {}).get("fileName", source_path.name),
         }
+        if event.get("location"):
+            race["location"] = event["location"]
         if event.get("competitionNumber"):
             race["competitionNumber"] = event["competitionNumber"]
         races.append(race)
@@ -203,7 +205,7 @@ def resolve_athlete_names(value: str, athletes: list[dict[str, Any]], question_n
     return resolved
 
 
-def resolve_race_scope(value: str, races: list[dict[str, Any]], question_number: int) -> tuple[list[str], str]:
+def resolve_race_scope(value: str, races: list[dict[str, Any]], question_number: int, race_date: str = "") -> tuple[list[str], str]:
     if not value:
         raise ValueError(f"Question {question_number}: Rennen is required")
     if value.strip().upper() in {"ALL", "ALLE"}:
@@ -219,8 +221,11 @@ def resolve_race_scope(value: str, races: list[dict[str, Any]], question_number:
     selected: list[dict[str, Any]] = []
     for reference in (part.strip() for part in value.split("|")):
         matches = by_reference.get(reference.casefold(), [])
+        if race_date:
+            matches = [race for race in matches if race.get("date") == race_date]
         if not matches:
-            raise ValueError(f"Question {question_number}: race '{reference}' was not found in the weekend")
+            suffix = f" on {race_date}" if race_date else ""
+            raise ValueError(f"Question {question_number}: race '{reference}'{suffix} was not found in the weekend")
         unique_matches = {race["id"]: race for race in matches}
         if len(unique_matches) > 1:
             raise ValueError(f"Question {question_number}: race '{reference}' is ambiguous")
@@ -258,7 +263,9 @@ def parse_question_markdown(path: Path, athletes: list[dict[str, Any]], races: l
         if not question_type:
             raise ValueError(f"Question {index}: unknown or missing type '{raw_type}'")
 
-        identifier = f"manual-{index:02d}-{slugify(question_prompt)}"
+        identifier = fields.get("id") or f"manual-{index:02d}-{slugify(question_prompt)}"
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", identifier):
+            raise ValueError(f"Question {index}: ID must only contain lowercase letters, numbers and hyphens")
         if identifier in used_ids:
             raise ValueError(f"Question {index}: duplicate question '{question_prompt}'")
         used_ids.add(identifier)
@@ -275,23 +282,45 @@ def parse_question_markdown(path: Path, athletes: list[dict[str, Any]], races: l
         question["evaluationMetric"] = evaluation_metric
         if evaluation_metric == "TOP_N_COUNT":
             question["threshold"] = int(fields.get("grenze", "10"))
-        race_ids, race_label = resolve_race_scope(fields.get("rennen", fields.get("races", "")), races, index)
+        race_ids, race_label = resolve_race_scope(
+            fields.get("rennen", fields.get("races", "")),
+            races,
+            index,
+            fields.get("renndatum", fields.get("race date", "")),
+        )
         question["raceIds"] = race_ids
         question["raceLabel"] = race_label
+
+        raw_age_classes = fields.get("altersklassen", fields.get("altersklasse", ""))
+        age_class_athlete_ids: list[str] | None = None
+        if raw_age_classes:
+            age_classes = [value.strip().upper() for value in re.split(r"[|,]", raw_age_classes) if value.strip()]
+            age_class_athlete_ids = [athlete["id"] for athlete in athletes if str(athlete.get("ageClass", "")).upper() in age_classes]
+            if not age_class_athlete_ids:
+                raise ValueError(f"Question {index}: no athletes found for Altersklasse {raw_age_classes}")
+            question["ageClasses"] = age_classes
+            question["raceLabel"] = f"{race_label} · {' / '.join(age_classes)}"
 
         if question_type == "NUMBER":
             question["minimum"] = int(fields.get("minimum", "0"))
             question["maximum"] = int(fields.get("maximum", "60"))
             if question["maximum"] <= question["minimum"]:
                 raise ValueError(f"Question {index}: maximum must be greater than minimum")
+            if age_class_athlete_ids is not None:
+                question["athleteIds"] = age_class_athlete_ids
         elif question_type == "PLACEMENT":
             person = fields.get("person", "")
             athlete_ids = resolve_athlete_names(person, athletes, index)
             if len(athlete_ids) != 1:
                 raise ValueError(f"Question {index}: PLATZIERUNG requires exactly one Person")
+            if age_class_athlete_ids is not None and athlete_ids[0] not in age_class_athlete_ids:
+                raise ValueError(f"Question {index}: Person does not belong to Altersklasse {raw_age_classes}")
             question.update({"athleteId": athlete_ids[0], "minimum": int(fields.get("minimum", "1")), "maximum": int(fields.get("maximum", "60"))})
         else:
-            athlete_ids = resolve_athlete_names(fields.get("personen", "ALLE"), athletes, index)
+            raw_people = fields.get("personen", "ALLE")
+            athlete_ids = age_class_athlete_ids if raw_people.upper() == "ALLE" and age_class_athlete_ids is not None else resolve_athlete_names(raw_people, athletes, index)
+            if age_class_athlete_ids is not None and any(athlete_id not in age_class_athlete_ids for athlete_id in athlete_ids):
+                raise ValueError(f"Question {index}: not all Personen belong to Altersklasse {raw_age_classes}")
             if question_type == "HEAD_TO_HEAD" and len(athlete_ids) != 2:
                 raise ValueError(f"Question {index}: DUELL requires exactly two Personen separated by |")
             if question_type in {"INTERNAL_RANKING", "PODIUM"}:
@@ -404,7 +433,21 @@ def generate_questions(athletes: list[dict[str, Any]], groups: list[dict[str, An
     return questions[: QUESTION_LIMITS[1]]
 
 
-def generate_tip_round(source_paths: list[Path], title: str | None = None, questions_path: Path | None = None, test_weekend_date: date | None = None) -> dict[str, Any]:
+def content_version(document: dict[str, Any]) -> str:
+    protected_content = {
+        "id": document["id"],
+        "opensAt": document["opensAt"],
+        "closesAt": document["closesAt"],
+        "athletes": document["athletes"],
+        "races": document["races"],
+        "groups": document["groups"],
+        "questions": document["questions"],
+    }
+    canonical = json.dumps(protected_content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return f"sha256-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
+
+
+def generate_tip_round(source_paths: list[Path], title: str | None = None, questions_path: Path | None = None, test_weekend_date: date | None = None, season_id: str | None = None, status: str = "DRAFT") -> dict[str, Any]:
     documents = [(path, load_start_list(path)) for path in source_paths]
     event_dates = sorted(date.fromisoformat(document["event"]["date"]) for _, document in documents)
     if not test_weekend_date and (event_dates[-1] - event_dates[0]).days > 3:
@@ -440,7 +483,7 @@ def generate_tip_round(source_paths: list[Path], title: str | None = None, quest
     document = {
         "schemaVersion": 1,
         "id": f"tip-round-{event_dates[0].isoformat()}",
-        "status": "DRAFT",
+        "status": status,
         "title": generated_title,
         "subtitle": f"{len(races)} Rennen · {len(athletes)} Oberhachinger Starter",
         "opensAt": opens_at.isoformat(),
@@ -462,10 +505,13 @@ def generate_tip_round(source_paths: list[Path], title: str | None = None, quest
             ],
         },
     }
+    if season_id:
+        document["seasonId"] = season_id
     if questions_path:
         document["questionsSource"] = questions_path.name
     if test_weekend_date:
         document["testFixture"] = True
+    document["contentVersion"] = content_version(document)
     return document
 
 
@@ -494,12 +540,14 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--title", help="Optional title override")
     parser.add_argument("--questions", type=Path, help="Markdown file containing six to ten manually selected questions")
     parser.add_argument("--test-weekend-date", type=date.fromisoformat, help="Fixture only: treat all sources as races on this ISO date")
+    parser.add_argument("--season-id", help="Season identifier copied into the generated tip round")
+    parser.add_argument("--status", choices=["DRAFT", "OPEN", "CLOSED", "EVALUATED", "ARCHIVED", "CANCELLED"], default="DRAFT")
     arguments = parser.parse_args(argv)
 
     source_paths = [path.resolve() for path in arguments.start_lists]
     output_path = (arguments.output or default_output_path(source_paths)).resolve()
     questions_path = arguments.questions.resolve() if arguments.questions else None
-    document = generate_tip_round(source_paths, arguments.title, questions_path, arguments.test_weekend_date)
+    document = generate_tip_round(source_paths, arguments.title, questions_path, arguments.test_weekend_date, arguments.season_id, arguments.status)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({**summary(document), "output": str(output_path)}, ensure_ascii=False))

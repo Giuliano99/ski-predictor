@@ -1,5 +1,7 @@
 # Race Data Importer
 
+Für den normalen Spielleiterbetrieb müssen die folgenden Einzelbefehle nicht manuell ausgeführt werden. Der automatisierte Ablauf steht unter [`scripts/game-master`](../../scripts/game-master/README.md). Die Einzelbefehle in diesem Dokument dienen der Entwicklung und Fehleranalyse.
+
 Dieser Dienst liest Startlisten und textbasierte Race Horology Ergebnislisten aus PDF Dateien ein.
 
 Der Dienst bleibt vom API Dienst getrennt. So können Importläufe unabhängig geplant, wiederholt und überwacht werden.
@@ -50,6 +52,21 @@ python services/results-importer/src/extract_result_list.py data/result-lists/in
 
 Das Ergebnis enthält das offizielle Gesamtergebnis, beide Läufe, Platzierung, prozentualen Rückstand und den ursprünglichen Status. `NAS`, `NIZ` und `DIS` werden fachlich als `DNS`, `DNF` und `DSQ` normalisiert.
 
+### Wertung von DNS, DNF und DSQ
+
+- `DNS` wird aus der sportlichen Reihenfolge entfernt. Eine Platzierungsfrage für diese Person oder ein betroffenes Duell wird annulliert. In Ranglisten wird die Person aus dem Tipp entfernt und die restliche Reihenfolge zusammengeschoben.
+- `DNF` und `DSQ` werden gleich behandelt. Sie teilen sich hinter allen gewerteten Personen den letzten Platz.
+- Die Reihenfolge mehrerer `DNF` oder `DSQ` ist für die Punktevergabe bedeutungslos.
+- Bei Platzierungsfragen ist der gemeinsame letzte Platz die höchste offizielle Platzierung der Wertungsgruppe plus eins.
+- Sind in einem Duell beide Personen `DNF` oder `DSQ`, oder besteht eine komplette Rangfolge nur daraus, wird die Frage annulliert.
+- Die Penalty-Zeit bleibt für technische Rückstandsberechnungen erhalten, löst aber keinen Gleichstand zwischen `DNF` und `DSQ` auf.
+
+### Versionsschutz
+
+Jede erzeugte Tipprunde erhält eine SHA-256-Inhaltsversion über Rennen, Starter, Wertungsgruppen, Fragen und Abgabefrist. Die Website schreibt diese Version in jede exportierte Tippabgabe. Die Auswertung lehnt fehlende oder abweichende Versionen ab. Der Statuswechsel selbst verändert die Inhaltsversion nicht.
+
+`Prepare-Weekend.ps1` darf nur im Status `DRAFT` ausgeführt werden. Damit bleiben die veröffentlichten Inhalte ab `OPEN` unverändert.
+
 ## Tippabgabe auswerten
 
 ```powershell
@@ -67,6 +84,26 @@ python services/results-importer/src/evaluate_tip_round.py apps/web/src/data/tip
 ```
 
 `evaluation.local.json` wird von Git ignoriert. Die Website blendet den Auswertungsbereich automatisch ein, wenn die Kennung zur geladenen Tipprunde passt.
+
+## Alle Abgaben eines Wochenendes auswerten
+
+Jede Person gibt in der Testwebsite einen Ranglistennamen ein, speichert ihren Tipp und exportiert ihn. Alle Dateien dieser Runde werden in `data/submissions/inbox/tip-round-2026-01-03` gesammelt. Pro Ranglistenkennung zählt die zeitlich neueste Abgabe.
+
+```powershell
+python services/results-importer/src/evaluate_submissions.py apps/web/src/data/tip-round.local.json data/result-lists/processed/rennen3.json --submissions-dir data/submissions/inbox/tip-round-2026-01-03 --output data/submissions/processed/weekend-tip-round-2026-01-03.json --website-output apps/web/src/data/weekend-evaluation.local.json
+```
+
+Die Wochenendauswertung enthält die Platzierung aller Teilnehmer und ihre Einzelauswertungen. Die Website findet anhand der lokal gespeicherten Abgabe ID automatisch die passende persönliche Auswertung.
+
+## Saisonrangliste erzeugen
+
+Alle bisher erzeugten Wochenendauswertungen werden ohne Streichergebnis addiert:
+
+```powershell
+python services/results-importer/src/aggregate_season.py data/submissions/processed/weekend-tip-round-2026-01-03.json --output data/submissions/processed/season-2026-2027.json --website-output apps/web/src/data/season-leaderboard.local.json
+```
+
+Sobald weitere Wochenenden vorliegen, werden deren archivierte JSON Dateien vor `--output` ergänzt. Die Saisonrangliste enthält Gesamtpunkte, Anzahl gewerteter Tipprunden und Durchschnittspunkte.
 
 ## Künstliches Testwochenende
 

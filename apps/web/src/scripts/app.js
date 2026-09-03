@@ -1,14 +1,8 @@
-const DATA_URLS = ["src/data/tip-round.local.json", "src/data/tip-round.json"];
+const DATA_URLS = ["/api/v1/predictor/rounds/current", "src/data/tip-round.local.json", "src/data/tip-round.json"];
 const EVALUATION_URL = "src/data/evaluation.local.json";
 const STORAGE_PREFIX = "ski-predictor:submission:";
 
-const leaders = [
-  { name: "Lena B.", initials: "LB", detail: "2 Tipprunden", points: 1840 },
-  { name: "Max S.", initials: "MS", detail: "2 Tipprunden", points: 1760 },
-  { name: "Sophie K.", initials: "SK", detail: "2 Tipprunden", points: 1690 },
-  { name: "Du", initials: "GG", detail: "1 Tipprunde", points: 920 },
-  { name: "Jonas R.", initials: "JR", detail: "1 Tipprunde", points: 880 },
-];
+let leaders = [];
 
 const dom = {
   form: document.querySelector("#prediction-form"),
@@ -20,6 +14,7 @@ const dom = {
   saveButton: document.querySelector("#save-prediction"),
   resetButton: document.querySelector("#reset-prediction"),
   exportButton: document.querySelector("#export-prediction"),
+  playerName: document.querySelector("#player-name"),
   toast: document.querySelector("#toast"),
   deadlineStatus: document.querySelector("#deadline-status"),
   raceList: document.querySelector("#race-list"),
@@ -35,6 +30,10 @@ const dom = {
   evaluationWeekendPoints: document.querySelector("#evaluation-weekend-points"),
   evaluationRawPoints: document.querySelector("#evaluation-raw-points"),
   evaluationQuestionList: document.querySelector("#evaluation-question-list"),
+  heroSeries: document.querySelector("#hero-series"),
+  heroTitle: document.querySelector("#hero-title"),
+  heroDate: document.querySelector("#hero-date"),
+  seasonLabel: document.querySelector("#season-label"),
 };
 
 let tipRound;
@@ -144,11 +143,18 @@ function renderWeekendOverview() {
 }
 
 function renderTipRound() {
+  const firstRace = tipRound.races[0];
+  const raceDate = new Date(`${firstRace.date}T12:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  dom.heroSeries.textContent = `${firstRace.discipline}${firstRace.location ? ` · ${firstRace.location}` : ""}`;
+  dom.heroTitle.textContent = firstRace.name;
+  dom.heroDate.innerHTML = `<strong>${escapeHtml(firstRace.day)}, ${escapeHtml(raceDate)}</strong>${tipRound.races.length} Rennen an diesem Wochenende`;
+  dom.seasonLabel.textContent = tipRound.seasonId ? `Saison ${tipRound.seasonId.replace("-", "/")}` : "Saisonwertung";
   dom.title.textContent = tipRound.title;
-  dom.subtitle.textContent = `${tipRound.subtitle} · ${tipRound.questions.length} Fragen · maximal 1.000 Wochenendpunkte`;
+  dom.subtitle.textContent = `${tipRound.subtitle} · ${tipRound.questions.length} Fragen · auf maximal 1.000 Wochenendpunkte normiert`;
   dom.questionList.innerHTML = tipRound.questions.map(renderQuestion).join("");
+  const statusLabels = { DRAFT: "Entwurf", OPEN: "Tippabgabe offen", CLOSED: "Tippabgabe geschlossen", EVALUATED: "Ausgewertet", ARCHIVED: "Archiviert", CANCELLED: "Abgesagt" };
   dom.raceList.innerHTML = tipRound.races.map((race) => `<article class="race-card">
-    <div class="race-card-top"><span class="race-date">${escapeHtml(race.day)}</span><span class="status">In dieser Runde</span></div>
+    <div class="race-card-top"><span class="race-date">${escapeHtml(race.day)}</span><span class="status">${escapeHtml(statusLabels[tipRound.status] ?? "In dieser Runde")}</span></div>
     <div class="location"><span class="event-icon" aria-hidden="true">S</span><div><strong>${escapeHtml(race.name)}</strong><span>${escapeHtml(race.discipline)}</span></div></div>
     <div class="race-card-bottom"><span>Offizielles Gesamtergebnis zählt</span><button type="button" data-scroll-to-tip>Tippen →</button></div>
   </article>`).join("");
@@ -163,14 +169,28 @@ function formatRanking(ranking) {
   return ranking.map((athleteId, index) => `${index + 1}. ${athleteName(athleteId)}`).join(" · ");
 }
 
+function formatRankGroups(rankGroups, unclassified = []) {
+  const lastPlace = new Set(unclassified);
+  let position = 1;
+  return rankGroups.map((group) => {
+    const names = group.map(athleteName).join(" = ");
+    const suffix = group.every((athleteId) => lastPlace.has(athleteId)) ? " (DNF/DSQ, letzter Platz)" : "";
+    const label = `${position}. ${names}${suffix}`;
+    position += group.length;
+    return label;
+  }).join(" · ");
+}
+
 function formatEvaluationAnswer(answer) {
   if (answer === null || answer === undefined || answer === "") return "Nicht wertbar";
   if (Array.isArray(answer)) return answer.length ? formatRanking(answer) : "Keine gewerteten Athleten";
   if (typeof answer === "object") {
     if (Array.isArray(answer.ranking)) {
-      const ranking = formatRanking(answer.ranking);
-      const unclassified = (answer.unclassified ?? []).map(athleteName);
-      return `${ranking || "Keine gewerteten Athleten"}${unclassified.length ? ` · Nicht gewertet: ${unclassified.join(", ")}` : ""}`;
+      const ranking = Array.isArray(answer.rankGroups)
+        ? formatRankGroups(answer.rankGroups, answer.unclassified)
+        : formatRanking(answer.ranking);
+      const dns = (answer.dns ?? []).map(athleteName);
+      return `${ranking || "Keine gewerteten Athleten"}${dns.length ? ` · DNS, nicht berücksichtigt: ${dns.join(", ")}` : ""}`;
     }
     return JSON.stringify(answer);
   }
@@ -201,15 +221,56 @@ function renderEvaluation(evaluation) {
   dom.evaluationSection.hidden = false;
 }
 
-async function loadEvaluation() {
+async function optionalJson(url) {
   try {
-    const response = await fetch(EVALUATION_URL);
-    if (!response.ok) return;
-    const evaluation = await response.json();
-    if (evaluation.tipRoundId === tipRound.id) renderEvaluation(evaluation);
+    const response = await fetch(url);
+    return response.ok ? response.json() : null;
   } catch {
-    // Die Auswertung ist optional und erscheint erst nach dem Ergebnisimport.
+    return null;
   }
+}
+
+async function optionalJsonFirst(urls) {
+  for (const url of urls) {
+    const value = await optionalJson(url);
+    if (value) return value;
+  }
+  return null;
+}
+
+async function loadResults() {
+  const weekendEvaluationUrls = [`/api/v1/predictor/rounds/${encodeURIComponent(tipRound.id)}/evaluation`, "src/data/weekend-evaluation.local.json"];
+  const seasonLeaderboardUrls = [`/api/v1/predictor/seasons/${encodeURIComponent(tipRound.seasonId)}/leaderboard`, "src/data/season-leaderboard.local.json"];
+  const [weekend, season] = await Promise.all([
+    optionalJsonFirst(weekendEvaluationUrls),
+    optionalJsonFirst(seasonLeaderboardUrls),
+  ]);
+
+  const weekendMatches = weekend?.tipRoundId === tipRound.id && weekend?.tipRoundVersion === tipRound.contentVersion;
+  const seasonRoundVersion = season?.tipRoundVersions?.[tipRound.id];
+  const seasonMatches = !seasonRoundVersion || seasonRoundVersion === tipRound.contentVersion;
+  if (season?.standings && seasonMatches && (!tipRound.seasonId || season.seasonId === tipRound.seasonId)) {
+    leaders = season.standings.map((standing) => ({
+      rank: standing.rank,
+      name: standing.displayName,
+      detail: `${standing.rounds} ${standing.rounds === 1 ? "Tipprunde" : "Tipprunden"} · Ø ${standing.averagePoints}`,
+      points: standing.seasonPoints,
+    }));
+  } else if (weekendMatches) {
+    leaders = weekend.standings.map((standing) => ({ rank: standing.rank, name: standing.displayName, detail: "Wochenendwertung", points: standing.weekendPoints }));
+  }
+
+  const submissionId = storedSubmission()?.id;
+  const personalEvaluation = weekendMatches
+    ? weekend.evaluations.find((evaluation) => evaluation.submissionId === submissionId)
+    : null;
+  if (personalEvaluation) {
+    renderEvaluation(personalEvaluation);
+    return;
+  }
+
+  const evaluation = await optionalJson(EVALUATION_URL);
+  if (evaluation?.tipRoundId === tipRound.id && evaluation?.tipRoundVersion === tipRound.contentVersion && (!submissionId || evaluation.submissionId === submissionId)) renderEvaluation(evaluation);
 }
 
 function valuesForQuestion(question) {
@@ -258,7 +319,12 @@ function storedSubmission() {
   const rawSubmission = localStorage.getItem(storageKey());
   if (!rawSubmission) return null;
   try {
-    return JSON.parse(rawSubmission);
+    const submission = JSON.parse(rawSubmission);
+    if (submission.tipRoundVersion !== tipRound.contentVersion) {
+      localStorage.removeItem(storageKey());
+      return null;
+    }
+    return submission;
   } catch {
     localStorage.removeItem(storageKey());
     return null;
@@ -271,13 +337,21 @@ function exportableSubmission(submission) {
     schemaVersion: 1,
     id: submission.id ?? `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`,
     tipRoundId: tipRound.id,
+    tipRoundVersion: tipRound.contentVersion,
+    player: submission.player,
     submittedAt,
     answers: submission.answers,
   };
 }
 
 function updateExportState() {
-  dom.exportButton.disabled = !storedSubmission();
+  const submission = storedSubmission();
+  dom.exportButton.disabled = !submission?.player?.displayName;
+}
+
+function playerIdForName(name) {
+  const slug = name.normalize("NFD").replaceAll(/[\u0300-\u036f]/g, "").toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/^-|-$/g, "");
+  return `local-${slug || "spieler"}`;
 }
 
 function collectSubmission() {
@@ -297,6 +371,7 @@ function restoreSubmission() {
   const submission = storedSubmission();
   if (!submission) return;
   try {
+    dom.playerName.value = submission.player?.displayName ?? "";
     Object.entries(submission.answers ?? {}).forEach(([questionId, value]) => {
       if (Array.isArray(value)) {
         value.forEach((item, position) => {
@@ -325,6 +400,33 @@ function setLocked(locked) {
 }
 
 function updateCountdown() {
+  const roundStatus = tipRound.status ?? "DRAFT";
+  if (roundStatus !== "OPEN") {
+    document.querySelector("#days").textContent = "--";
+    document.querySelector("#hours").textContent = "--";
+    document.querySelector("#minutes").textContent = "--";
+    setLocked(true);
+    const statusText = {
+      DRAFT: "Tipprunde noch nicht geöffnet",
+      CLOSED: "Tippabgabe geschlossen",
+      EVALUATED: "Tipprunde ausgewertet",
+      ARCHIVED: "Tipprunde archiviert",
+      CANCELLED: "Tipprunde abgesagt",
+    };
+    dom.deadlineStatus.textContent = statusText[roundStatus] ?? "Tippabgabe geschlossen";
+    dom.message.textContent = roundStatus === "EVALUATED"
+      ? "Die Tipprunde ist ausgewertet. Die Ergebnisse stehen unten auf der Seite."
+      : "Für diese Tipprunde können aktuell keine Tipps abgegeben werden.";
+    return;
+  }
+  if (tipRound.testMode) {
+    document.querySelector("#days").textContent = "--";
+    document.querySelector("#hours").textContent = "--";
+    document.querySelector("#minutes").textContent = "--";
+    setLocked(false);
+    dom.deadlineStatus.textContent = "Testmodus geöffnet";
+    return;
+  }
   const remainingMilliseconds = new Date(tipRound.closesAt).getTime() - Date.now();
   const remainingMinutes = Math.max(0, Math.floor(remainingMilliseconds / 60_000));
   document.querySelector("#days").textContent = String(Math.floor(remainingMinutes / 1440)).padStart(2, "0");
@@ -347,7 +449,16 @@ function bindEvents() {
 
   dom.form.addEventListener("submit", (event) => {
     event.preventDefault();
-    if (Date.now() >= new Date(tipRound.closesAt).getTime()) return;
+    if ((tipRound.status ?? "DRAFT") !== "OPEN") return;
+    if (!tipRound.testMode && Date.now() >= new Date(tipRound.closesAt).getTime()) return;
+
+    const playerName = dom.playerName.value.trim();
+    if (playerName.length < 2) {
+      dom.message.textContent = "Bitte gib deinen Namen für die Rangliste ein.";
+      dom.message.classList.add("error");
+      dom.playerName.focus();
+      return;
+    }
 
     const { answers, firstInvalidCard } = collectSubmission();
     if (firstInvalidCard) {
@@ -358,7 +469,7 @@ function bindEvents() {
     }
 
     const submittedAt = new Date().toISOString();
-    const submission = { schemaVersion: 1, id: `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`, tipRoundId: tipRound.id, submittedAt, answers };
+    const submission = { schemaVersion: 1, id: `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`, tipRoundId: tipRound.id, tipRoundVersion: tipRound.contentVersion, player: { id: playerIdForName(playerName), displayName: playerName }, submittedAt, answers };
     localStorage.setItem(storageKey(), JSON.stringify(submission));
     dom.message.textContent = "Dein Tipp wurde lokal gespeichert und kann bis zum Abgabeschluss geändert werden.";
     dom.message.classList.remove("error");
@@ -385,7 +496,7 @@ function bindEvents() {
     const downloadUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = downloadUrl;
-    link.download = `tipp-${tipRound.id}.json`;
+    link.download = `tipp-${tipRound.id}-${exportData.player.id}-${exportData.submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}.json`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -396,8 +507,12 @@ function bindEvents() {
 }
 
 function renderLeaderboard() {
-  document.querySelector("#leaderboard-list").innerHTML = leaders.map((leader, index) => `<li>
-    <span class="rank">${index + 1}</span><span class="avatar">${escapeHtml(leader.initials)}</span>
+  if (!leaders.length) {
+    document.querySelector("#leaderboard-list").innerHTML = `<li class="leaderboard-empty">Noch keine ausgewerteten Tipps.</li>`;
+    return;
+  }
+  document.querySelector("#leaderboard-list").innerHTML = leaders.map((leader) => `<li>
+    <span class="rank">${leader.rank}</span><span class="avatar">${escapeHtml(leader.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase())}</span>
     <span class="person"><strong>${escapeHtml(leader.name)}</strong><span>${escapeHtml(leader.detail)}</span></span>
     <span class="score">${leader.points} <small>Pkt.</small></span>
   </li>`).join("");
@@ -415,7 +530,7 @@ async function initialize() {
     athletesById = new Map(tipRound.athletes.map((athlete) => [athlete.id, athlete]));
     renderWeekendOverview();
     renderTipRound();
-    await loadEvaluation();
+    await loadResults();
     renderLeaderboard();
     bindEvents();
     restoreSubmission();

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spielleiter | Ski Predictor</title>
+    <link rel="stylesheet" href="/spielleiter/assets/dashboard.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">Skiteam Oberhaching</span>
+        <h1>Spielleiter</h1>
+      </div>
+      <div class="header-actions">
+        <a class="button secondary" href="/tippspiel/" target="_blank">Tippspiel ansehen</a>
+        <button class="button" id="new-weekend-button" type="button">Neues Wochenende</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="welcome">
+        <div>
+          <span class="eyebrow">Geführter Ablauf</span>
+          <h2>Du prüfst. Der Rest läuft automatisch.</h2>
+          <p>Lege die Dateien hier ab. Import, Zuordnung, Prüfberichte, Auswertung und Saisonwertung übernimmt der Assistent.</p>
+        </div>
+        <div class="legend"><span><i class="dot draft"></i>Vorbereitung</span><span><i class="dot open"></i>Tippen</span><span><i class="dot evaluated"></i>Ausgewertet</span></div>
+      </section>
+
+      <div class="notice" id="notice" hidden></div>
+      <section class="empty" id="empty" hidden>
+        <h2>Noch kein Rennwochenende</h2>
+        <p>Lege das erste Wochenende an. Alle benötigten Ordner und Vorlagen entstehen automatisch.</p>
+      </section>
+      <section class="dashboard" id="dashboard" hidden>
+        <aside class="weekend-list">
+          <div class="aside-title"><span>Rennwochenenden</span><button id="refresh-button" title="Neu laden" type="button">↻</button></div>
+          <div id="weekend-list"></div>
+        </aside>
+        <div id="weekend-detail"></div>
+      </section>
+    </main>
+
+    <dialog id="new-weekend-dialog">
+      <form id="new-weekend-form">
+        <div class="dialog-head"><div><span class="eyebrow">Saison vorbereiten</span><h2>Neues Wochenende</h2></div><button class="icon-button" value="cancel" formmethod="dialog" type="button" data-close>×</button></div>
+        <label>Erster Renntag<input name="date" type="date" required /></label>
+        <label>Name des Rennwochenendes<input name="title" type="text" minlength="3" maxlength="100" placeholder="z. B. SVM Wochenende Lenggries" required /></label>
+        <label class="check"><input name="testMode" type="checkbox" /><span><strong>Testmodus</strong><small>Die Abgabefrist wird beim lokalen Test nicht erzwungen.</small></span></label>
+        <div class="dialog-actions"><button class="button secondary" type="button" data-close>Abbrechen</button><button class="button" type="submit">Wochenende anlegen</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="confirm-dialog">
+      <div class="dialog-head"><div><span class="eyebrow">Bitte prüfen</span><h2 id="confirm-title">Aktion bestätigen</h2></div><button class="icon-button" type="button" data-close>×</button></div>
+      <p id="confirm-text"></p>
+      <div class="dialog-actions"><button class="button secondary" type="button" data-close>Zurück</button><button class="button" id="confirm-button" type="button">Bestätigen</button></div>
+    </dialog>
+
+    <template id="detail-template">
+      <section class="detail">
+        <div class="detail-header">
+          <div><span class="status-badge"></span><h2 class="weekend-title"></h2><p class="season"></p></div>
+          <div class="detail-actions"></div>
+        </div>
+        <div class="steps"></div>
+      </section>
+    </template>
+
+    <script src="/spielleiter/assets/dashboard.js"></script>
+  </body>
+</html>

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "tip-round-2026-03-07",
+  "seasonId": "2025-2026",
+  "status": "EVALUATED",
+  "statusHistory": [
+    {
+      "status": "CLOSED",
+      "changedAt": "2026-09-03T00:00:00Z"
+    },
+    {
+      "status": "EVALUATED",
+      "changedAt": "2026-09-03T10:04:09.106317+02:00"
+    }
+  ],
+  "questionsFile": "data/questions/weekend-questions-2026-03-07.md",
+  "startListsDirectory": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten",
+  "startLists": [
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten/startliste_u8-u10_2026-03-07.pdf",
+      "output": "data/result-lists/processed/weekend-2026-03-07/startliste_u8-u10_2026-03-07.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten/startliste_u12_2026-03-07.pdf",
+      "output": "data/result-lists/processed/weekend-2026-03-07/startliste_u12_2026-03-07.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten/startliste_u14-u16_2026-03-07.pdf",
+      "output": "data/result-lists/processed/weekend-2026-03-07/startliste_u14-u16_2026-03-07.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten/startliste_u8-u10_2026-03-08.pdf",
+      "output": "data/result-lists/processed/weekend-2026-03-07/startliste_u8-u10_2026-03-08.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten/startliste_u12_2026-03-08.pdf",
+      "output": "data/result-lists/processed/weekend-2026-03-07/startliste_u12_2026-03-08.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/startlisten/startliste_u14-u16_2026-03-08.pdf",
+      "output": "data/result-lists/processed/weekend-2026-03-07/startliste_u14-u16_2026-03-08.json"
+    }
+  ],
+  "tipRound": {
+    "title": "Rennwochenende 7. und 8. März 2026",
+    "output": "data/result-lists/processed/weekend-2026-03-07/tip-round.json",
+    "websiteOutput": "apps/web/src/data/tip-round.local.json",
+    "testMode": true
+  },
+  "resultsDirectory": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten",
+  "results": [
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u10.pdf",
+      "startList": "data/result-lists/processed/weekend-2026-03-07/startliste_u8-u10_2026-03-07.json",
+      "output": "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u10.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u10_2.pdf",
+      "startList": "data/result-lists/processed/weekend-2026-03-07/startliste_u8-u10_2026-03-08.json",
+      "output": "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u10_2.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u12.pdf",
+      "startList": "data/result-lists/processed/weekend-2026-03-07/startliste_u12_2026-03-07.json",
+      "output": "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u12.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u14.pdf",
+      "startList": "data/result-lists/processed/weekend-2026-03-07/startliste_u14-u16_2026-03-07.json",
+      "output": "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u14.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u14_2.pdf",
+      "startList": "data/result-lists/processed/weekend-2026-03-07/startliste_u14-u16_2026-03-08.json",
+      "output": "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u14_2.json"
+    },
+    {
+      "pdf": "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnislisteu12_2.pdf",
+      "startList": "data/result-lists/processed/weekend-2026-03-07/startliste_u12_2026-03-08.json",
+      "output": "data/result-lists/processed/weekend-2026-03-07/result-ergebnislisteu12_2.json"
+    }
+  ],
+  "submissionsDir": "data/submissions/inbox/tip-round-2026-03-07",
+  "weekendEvaluation": {
+    "output": "data/submissions/processed/weekend-tip-round-2026-03-07.json",
+    "websiteOutput": "apps/web/src/data/weekend-evaluation.local.json"
+  },
+  "seasonLeaderboard": {
+    "weekendPattern": "data/submissions/processed/weekend-*.json",
+    "output": "data/submissions/processed/season-2025-2026.json",
+    "websiteOutput": "apps/web/src/data/season-leaderboard.local.json"
+  },
+  "reviewReport": "output/reports/review-tip-round-2026-03-07.md",
+  "resultReviewReport": "output/reports/results-tip-round-2026-03-07.md"
+}
