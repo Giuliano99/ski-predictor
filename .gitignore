@@ -3,3 +3,4 @@ __pycache__/
 tmp/
 apps/web/src/data/*.local.json
 config/local-storage.json
+data/extractions/

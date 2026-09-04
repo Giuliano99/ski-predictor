@@ -7,7 +7,7 @@ import threading
 import unittest
 import urllib.request
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 SOURCE_DIRECTORY = Path(__file__).resolve().parents[1] / "src"
@@ -82,6 +82,75 @@ class DocumentApiTests(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=2)
         self.assertEqual(payload["weekends"][0]["id"], "tip-round-2030-01-05")
+
+    def test_accepts_submission_through_public_api(self) -> None:
+        accepted = {"message": "gespeichert", "submission": {"id": "submission-server"}}
+        with tempfile.TemporaryDirectory() as directory, patch("server.save_submission", return_value=accepted) as save_submission:
+            server, thread, base_url = self.running_server(Path(directory))
+            request = urllib.request.Request(
+                f"{base_url}/api/v1/predictor/rounds/tip-round-2030-01-05/submissions",
+                data=json.dumps({"tipRoundId": "tip-round-2030-01-05"}).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request) as response:
+                    payload = json.load(response)
+                    status = response.status
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+        self.assertEqual(status, 201)
+        self.assertEqual(payload, accepted)
+        save_submission.assert_called_once()
+
+    def test_exposes_extraction_jobs_and_approved_races(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pdf = root / "startliste.pdf"
+            pdf.write_bytes(b"%PDF test")
+            catalog = DocumentCatalog(root)
+            document_id = catalog.documents()[0].document_id
+            server = ApiServer(("127.0.0.1", 0), catalog)
+            server.extractions = Mock()
+            server.extractions.start.return_value = ({"jobId": "extract-test", "status": "PENDING"}, True)
+            server.extractions.races.return_value = [{"id": "race-test", "name": "Testpokal"}]
+            server.extractions.athletes.return_value = [{"id": "athlete-test", "displayName": "Anna A."}]
+            server.extractions.merge_athletes.return_value = {"id": "athlete-target", "displayName": "Anna A."}
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            base_url = f"http://127.0.0.1:{server.server_port}"
+            request = urllib.request.Request(
+                f"{base_url}/api/v1/documents/{document_id}/extract",
+                data=b"{}",
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request) as response:
+                    extraction_payload = json.load(response)
+                    extraction_status = response.status
+                with urllib.request.urlopen(f"{base_url}/api/v1/races") as response:
+                    race_payload = json.load(response)
+                with urllib.request.urlopen(f"{base_url}/api/v1/athletes?targetClub=true") as response:
+                    athlete_payload = json.load(response)
+                merge_request = urllib.request.Request(
+                    f"{base_url}/api/v1/athlete-identities/merge",
+                    data=json.dumps({"sourceAthleteId": "athlete-source", "targetAthleteId": "athlete-target"}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}, method="POST",
+                )
+                with urllib.request.urlopen(merge_request) as response:
+                    merge_payload = json.load(response)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+        self.assertEqual(extraction_status, 202)
+        self.assertTrue(extraction_payload["created"])
+        self.assertEqual(race_payload["items"][0]["id"], "race-test")
+        self.assertEqual(athlete_payload["items"][0]["id"], "athlete-test")
+        self.assertEqual(merge_payload["athlete"]["id"], "athlete-target")
 
 
 if __name__ == "__main__":

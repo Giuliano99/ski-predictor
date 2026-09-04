@@ -9,8 +9,9 @@ import shutil
 import subprocess
 import threading
 import urllib.parse
+import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,8 @@ STORAGE_PREFIX = "storage://"
 WEEKEND_ID_PATTERN = re.compile(r"^tip-round-\d{4}-\d{2}-\d{2}$")
 SAFE_FILENAME_PATTERN = re.compile(r"[^A-Za-z0-9ÄÖÜäöüß._() -]+")
 ACTION_LOCK = threading.Lock()
+SUBMISSION_LOCK = threading.Lock()
+PLAYER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class WorkflowError(RuntimeError):
@@ -180,6 +183,102 @@ def save_questions(weekend_id: str, content: str) -> dict[str, Any]:
     question_path = resolve_path(config["questionsFile"])
     question_path.write_text(content.rstrip() + "\n", encoding="utf-8")
     return {"message": "Fragen gespeichert.", "weekend": weekend_state(path)}
+
+
+def validate_submission_answers(tip_round: dict[str, Any], answers: Any) -> dict[str, Any]:
+    if not isinstance(answers, dict):
+        raise WorkflowError("Die Antworten müssen als Objekt übertragen werden.")
+    questions = {question["id"]: question for question in tip_round.get("questions", [])}
+    missing = set(questions) - set(answers)
+    unexpected = set(answers) - set(questions)
+    if missing:
+        raise WorkflowError("Bitte alle Fragen beantworten.")
+    if unexpected:
+        raise WorkflowError("Die Abgabe enthält unbekannte Fragen.")
+
+    validated: dict[str, Any] = {}
+    for question_id, question in questions.items():
+        answer = answers[question_id]
+        question_type = question.get("type")
+        if question_type in {"NUMBER", "PLACEMENT"}:
+            if isinstance(answer, bool):
+                raise WorkflowError(f"Die Antwort auf {question_id} muss eine ganze Zahl sein.")
+            try:
+                numeric_answer = int(answer)
+            except (TypeError, ValueError) as error:
+                raise WorkflowError(f"Die Antwort auf {question_id} muss eine ganze Zahl sein.") from error
+            if str(numeric_answer) != str(answer).strip() and not isinstance(answer, int):
+                raise WorkflowError(f"Die Antwort auf {question_id} muss eine ganze Zahl sein.")
+            if numeric_answer < question.get("minimum", numeric_answer) or numeric_answer > question.get("maximum", numeric_answer):
+                raise WorkflowError(f"Die Antwort auf {question_id} liegt außerhalb des erlaubten Bereichs.")
+            validated[question_id] = numeric_answer
+        elif question_type in {"ATHLETE", "HEAD_TO_HEAD"}:
+            if answer not in question.get("athleteIds", []):
+                raise WorkflowError(f"Für {question_id} wurde eine nicht zugelassene Person gewählt.")
+            validated[question_id] = answer
+        elif question_type in {"INTERNAL_RANKING", "PODIUM"}:
+            positions = question.get("positions")
+            eligible = set(question.get("athleteIds", []))
+            if not isinstance(answer, list) or len(answer) != positions or len(set(answer)) != len(answer) or any(item not in eligible for item in answer):
+                raise WorkflowError(f"Die Reihenfolge für {question_id} ist ungültig.")
+            validated[question_id] = answer
+        else:
+            raise WorkflowError(f"Der Fragentyp von {question_id} wird nicht unterstützt.")
+    return validated
+
+
+def save_submission(tip_round_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    config_path = weekend_config_path(tip_round_id)
+    config = read_json(config_path)
+    if config.get("status", "DRAFT") != "OPEN":
+        raise WorkflowError("Für diese Tipprunde können aktuell keine Tipps abgegeben werden.")
+
+    tip_round_reference = config.get("tipRound", {}).get("output")
+    if not tip_round_reference:
+        raise WorkflowError("Die Tipprunde wurde noch nicht vorbereitet.")
+    tip_round = read_json(resolve_path(tip_round_reference))
+    if payload.get("schemaVersion") != 1:
+        raise WorkflowError("Die Version des Abgabeformats wird nicht unterstützt.")
+    if tip_round.get("id") != tip_round_id or payload.get("tipRoundId") != tip_round_id:
+        raise WorkflowError("Die Abgabe gehört nicht zu dieser Tipprunde.")
+    if tip_round.get("status") != "OPEN":
+        raise WorkflowError("Die veröffentlichte Tipprunde ist nicht geöffnet.")
+    if payload.get("tipRoundVersion") != tip_round.get("contentVersion"):
+        raise WorkflowError("Die Tipprunde wurde verändert. Bitte die Seite neu laden und erneut tippen.")
+
+    deadline = datetime.fromisoformat(str(tip_round["closesAt"]))
+    now = datetime.now(deadline.tzinfo) if deadline.tzinfo else datetime.now()
+    if not config.get("tipRound", {}).get("testMode") and now >= deadline:
+        raise WorkflowError("Der Abgabeschluss ist bereits erreicht.")
+
+    player = payload.get("player")
+    if not isinstance(player, dict):
+        raise WorkflowError("Die Spielerangaben fehlen.")
+    player_id = str(player.get("id", "")).strip()
+    display_name = " ".join(str(player.get("displayName", "")).split())
+    if not PLAYER_ID_PATTERN.fullmatch(player_id) or not 2 <= len(display_name) <= 40:
+        raise WorkflowError("Spieler-ID oder Ranglistenname ist ungültig.")
+
+    submitted_at = datetime.now(timezone.utc)
+    submission_id = f"submission-{uuid.uuid4().hex}"
+    submission = {
+        "schemaVersion": 1,
+        "id": submission_id,
+        "tipRoundId": tip_round_id,
+        "tipRoundVersion": tip_round["contentVersion"],
+        "player": {"id": player_id, "displayName": display_name},
+        "submittedAt": submitted_at.isoformat().replace("+00:00", "Z"),
+        "answers": validate_submission_answers(tip_round, payload.get("answers")),
+    }
+    destination_directory = resolve_path(config["submissionsDir"])
+    timestamp = submitted_at.strftime("%Y%m%d%H%M%S%f")
+    destination = destination_directory / f"tipp-{tip_round_id}-{player_id}-{timestamp}-{submission_id[-8:]}.json"
+    with SUBMISSION_LOCK:
+        destination_directory.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_suffix(".tmp")
+        temporary.write_text(json.dumps(submission, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(temporary, destination)
+    return {"message": "Dein Tipp wurde verbindlich gespeichert.", "submission": submission}
 
 
 def safe_filename(name: str, suffix: str) -> str:

@@ -1,4 +1,4 @@
-"""Local, read-only backend API for shared Ski Predictor source documents."""
+"""Local backend API for Ski Predictor documents, workflows and submissions."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from document_catalog import DOCUMENT_KINDS, DocumentCatalog
+from extraction_service import ExtractionError, ExtractionService
 from workflow_service import (
     MAX_UPLOAD_BYTES,
     WorkflowError,
@@ -25,13 +26,15 @@ from workflow_service import (
     read_json,
     resolve_path,
     save_questions,
+    save_submission,
     upload_file,
     weekend_config_path,
 )
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.1.0"
+API_VERSION = "1.4.0"
+MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
 WEB_DIRECTORY = WORKSPACE / "apps" / "web"
@@ -87,10 +90,25 @@ def openapi_document(port: int) -> dict[str, Any]:
             ], "responses": {"200": {"description": "Gefundene Dokumente"}}}},
             "/documents/{documentId}": {"get": {"summary": "Metadaten eines Dokuments", "responses": {"200": {"description": "Dokument"}, "404": {"description": "Nicht gefunden"}}}},
             "/documents/{documentId}/file": {"get": {"summary": "Original-PDF abrufen", "responses": {"200": {"description": "PDF-Datei"}, "404": {"description": "Nicht gefunden"}}}},
+            "/documents/{documentId}/extract": {"post": {"summary": "PDF-Extraktion starten", "responses": {"202": {"description": "Auftrag gestartet"}}}},
+            "/documents/{documentId}/extraction": {"get": {"summary": "Letzte prüfbare Extraktion", "responses": {"200": {"description": "Extraktion und Prüfbericht"}}}},
             "/collections": {"get": {"summary": "Sammlungen nach Saison und Wochenende", "responses": {"200": {"description": "Sammlungen"}}}},
             "/health": {"get": {"summary": "Verfügbarkeit prüfen", "responses": {"200": {"description": "API ist bereit"}}}},
             "/weekends": {"get": {"summary": "Spielleiter-Wochenenden", "responses": {"200": {"description": "Wochenenden"}}}},
+            "/extraction-jobs": {"get": {"summary": "Extraktionsaufträge", "responses": {"200": {"description": "Aufträge"}}}},
+            "/extraction-jobs/{jobId}": {"get": {"summary": "Extraktionsstatus", "responses": {"200": {"description": "Auftrag"}}}},
+            "/extraction-jobs/{jobId}/approve": {"post": {"summary": "Extraktion freigeben", "responses": {"200": {"description": "Freigegeben"}}}},
+            "/events": {"get": {"summary": "Freigegebene Veranstaltungen", "responses": {"200": {"description": "Veranstaltungen"}}}},
+            "/races": {"get": {"summary": "Freigegebene Rennen", "responses": {"200": {"description": "Rennen"}}}},
+            "/races/{raceId}": {"get": {"summary": "Freigegebenes Rennen mit Startlisten und Ergebnissen", "responses": {"200": {"description": "Rennen"}}}},
+            "/races/{raceId}/start-list": {"get": {"summary": "Freigegebene Startlisten eines Rennens", "responses": {"200": {"description": "Startlisten"}}}},
+            "/races/{raceId}/results": {"get": {"summary": "Freigegebene Ergebnisse eines Rennens", "responses": {"200": {"description": "Ergebnisse"}}}},
+            "/athletes": {"get": {"summary": "Kanonische Athleten", "responses": {"200": {"description": "Athleten"}}}},
+            "/athletes/{athleteId}": {"get": {"summary": "Athlet mit Starts und Ergebnissen", "responses": {"200": {"description": "Athlet"}}}},
+            "/athletes/{athleteId}/results": {"get": {"summary": "Ergebnisse eines Athleten", "responses": {"200": {"description": "Ergebnisse"}}}},
+            "/athlete-identities/merge": {"post": {"summary": "Doppelte Athletenidentitäten zusammenführen", "responses": {"200": {"description": "Zusammengeführt"}}}},
             "/predictor/rounds/current": {"get": {"summary": "Aktuelle öffentliche Tipprunde", "responses": {"200": {"description": "Tipprunde"}}}},
+            "/predictor/rounds/{tipRoundId}/submissions": {"post": {"summary": "Tippabgabe speichern", "responses": {"201": {"description": "Abgabe gespeichert"}, "400": {"description": "Abgabe ungültig"}}}},
             "/predictor/rounds/{tipRoundId}/evaluation": {"get": {"summary": "Öffentliche Wochenendauswertung", "responses": {"200": {"description": "Auswertung"}}}},
             "/predictor/seasons/{seasonId}/leaderboard": {"get": {"summary": "Öffentliche Saisonrangliste", "responses": {"200": {"description": "Rangliste"}}}},
         },
@@ -106,7 +124,8 @@ body{{max-width:900px;margin:60px auto;padding:0 24px;color:#211d20;background:#
 <li><a href=\"/api/v1/documents?kind=RESULT_LIST\"><code>GET /api/v1/documents?kind=RESULT_LIST</code></a> Ergebnislisten</li>
 <li><a href=\"/api/v1/collections\"><code>GET /api/v1/collections</code></a> Sammlungen</li>
 <li><a href=\"/api/v1/openapi.json\"><code>GET /api/v1/openapi.json</code></a> API-Vertrag</li>
-</ul><p>Die API ist nur lokal unter <code>127.0.0.1:{port}</code> erreichbar. Dokumentzugriffe sind lesend; Änderungen am Spielbetrieb erfolgen kontrolliert über die Spielleiter-Oberfläche.</p><p><a href="/spielleiter/">Spielleiter öffnen</a> · <a href="/tippspiel/">Tippspiel öffnen</a></p></div></body></html>""".encode("utf-8")
+<li><code>POST /api/v1/predictor/rounds/{{tipRoundId}}/submissions</code> Tippabgabe speichern</li>
+</ul><p>Die API ist nur lokal unter <code>127.0.0.1:{port}</code> erreichbar. Dokumentzugriffe sind lesend; Änderungen am Spielbetrieb erfolgen kontrolliert über die Spielleiter-Oberfläche. Geöffnete Tipprunden nehmen validierte Abgaben über die API entgegen.</p><p><a href="/spielleiter/">Spielleiter öffnen</a> · <a href="/tippspiel/">Tippspiel öffnen</a></p></div></body></html>""".encode("utf-8")
 
 
 def current_config() -> dict[str, Any]:
@@ -129,6 +148,10 @@ class ApiHandler(BaseHTTPRequestHandler):
     @property
     def catalog(self) -> DocumentCatalog:
         return self.server.catalog  # type: ignore[attr-defined]
+
+    @property
+    def extractions(self) -> ExtractionService:
+        return self.server.extractions  # type: ignore[attr-defined]
 
     def log_message(self, format: str, *args: Any) -> None:
         print(f"[API] {format % args}")
@@ -167,17 +190,20 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def read_body(self) -> bytes:
+    def read_body(self, maximum: int = MAX_UPLOAD_BYTES) -> bytes:
         length = int(self.headers.get("Content-Length", "0"))
-        if length > MAX_UPLOAD_BYTES:
-            raise WorkflowError("Die Anfrage ist größer als 25 MB.")
+        if length > maximum:
+            raise WorkflowError("Die Anfrage ist zu groß.")
         return self.rfile.read(length)
 
-    def read_json_body(self) -> dict[str, Any]:
+    def read_json_body(self, maximum: int = MAX_JSON_BYTES) -> dict[str, Any]:
         try:
-            return json.loads(self.read_body().decode("utf-8"))
+            value = json.loads(self.read_body(maximum).decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             raise WorkflowError("Die Anfrage enthält kein gültiges JSON.") from error
+        if not isinstance(value, dict):
+            raise WorkflowError("Die JSON-Anfrage muss ein Objekt enthalten.")
+        return value
 
     def do_OPTIONS(self) -> None:
         self.send_response(HTTPStatus.NO_CONTENT)
@@ -245,6 +271,43 @@ class ApiHandler(BaseHTTPRequestHandler):
             if parts == ["api", "v1", "weekends"]:
                 self.send_json({"weekends": all_weekends()})
                 return
+            if parts == ["api", "v1", "extraction-jobs"]:
+                self.send_json({"items": self.extractions.jobs(first(query, "weekendDate"))})
+                return
+            if len(parts) == 4 and parts[:3] == ["api", "v1", "extraction-jobs"]:
+                self.send_json(self.extractions.job(parts[3]))
+                return
+            if parts == ["api", "v1", "events"]:
+                events = self.extractions.events()
+                self.send_json({"items": events, "total": len(events)})
+                return
+            if parts == ["api", "v1", "races"]:
+                races = self.extractions.races()
+                self.send_json({"items": races, "total": len(races)})
+                return
+            if parts == ["api", "v1", "athletes"]:
+                athletes = self.extractions.athletes(boolean_filter(first(query, "targetClub")))
+                self.send_json({"items": athletes, "total": len(athletes)})
+                return
+            if len(parts) in {4, 5} and parts[:3] == ["api", "v1", "athletes"]:
+                athlete = self.extractions.athlete(parts[3])
+                if len(parts) == 4:
+                    self.send_json(athlete)
+                    return
+                if parts[4] == "results":
+                    self.send_json({"athlete": {key: value for key, value in athlete.items() if key not in {"starts", "results"}}, "items": athlete["results"], "total": len(athlete["results"])})
+                    return
+            if len(parts) == 4 and parts[:3] == ["api", "v1", "races"]:
+                self.send_json(self.extractions.race(parts[3]))
+                return
+            if len(parts) == 5 and parts[:3] == ["api", "v1", "races"]:
+                race = self.extractions.race(parts[3])
+                if parts[4] == "start-list":
+                    self.send_json({"items": race["startLists"], "total": len(race["startLists"])})
+                    return
+                if parts[4] == "results":
+                    self.send_json({"items": race["results"], "total": len(race["results"])})
+                    return
             if parts == ["api", "v1", "predictor", "rounds", "current"]:
                 config = current_config()
                 self.send_json(optional_artifact(config["tipRound"]["websiteOutput"]) or optional_artifact(config["tipRound"]["output"]))
@@ -269,6 +332,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if len(parts) == 4:
                     self.send_json(document.public_value())
                     return
+                if parts[4] == "extraction":
+                    self.send_json(self.extractions.extraction(parts[3]))
+                    return
                 if parts[4] == "file":
                     body = document.path.read_bytes()
                     self.send_response(HTTPStatus.OK)
@@ -279,7 +345,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.wfile.write(body)
                     return
             self.send_api_error(HTTPStatus.NOT_FOUND, "ROUTE_NOT_FOUND", "Dieser API-Endpunkt existiert nicht.")
-        except (ValueError, OSError, WorkflowError) as error:
+        except (ValueError, OSError, WorkflowError, ExtractionError) as error:
             self.send_api_error(HTTPStatus.BAD_REQUEST, "INVALID_REQUEST", str(error))
 
     def do_POST(self) -> None:
@@ -296,8 +362,29 @@ class ApiHandler(BaseHTTPRequestHandler):
             if len(parts) == 5 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "actions":
                 self.send_json(perform_action(parts[3], str(self.read_json_body().get("action", ""))))
                 return
+            if len(parts) == 5 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "extractions":
+                weekend_id = parts[3]
+                config = read_json(weekend_config_path(weekend_id))
+                jobs = self.extractions.start_weekend(weekend_id.removeprefix("tip-round-"))
+                self.send_json({"message": f"{len(jobs)} Extraktionsaufträge wurden berücksichtigt.", "items": jobs, "seasonId": config.get("seasonId")}, HTTPStatus.ACCEPTED)
+                return
+            if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
+                self.send_json(save_submission(parts[4], self.read_json_body()), HTTPStatus.CREATED)
+                return
+            if len(parts) == 5 and parts[:3] == ["api", "v1", "documents"] and parts[4] == "extract":
+                job, created = self.extractions.start(parts[3], self.read_json_body())
+                self.send_json({"job": job, "created": created}, HTTPStatus.ACCEPTED if created else HTTPStatus.OK)
+                return
+            if len(parts) == 5 and parts[:3] == ["api", "v1", "extraction-jobs"] and parts[4] == "approve":
+                self.send_json({"message": "Die Extraktion wurde freigegeben.", "job": self.extractions.approve(parts[3])})
+                return
+            if parts == ["api", "v1", "athlete-identities", "merge"]:
+                payload = self.read_json_body()
+                athlete = self.extractions.merge_athletes(str(payload.get("sourceAthleteId", "")), str(payload.get("targetAthleteId", "")))
+                self.send_json({"message": "Die Athletenidentitäten wurden zusammengeführt.", "athlete": athlete})
+                return
             self.send_api_error(HTTPStatus.NOT_FOUND, "ROUTE_NOT_FOUND", "Dieser API-Endpunkt existiert nicht.")
-        except (ValueError, OSError, WorkflowError) as error:
+        except (ValueError, OSError, WorkflowError, ExtractionError) as error:
             self.send_api_error(HTTPStatus.BAD_REQUEST, "INVALID_REQUEST", str(error))
 
     def do_PUT(self) -> None:
@@ -307,7 +394,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json(save_questions(parts[3], str(self.read_json_body().get("content", ""))))
                 return
             self.send_api_error(HTTPStatus.NOT_FOUND, "ROUTE_NOT_FOUND", "Dieser API-Endpunkt existiert nicht.")
-        except (ValueError, OSError, WorkflowError) as error:
+        except (ValueError, OSError, WorkflowError, ExtractionError) as error:
             self.send_api_error(HTTPStatus.BAD_REQUEST, "INVALID_REQUEST", str(error))
 
 
@@ -315,6 +402,7 @@ class ApiServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], catalog: DocumentCatalog):
         super().__init__(address, ApiHandler)
         self.catalog = catalog
+        self.extractions = ExtractionService(catalog)
 
 
 def main() -> None:
@@ -325,6 +413,7 @@ def main() -> None:
     arguments = parser.parse_args()
     catalog = DocumentCatalog(load_storage_root())
     server = ApiServer(("127.0.0.1", arguments.port), catalog)
+    server.extractions.resume_incomplete()
     stop_event = threading.Event()
     def deadline_loop() -> None:
         while not stop_event.is_set():

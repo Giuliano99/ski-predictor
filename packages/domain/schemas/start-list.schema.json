@@ -14,7 +14,7 @@
       "required": ["fileName", "format", "extractedAt"],
       "properties": {
         "fileName": { "type": "string", "minLength": 1 },
-        "format": { "enum": ["DSVALPIN", "RACE_HOROLOGY_CODE", "RACE_HOROLOGY_SIMPLE"] },
+        "format": { "enum": ["DSVALPIN", "RACE_HOROLOGY_CODE", "RACE_HOROLOGY_SIMPLE", "SKI_PREDICTOR_RECONSTRUCTED"] },
         "extractedAt": { "type": "string", "format": "date-time" }
       }
     },

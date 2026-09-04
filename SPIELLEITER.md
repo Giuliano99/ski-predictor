@@ -14,9 +14,13 @@ Für den normalen Betrieb reicht ein Befehl:
 .\scripts\game-master\Start-Dashboard.ps1
 ```
 
-Die Oberfläche öffnet sich automatisch im Browser. Startlisten, Ergebnislisten und exportierte Tipps werden direkt dort ausgewählt. Die Oberfläche legt sie im richtigen Ordner ab und übernimmt Import, Zuordnung, Prüfberichte, Auswertung und Saisonwertung.
+Die Oberfläche öffnet sich automatisch im Browser. Startlisten und Ergebnislisten werden direkt dort ausgewählt. Tipps speichert die Website automatisch über die Backend API im richtigen Wochenendordner. Die Oberfläche übernimmt anschließend Import, Zuordnung, Prüfberichte, Auswertung und Saisonwertung.
 
 Der Spielleiter kontrolliert vor der Veröffentlichung den grünen Prüfbericht und bestätigt anschließend das Öffnen der Tipprunde. Nach dem Rennwochenende kontrolliert er den Ergebnisbericht und die Rangliste und archiviert das Wochenende. Eine echte geöffnete Runde wird bei laufender Oberfläche nach Erreichen des Abgabeschlusses automatisch geschlossen. Der Testmodus bleibt offen, bis der Spielleiter ihn schließt.
+
+Im Bereich **PDF-Daten für weitere Projekte** liest die Oberfläche alle Dokumente des Wochenendes zusätzlich in ein allgemeines Datenmodell ein. Der Spielleiter öffnet pro Dokument den Prüfbericht und gibt die erkannten Daten frei. Erst danach erscheinen sie unter den allgemeinen API-Endpunkten `/api/v1/events` und `/api/v1/races`. Ergebnislisten, die eine Startliste benötigen, werden nach Freigabe aller Startlisten automatisch erneut verarbeitet.
+
+Der Prüfbericht zeigt zusätzlich, ob Athleten neu angelegt, eindeutig wiedererkannt oder nur über eine Namensähnlichkeit zugeordnet wurden. `FUZZY_REVIEW` muss besonders kontrolliert werden. Bei versehentlich doppelten Personen können die beiden Einträge unter **Athletenkartei verwalten** zusammengeführt werden. Die Identität, die im zweiten Feld ausgewählt wird, bleibt als gemeinsame Kennung bestehen.
 
 Die nachfolgenden PowerShell-Schritte bleiben als manueller Ersatz und zur Fehleranalyse erhalten.
 
@@ -83,7 +87,7 @@ Nur bei `Status: BEREIT` fortfahren. Fehler zuerst in den Startlisten, Fragen od
 
 Der Statuswechsel ist nur mit einem erfolgreichen Prüfbericht möglich.
 
-Mit dem Öffnen wird die vorbereitete Version der Rennen, Starter und Fragen verbindlich. Danach `Prepare-Weekend.ps1` nicht erneut ausführen und die Fragen nicht mehr verändern. Exportierte Tipps enthalten automatisch die passende Inhaltsversion; Tipps einer anderen Version werden abgelehnt.
+Mit dem Öffnen wird die vorbereitete Version der Rennen, Starter und Fragen verbindlich. Danach `Prepare-Weekend.ps1` nicht erneut ausführen und die Fragen nicht mehr verändern. Die API versieht jeden Tipp mit der passenden Inhaltsversion und lehnt veraltete Abgaben ab.
 
 ### 6. Website lokal kontrollieren
 
@@ -99,13 +103,13 @@ http://127.0.0.1:4175/tippspiel/
 
 ### 7. Tippabgaben sammeln
 
-Die Spieler exportieren ihre Tipps auf der Website als JSON-Datei. Alle Dateien werden hier abgelegt:
+Die Spieler speichern ihre Tipps direkt auf der Website. Die Backend API prüft die Abgabe und legt sie automatisch hier ab:
 
 ```text
 data/submissions/inbox/tip-round-JJJJ-MM-TT
 ```
 
-Wenn ein Spieler mehrfach abgibt, verwendet die Auswertung automatisch seine neueste Abgabe.
+Der Spielleiter muss keine Dateien mehr verschieben. Der Export auf der Website dient nur als Sicherung bei einem Verbindungsproblem. Wenn ein Spieler mehrfach abgibt, verwendet die Auswertung automatisch seine neueste Abgabe.
 
 ### 8. Tipprunde schließen
 

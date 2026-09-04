@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/athlete-identity.schema.json",
+  "title": "Ski Predictor Athlete Identity",
+  "type": "object",
+  "required": ["id", "fullName", "displayName", "birthYear", "club", "externalIds", "aliases", "sourceDocumentIds"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^athlete-[a-f0-9]{16}$" },
+    "fullName": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 3 },
+    "birthYear": { "type": "integer", "minimum": 1900, "maximum": 2100 },
+    "club": { "type": "string", "minLength": 1 },
+    "externalIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fullName", "displayName", "birthYear", "club"],
+        "properties": {
+          "fullName": { "type": "string" },
+          "displayName": { "type": "string" },
+          "birthYear": { "type": "integer" },
+          "club": { "type": "string" }
+        }
+      }
+    },
+    "sourceDocumentIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "targetClub": { "type": "boolean" }
+  }
+}

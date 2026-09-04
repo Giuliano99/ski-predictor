@@ -4,11 +4,11 @@ Die öffentliche Ski Predictor Website.
 
 Der aktuelle MVP verwendet HTML, CSS und JavaScript ohne Build Schritt. Dadurch lässt er sich schnell testen. Bei einer späteren Umstellung auf ein Frontend Framework bleibt dieser Ordner der Einstiegspunkt der Webanwendung.
 
-Im normalen Betrieb lädt die Website Tipprunde, Auswertung und Saisonrangliste aus der gemeinsamen Backend API. Die Dateien unter `src/data` bleiben als Rückfall erhalten, damit die Website bei Bedarf weiterhin ohne Backend gestartet werden kann. Tippabgaben werden bis zur späteren Datenbankanbindung im `localStorage` des Browsers gespeichert.
+Im normalen Betrieb lädt die Website Tipprunde, Auswertung und Saisonrangliste aus der gemeinsamen Backend API. Die Dateien unter `src/data` bleiben als Rückfall erhalten, damit die Website bei Bedarf weiterhin ohne Backend gestartet werden kann.
 
-Vor dem Speichern wird ein lokaler Ranglistenname eingegeben. Eine Anmeldung ist dafür nicht nötig. Nach dem Speichern kann die Abgabe über `Tipp exportieren` als JSON heruntergeladen werden. Diese Datei wird anschließend in den zur Tipprunde gehörenden Unterordner von `data/submissions/inbox` verschoben und vom lokalen Ergebnis Importer ausgewertet. Der Export bleibt auch nach dem Abgabeschluss verfügbar.
+Vor dem Speichern wird ein Ranglistenname eingegeben. Eine Anmeldung ist dafür noch nicht nötig. Die Website sendet den Tipp direkt an die Backend API. Dort wird er geprüft und automatisch im richtigen Wochenendordner gespeichert. Im Browser bleibt eine lokale Kopie. Der JSON-Export ist nur noch eine Sicherung, falls die API nicht erreichbar ist.
 
-Eine lokale Tipprunde kann im offenen `testMode` laufen. Dadurch lässt sich ein Beispielrennen unabhängig vom offiziellen Datum ausfüllen, speichern und exportieren. Der Testmodus darf für eine echte Runde nicht gesetzt sein; dann gilt wieder der fachliche Abgabeschluss.
+Eine lokale Tipprunde kann im offenen `testMode` laufen. Dadurch lässt sich ein Beispielrennen unabhängig vom offiziellen Datum ausfüllen und speichern. Der Testmodus darf für eine echte Runde nicht gesetzt sein; dann gilt wieder der fachliche Abgabeschluss.
 
 Nach dem Ergebnisimport kann optional `src/data/evaluation.local.json` erzeugt werden. Gehört sie zur geladenen Tipprunde, zeigt die Website automatisch die Wochenendpunkte und den Soll Ist Vergleich für jede Frage. Fehlt die Datei, wird der Auswertungsbereich ausgeblendet.
 

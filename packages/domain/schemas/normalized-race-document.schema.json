@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/normalized-race-document.schema.json",
+  "title": "Normalized Ski Race Document",
+  "type": "object",
+  "required": ["schemaVersion", "extractionVersion", "documentId", "documentType", "event", "race", "groups", "statistics", "warnings"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "extractionVersion": { "type": "string", "minLength": 1 },
+    "documentId": { "type": "string", "pattern": "^doc-[a-f0-9]+$" },
+    "documentType": { "enum": ["START_LIST", "RACE_RESULT"] },
+    "event": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "location": { "type": "string" },
+        "discipline": { "type": "string" }
+      }
+    },
+    "race": {
+      "type": "object",
+      "required": ["id", "eventId", "name", "discipline", "sourceDocumentId"],
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "name": { "type": "string" },
+        "date": { "type": ["string", "null"], "format": "date" },
+        "location": { "type": ["string", "null"] },
+        "discipline": { "type": "string" },
+        "competitionNumber": { "type": ["string", "null"] },
+        "sourceDocumentId": { "type": "string" }
+      }
+    },
+    "groups": { "type": "array" },
+    "statistics": {
+      "type": "object",
+      "required": ["groups", "participants", "targetClubParticipants"],
+      "properties": {
+        "groups": { "type": "integer", "minimum": 1 },
+        "participants": { "type": "integer", "minimum": 1 },
+        "targetClubParticipants": { "type": "integer", "minimum": 0 },
+        "identities": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}

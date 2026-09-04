@@ -1,5 +1,6 @@
-const state = { weekends: [], selectedId: null, pendingConfirmation: null };
+const state = { weekends: [], extractionJobs: [], athletes: [], selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
 const labels = { DRAFT: "Entwurf", OPEN: "Tippen geöffnet", CLOSED: "Tippen geschlossen", EVALUATED: "Ausgewertet", ARCHIVED: "Archiviert", CANCELLED: "Abgesagt", FEHLER: "Fehler" };
+const extractionLabels = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQUIRED: "Prüfung nötig", APPROVED: "Freigegeben", FAILED: "Fehlgeschlagen" };
 const dom = {
   dashboard: document.querySelector("#dashboard"), empty: document.querySelector("#empty"), list: document.querySelector("#weekend-list"), detail: document.querySelector("#weekend-detail"),
   notice: document.querySelector("#notice"), newDialog: document.querySelector("#new-weekend-dialog"), newForm: document.querySelector("#new-weekend-form"),
@@ -21,8 +22,10 @@ async function request(url, options = {}) {
 }
 
 async function refresh(preferredId = state.selectedId) {
-  const payload = await request("/api/v1/weekends");
+  const [payload, extractions, athletes] = await Promise.all([request("/api/v1/weekends"), request("/api/v1/extraction-jobs"), request("/api/v1/athletes")]);
   state.weekends = payload.weekends;
+  state.extractionJobs = extractions.items;
+  state.athletes = athletes.items;
   state.selectedId = state.weekends.some((weekend) => weekend.id === preferredId) ? preferredId : state.weekends[0]?.id ?? null;
   render();
 }
@@ -54,6 +57,27 @@ function stepHtml(number, title, description, body, condition, active) {
 
 function actionButton(action, label, style = "") { return `<button class="button ${style}" data-action="${action}" type="button">${escapeHtml(label)}</button>`; }
 
+function extractionHtml(weekend) {
+  const weekendDate = weekend.id.replace("tip-round-", "");
+  const jobs = state.extractionJobs
+    .filter((job) => job.weekendDate === weekendDate)
+    .filter((job, index, all) => all.findIndex((candidate) => candidate.documentId === job.documentId) === index);
+  const list = jobs.length ? `<ul class="file-list">${jobs.map((job) => {
+    const review = job.review?.warnings?.length ? ` · ${job.review.warnings.length} Warnung${job.review.warnings.length === 1 ? "" : "en"}` : "";
+    const error = job.error ? `<small>${escapeHtml(job.error)}</small>` : "";
+    const identityStats = job.review?.statistics?.identities ?? {};
+    const identityText = Object.entries(identityStats).map(([key, value]) => `${key}: ${value}`).join(" · ");
+    const reviewDetails = job.review ? `<details><summary>Prüfbericht anzeigen</summary><p>${job.review.statistics.groups} Gruppen · ${job.review.statistics.participants} Teilnehmer · ${job.review.statistics.targetClubParticipants} Oberhachinger</p>${identityText ? `<p><strong>Athletenidentität:</strong> ${escapeHtml(identityText)}</p>` : ""}${job.review.warnings.length ? `<ul>${job.review.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : `<p>Keine Warnungen.</p>`}</details>` : "";
+    const approve = job.status === "REVIEW_REQUIRED" ? `<button class="button secondary" data-approve-extraction="${job.jobId}" type="button">Prüfen und freigeben</button>` : "";
+    return `<li class="extraction-item"><span><strong>${escapeHtml(job.sourceName)}</strong><small>${escapeHtml(extractionLabels[job.status] ?? job.status)}${escapeHtml(review)}</small>${error}${reviewDetails}</span>${approve}</li>`;
+  }).join("")}</ul>` : `<p>Noch keine wiederverwendbaren Renndaten erzeugt.</p>`;
+  const active = jobs.some((job) => ["PENDING", "PROCESSING"].includes(job.status));
+  const approved = jobs.filter((job) => job.status === "APPROVED").length;
+  const athleteOptions = state.athletes.map((athlete) => `<option value="${athlete.id}">${escapeHtml(athlete.fullName)} · ${athlete.birthYear} · ${escapeHtml(athlete.club)}</option>`).join("");
+  const registry = state.athletes.length ? `<details class="athlete-registry"><summary>Athletenkartei verwalten (${state.athletes.length})</summary><p>Nur verwenden, wenn dieselbe Person versehentlich mit zwei Kennungen angelegt wurde.</p><div class="identity-merge"><label>Doppelte Identität<select id="merge-source"><option value="">Bitte auswählen</option>${athleteOptions}</select></label><label>Behaltene Identität<select id="merge-target"><option value="">Bitte auswählen</option>${athleteOptions}</select></label><button class="button secondary" data-merge-athletes type="button">Identitäten zusammenführen</button></div></details>` : "";
+  return `${list}<div class="card-actions"><button class="button secondary" data-extract-weekend type="button" ${active ? "disabled" : ""}>${active ? "PDFs werden ausgelesen …" : "Neue PDFs auslesen"}</button>${approved ? `<a class="button secondary" href="/api/v1/races" target="_blank">${approved} freigegebene Datensätze ansehen</a>` : ""}</div>${registry}`;
+}
+
 function renderDetail(weekend) {
   if (weekend.loadError) { dom.detail.innerHTML = `<section class="detail"><div class="detail-header"><div><span class="status-badge FEHLER">FEHLER</span><h2>${escapeHtml(weekend.title)}</h2><p>${escapeHtml(weekend.loadError)}</p></div></div></section>`; return; }
   const fragment = document.querySelector("#detail-template").content.cloneNode(true);
@@ -75,10 +99,11 @@ function renderDetail(weekend) {
   const resultsBody = `${filesHtml(weekend.files.results, "Noch keine Ergebnislisten abgelegt.")}<div class="card-actions">${uploadHtml("results", ".pdf,application/pdf", true, "Ergebnislisten auswählen", weekend.status === "CLOSED")}${weekend.actions.evaluate ? actionButton("evaluate", "Automatisch prüfen und auswerten") : ""}</div>`;
   const evaluationBody = `${reportHtml(weekend.reports.results, "Prüfbericht zu Ergebnissen und Tipps")}<div class="card-actions"><a class="button secondary" href="/tippspiel/#auswertung" target="_blank">Auswertung auf der Website prüfen</a></div>`;
   root.querySelector(".steps").innerHTML = [
+    stepHtml("D", "PDF-Daten für weitere Projekte", "PDFs automatisch in strukturierte Renndaten umwandeln. Nur bestätigte Extraktionen werden über die allgemeine API veröffentlicht.", extractionHtml(weekend), false, false),
     stepHtml(1, "Startlisten ablegen", "Alle PDF-Startlisten des Wochenendes auswählen.", startBody, weekend.files.startLists.length > 0, weekend.status === "DRAFT"),
     stepHtml(2, "Fragen festlegen", "Vorschläge anpassen und speichern. Die Rennzuordnung wird beim Import geprüft.", questionsBody, prepared || weekend.status !== "DRAFT", weekend.status === "DRAFT"),
     stepHtml(3, "Automatisch vorbereiten und prüfen", "Starter, Rennen und Fragen werden verarbeitet. Öffnen ist erst bei einem grünen Bericht möglich.", prepareBody, ["OPEN", "CLOSED", "EVALUATED", "ARCHIVED"].includes(weekend.status), weekend.status === "DRAFT"),
-    stepHtml(4, "Tippabgaben sammeln", "Die exportierten JSON-Dateien hier auswählen. Die neueste Abgabe pro Person zählt automatisch.", submissionsBody, ["CLOSED", "EVALUATED", "ARCHIVED"].includes(weekend.status), weekend.status === "OPEN"),
+    stepHtml(4, "Tippabgaben sammeln", "Die Website legt gültige Tipps hier automatisch ab. Der manuelle Upload bleibt nur für Sicherungsdateien verfügbar. Die neueste Abgabe pro Person zählt.", submissionsBody, ["CLOSED", "EVALUATED", "ARCHIVED"].includes(weekend.status), weekend.status === "OPEN"),
     stepHtml(5, "Ergebnislisten auswerten", "PDFs auswählen. Zuordnung, Statusregeln, Punkte und Saisonwertung laufen automatisch.", resultsBody, evaluated, weekend.status === "CLOSED"),
     stepHtml(6, "Ergebnis kontrollieren", "Prüfbericht und Website ansehen. Danach kann das Wochenende archiviert werden.", evaluationBody, weekend.status === "ARCHIVED", weekend.status === "EVALUATED"),
   ].join("");
@@ -137,6 +162,55 @@ function bindDetailEvents() {
     try { const id = selectedWeekend().id; const payload = await request(`/api/v1/weekends/${id}/questions`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: document.querySelector("#questions-editor").value }) }); showNotice(`${payload.message} Die automatische Prüfung startet jetzt.`); await refresh(id); if (selectedWeekend()?.actions.prepare) await runAction("prepare"); }
     catch (error) { showNotice(error.message, true); }
   });
+  document.querySelector("[data-extract-weekend]")?.addEventListener("click", startWeekendExtraction);
+  document.querySelector("[data-merge-athletes]")?.addEventListener("click", mergeAthletes);
+  dom.detail.querySelectorAll("[data-approve-extraction]").forEach((button) => button.addEventListener("click", () => approveExtraction(button.dataset.approveExtraction)));
+}
+
+async function pollExtractions(weekendId, token) {
+  for (let attempt = 0; attempt < 120 && token === state.extractionPoll; attempt += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 750));
+    await refresh(weekendId);
+    const date = weekendId.replace("tip-round-", "");
+    if (!state.extractionJobs.some((job) => job.weekendDate === date && ["PENDING", "PROCESSING"].includes(job.status))) break;
+  }
+}
+
+async function startWeekendExtraction() {
+  const weekend = selectedWeekend();
+  setBusy("PDFs werden automatisch ausgelesen ...");
+  try {
+    const payload = await request(`/api/v1/weekends/${weekend.id}/extractions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    showNotice(payload.message);
+    const token = ++state.extractionPoll;
+    clearBusy();
+    await pollExtractions(weekend.id, token);
+  } catch (error) { showNotice(error.message, true); clearBusy(); }
+}
+
+async function approveExtraction(jobId) {
+  const weekend = selectedWeekend();
+  try {
+    const payload = await request(`/api/v1/extraction-jobs/${jobId}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    showNotice(payload.message);
+    const token = ++state.extractionPoll;
+    await pollExtractions(weekend.id, token);
+  } catch (error) { showNotice(error.message, true); await refresh(weekend.id); }
+}
+
+async function mergeAthletes() {
+  const sourceAthleteId = document.querySelector("#merge-source")?.value;
+  const targetAthleteId = document.querySelector("#merge-target")?.value;
+  if (!sourceAthleteId || !targetAthleteId || sourceAthleteId === targetAthleteId) {
+    showNotice("Bitte zwei unterschiedliche Athletenidentitäten auswählen.", true);
+    return;
+  }
+  if (!window.confirm("Sind beide Einträge wirklich dieselbe Person? Die zweite Identität wird künftig als gemeinsame Kennung verwendet.")) return;
+  try {
+    const payload = await request("/api/v1/athlete-identities/merge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceAthleteId, targetAthleteId }) });
+    showNotice(payload.message);
+    await refresh(selectedWeekend()?.id);
+  } catch (error) { showNotice(error.message, true); }
 }
 
 document.querySelector("#new-weekend-button").addEventListener("click", () => dom.newDialog.showModal());

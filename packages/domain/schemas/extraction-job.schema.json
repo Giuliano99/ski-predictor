@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ski-predictor.local/schemas/extraction-job.schema.json",
+  "title": "Ski Predictor Extraction Job",
+  "type": "object",
+  "required": ["schemaVersion", "jobId", "documentId", "documentKind", "sourceContentHash", "extractionVersion", "status", "createdAt", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "jobId": { "type": "string", "pattern": "^extract-[a-f0-9]{32}$" },
+    "documentId": { "type": "string", "pattern": "^doc-[a-f0-9]+$" },
+    "documentKind": { "enum": ["START_LIST", "RESULT_LIST"] },
+    "sourceContentHash": { "type": "string", "pattern": "^sha256-[a-f0-9]{64}$" },
+    "extractionVersion": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "FAILED"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "raceId": { "type": "string" },
+    "eventId": { "type": "string" },
+    "error": { "type": "string" },
+    "review": { "type": "object" }
+  }
+}

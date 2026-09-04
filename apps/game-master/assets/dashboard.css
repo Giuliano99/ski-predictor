@@ -51,6 +51,17 @@ main { max-width:1380px; margin:0 auto; padding:36px 28px 70px; }
 .file-row { margin:12px 0; padding:14px; border:1px dashed #c9c1c6; background:#fcfbfc; display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .file-list { margin:10px 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:7px; }
 .file-list li { padding:5px 9px; border-radius:3px; color:#555056; background:var(--snow); font-size:11px; }
+.file-list .extraction-item { width:100%; padding:10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; font-size:13px; }
+.extraction-item > span { display:grid; gap:3px; flex:1; }
+.extraction-item small { color:var(--muted); }
+.extraction-item details { margin-top:5px; }
+.extraction-item details summary { cursor:pointer; font-weight:700; }
+.extraction-item details ul { margin:5px 0 0; padding-left:18px; }
+.athlete-registry { margin-top:16px; padding:12px; border:1px solid var(--line); background:white; }
+.athlete-registry > summary { cursor:pointer; font-weight:800; }
+.identity-merge { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+.identity-merge label { display:grid; gap:5px; font-size:12px; font-weight:700; }
+.identity-merge select { width:100%; min-width:0; padding:9px; border:1px solid var(--line); background:white; }
 .upload-button { position:relative; overflow:hidden; }
 .upload-button input { position:absolute; inset:0; opacity:0; cursor:pointer; }
 .questions-editor { width:100%; min-height:320px; padding:14px; border:1px solid var(--line); resize:vertical; font:12px/1.5 Consolas,monospace; }
@@ -69,4 +80,4 @@ dialog label { margin-top:18px; display:grid; gap:7px; font-weight:700; } dialog
 .check { grid-template-columns:auto 1fr; align-items:start; }.check input { margin-top:5px; }.check strong,.check small { display:block; }.check small { color:var(--muted); font-weight:400; }
 .dialog-actions { margin-top:25px; justify-content:flex-end; }
 @media (max-width:850px) { .dashboard { grid-template-columns:1fr; }.weekend-list { position:static; }.welcome,.detail-header { align-items:flex-start; flex-direction:column; }.legend { white-space:normal; }.topbar { align-items:flex-start; }.header-actions { justify-content:flex-end; }.step { padding:21px 18px; grid-template-columns:36px 1fr; }.detail-header { padding:22px 18px; } }
-@media (max-width:560px) { main { padding:20px 12px 50px; }.topbar { padding:16px; flex-direction:column; }.welcome { padding:23px 20px; }.legend { flex-direction:column; gap:7px; }.file-row { align-items:flex-start; flex-direction:column; }.button { width:100%; }.header-actions,.detail-actions,.card-actions { width:100%; }.step { grid-template-columns:1fr; }.step-number { width:31px; height:31px; } }
+@media (max-width:560px) { main { padding:20px 12px 50px; }.topbar { padding:16px; flex-direction:column; }.welcome { padding:23px 20px; }.legend { flex-direction:column; gap:7px; }.file-row { align-items:flex-start; flex-direction:column; }.button { width:100%; }.header-actions,.detail-actions,.card-actions { width:100%; }.step { grid-template-columns:1fr; }.step-number { width:31px; height:31px; }.identity-merge { grid-template-columns:1fr; } }

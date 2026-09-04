@@ -11,8 +11,8 @@ ski-predictor/
 ├── apps/
 │   └── web/                 Öffentliche Website
 ├── services/
-│   ├── api/                 Spätere Anwendungsschnittstelle
-│   └── results-importer/    Späterer Ergebnisimport
+│   ├── api/                 Backend, PDF-Extraktion und gemeinsame Renndaten
+│   └── results-importer/    Parser und fachliche Ergebnisverarbeitung
 ├── packages/
 │   └── domain/              Gemeinsame Fachlogik und Datentypen
 ├── config/
@@ -61,8 +61,10 @@ Details zur Oberfläche stehen in [`apps/game-master/README.md`](apps/game-maste
 
 * Übersicht des nächsten Rennens
 * konfigurierbare Tippfragen mit Validierung
-* lokales Speichern und Exportieren von Tippabgaben
+* validiertes Speichern der Tippabgaben über die lokale Backend API
 * automatischer Import von Start- und Ergebnislisten
+* persistente PDF-Extraktionsaufträge mit Prüfbericht und Freigabe
+* allgemeine API für freigegebene Veranstaltungen und Rennen
 * Wochenend- und Saisonrangliste
 * Karten für kommende Rennen
 * Responsive Darstellung

@@ -39,6 +39,7 @@ const dom = {
 let tipRound;
 let athletesById;
 let countdownTimer;
+let tipRoundLoadedFromApi = false;
 
 function escapeHtml(value) {
   return String(value)
@@ -367,6 +368,17 @@ function collectSubmission() {
   return { answers, firstInvalidCard };
 }
 
+async function saveSubmissionToApi(submission) {
+  const response = await fetch(`/api/v1/predictor/rounds/${encodeURIComponent(tipRound.id)}/submissions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(submission),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error?.message ?? "Der Tipp konnte nicht an den Spielleiter übertragen werden.");
+  return payload.submission;
+}
+
 function restoreSubmission() {
   const submission = storedSubmission();
   if (!submission) return;
@@ -447,7 +459,7 @@ function bindEvents() {
     updateProgress();
   });
 
-  dom.form.addEventListener("submit", (event) => {
+  dom.form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if ((tipRound.status ?? "DRAFT") !== "OPEN") return;
     if (!tipRound.testMode && Date.now() >= new Date(tipRound.closesAt).getTime()) return;
@@ -471,10 +483,28 @@ function bindEvents() {
     const submittedAt = new Date().toISOString();
     const submission = { schemaVersion: 1, id: `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`, tipRoundId: tipRound.id, tipRoundVersion: tipRound.contentVersion, player: { id: playerIdForName(playerName), displayName: playerName }, submittedAt, answers };
     localStorage.setItem(storageKey(), JSON.stringify(submission));
-    dom.message.textContent = "Dein Tipp wurde lokal gespeichert und kann bis zum Abgabeschluss geändert werden.";
-    dom.message.classList.remove("error");
     updateExportState();
-    showToast();
+    dom.saveButton.disabled = true;
+    dom.message.classList.remove("error");
+    dom.message.textContent = tipRoundLoadedFromApi ? "Dein Tipp wird gespeichert …" : "Dein Tipp wurde lokal gespeichert.";
+    try {
+      if (tipRoundLoadedFromApi) {
+        const acceptedSubmission = await saveSubmissionToApi(submission);
+        localStorage.setItem(storageKey(), JSON.stringify(acceptedSubmission));
+        dom.message.textContent = "Dein Tipp wurde verbindlich beim Spielleiter gespeichert. Eine spätere Abgabe mit demselben Namen ersetzt ihn in der Wertung.";
+      } else {
+        dom.message.textContent = "Dein Tipp wurde lokal gespeichert. Nutze den Export, wenn die Backend API nicht läuft.";
+      }
+      dom.message.classList.remove("error");
+      updateExportState();
+      showToast();
+    } catch (error) {
+      dom.message.textContent = `${error.message} Der Tipp bleibt als lokale Sicherung erhalten und kann exportiert werden.`;
+      dom.message.classList.add("error");
+    } finally {
+      dom.saveButton.disabled = false;
+      updateCountdown();
+    }
   });
 
   dom.resetButton.addEventListener("click", () => {
@@ -501,7 +531,7 @@ function bindEvents() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
-    dom.message.textContent = "Tipp exportiert. Lege die JSON Datei für die Auswertung im Submission Inbox Ordner ab.";
+    dom.message.textContent = "Tipp als Sicherungsdatei exportiert. Bei erfolgreicher API-Speicherung ist kein manuelles Ablegen nötig.";
     dom.message.classList.remove("error");
   });
 }
@@ -521,12 +551,17 @@ function renderLeaderboard() {
 async function initialize() {
   try {
     let response;
+    let loadedUrl = "";
     for (const url of DATA_URLS) {
       response = await fetch(url);
-      if (response.ok) break;
+      if (response.ok) {
+        loadedUrl = url;
+        break;
+      }
     }
     if (!response?.ok) throw new Error(`Tipprunde konnte nicht geladen werden: ${response?.status ?? "keine Antwort"}`);
     tipRound = await response.json();
+    tipRoundLoadedFromApi = loadedUrl.startsWith("/api/");
     athletesById = new Map(tipRound.athletes.map((athlete) => [athlete.id, athlete]));
     renderWeekendOverview();
     renderTipRound();

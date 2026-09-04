@@ -13,11 +13,13 @@ Danach startet ein gemeinsamer Backend-Prozess. Die Spielleiter-Oberfläche öff
 Die Oberfläche nutzt ausschließlich die versionierten Endpunkte unter `/api/v1` und übernimmt:
 
 1. Anlegen eines Rennwochenendes samt Ordnern und Fragenvorlage
-2. Ablage der Startlisten, Ergebnislisten und exportierten Tippdateien
-3. Import und Zuordnung aller PDFs
-4. Erzeugung und Anzeige der Prüfberichte
-5. Auswertung aller Tipps und Aktualisierung der Saisonwertung
-6. Automatisches Schließen einer echten Tipprunde nach dem Abgabeschluss, solange das Dashboard läuft
+2. Ablage der Startlisten und Ergebnislisten sowie Kontrolle der automatisch gespeicherten Tippabgaben
+3. Automatisches Auslesen der PDFs für die wiederverwendbare Renndaten-API
+4. Prüfung und Freigabe der strukturierten Renndaten
+5. Import und Zuordnung aller PDFs für das Tippspiel
+6. Erzeugung und Anzeige der Prüfberichte
+7. Auswertung aller Tipps und Aktualisierung der Saisonwertung
+8. Automatisches Schließen einer echten Tipprunde nach dem Abgabeschluss, solange das Dashboard läuft
 
 Bewusste Bestätigungen bleiben das Öffnen der geprüften Tipprunde und das Archivieren nach der Ergebniskontrolle. Im Testmodus wird eine Runde nicht automatisch anhand des Datums geschlossen.
 

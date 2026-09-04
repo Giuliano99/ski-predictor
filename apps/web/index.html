@@ -50,9 +50,9 @@
         <div class="prediction-panel">
           <div class="section-heading"><div><span class="kicker">Deine Tipprunde</span><h2 id="tip-round-title">Tipps werden geladen</h2><p id="tip-round-subtitle">Lokale Demo-Daten ohne Anmeldung</p></div><span class="points-pill" id="question-progress">0 / 0 beantwortet</span></div>
           <form id="prediction-form" novalidate>
-            <label class="player-input"><span>Dein Name für die Rangliste</span><input id="player-name" name="player-name" type="text" minlength="2" maxlength="40" autocomplete="name" placeholder="z. B. Giuliano G." required /><small>Wird nur zusammen mit deinem Tipp exportiert.</small></label>
+              <label class="player-input"><span>Dein Name für die Rangliste</span><input id="player-name" name="player-name" type="text" minlength="2" maxlength="40" autocomplete="name" placeholder="z. B. Giuliano G." required /><small>Wird zusammen mit deinem Tipp beim lokalen Spielleiter gespeichert.</small></label>
             <div class="question-list" id="question-list"></div>
-            <div class="prediction-footer"><p id="form-message" role="status">Deine Eingaben werden nach dem Speichern lokal im Browser abgelegt.</p><div class="form-actions"><button class="text-button reset-button" id="reset-prediction" type="button">Tipp zurücksetzen</button><button class="text-button export-button" id="export-prediction" type="button" disabled>Tipp exportieren ↓</button><button class="button button-dark" id="save-prediction" type="submit">Tipp speichern <span>→</span></button></div></div>
+              <div class="prediction-footer"><p id="form-message" role="status">Deine Eingaben werden über die lokale API beim Spielleiter gespeichert.</p><div class="form-actions"><button class="text-button reset-button" id="reset-prediction" type="button">Lokale Eingaben zurücksetzen</button><button class="text-button export-button" id="export-prediction" type="button" disabled>Sicherung exportieren ↓</button><button class="button button-dark" id="save-prediction" type="submit">Tipp verbindlich speichern <span>→</span></button></div></div>
           </form>
         </div>
 
@@ -86,7 +86,7 @@
     </main>
 
     <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Demo MVP</span></div><div><a href="https://www.skiteam-oberhaching.de/impressum/" target="_blank" rel="noreferrer">Impressum ↗</a><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Vereinswebsite ↗</a></div></footer>
-    <div class="toast" id="toast" role="status" aria-live="polite">✓ Dein Demo-Tipp wurde gespeichert</div>
-    <script src="src/scripts/app.js?v=20260902b"></script>
+    <div class="toast" id="toast" role="status" aria-live="polite">✓ Dein Tipp wurde gespeichert</div>
+    <script src="src/scripts/app.js?v=20260904a"></script>
   </body>
 </html>
