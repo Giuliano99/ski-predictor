@@ -87,6 +87,7 @@ function renderDetail(weekend) {
   root.querySelector(".weekend-title").textContent = weekend.title;
   root.querySelector(".season").textContent = `Saison ${weekend.seasonId}${weekend.testMode ? " · Testmodus" : ""}${weekend.storageRoot ? ` · Externer Datenordner: ${weekend.storageRoot}` : ""}`;
   const headerActions = root.querySelector(".detail-actions");
+  if (weekend.actions.reset) headerActions.innerHTML += actionButton("reset", "Testablauf neu starten", "secondary");
   if (weekend.actions.cancel) headerActions.innerHTML += actionButton("cancel", "Wochenende absagen", "secondary");
   if (weekend.actions.archive) headerActions.innerHTML += actionButton("archive", "Abschließen und archivieren", "secondary");
 
@@ -136,7 +137,7 @@ async function uploadFiles(category, files) {
 
 async function runAction(action) {
   const weekend = selectedWeekend();
-  const busyLabels = { prepare: "Startlisten und Fragen werden verarbeitet ...", evaluate: "Ergebnisse und Tipps werden ausgewertet ...", open: "Tipprunde wird geöffnet ...", close: "Tippabgabe wird geschlossen ...", archive: "Wochenende wird archiviert ...", cancel: "Wochenende wird abgesagt ..." };
+  const busyLabels = { prepare: "Startlisten und Fragen werden verarbeitet ...", evaluate: "Ergebnisse und Tipps werden ausgewertet ...", open: "Tipprunde wird geöffnet ...", close: "Tippabgabe wird geschlossen ...", archive: "Wochenende wird archiviert ...", cancel: "Wochenende wird abgesagt ...", reset: "Testwochenende wird zurückgesetzt ..." };
   setBusy(busyLabels[action]);
   try {
     const payload = await request(`/api/v1/weekends/${weekend.id}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
@@ -147,6 +148,7 @@ async function runAction(action) {
 
 function confirmAction(action) {
   const content = {
+    reset: ["Testablauf neu starten?", "Das Wochenende springt zurück zu Fragen festlegen. PDFs und Tippabgaben bleiben erhalten. Alte Auswertungsdateien werden entfernt."],
     open: ["Tipprunde wirklich öffnen?", "Bitte kontrolliere vorher den grünen Prüfbericht. Nach dem Öffnen sind Rennen, Starter und Fragen verbindlich und versionsgeschützt."],
     close: ["Tippabgabe jetzt schließen?", "Danach können keine Tipps mehr geändert werden. Vorhandene Tippdateien bleiben erhalten."],
     archive: ["Wochenende archivieren?", "Bitte kontrolliere vorher Prüfbericht, Punkte und Ranglisten auf der Website."],
@@ -157,7 +159,7 @@ function confirmAction(action) {
 
 function bindDetailEvents() {
   dom.detail.querySelectorAll("[data-upload]").forEach((input) => input.addEventListener("change", () => { if (input.files.length) uploadFiles(input.dataset.upload, Array.from(input.files)); }));
-  dom.detail.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => ["open", "close", "archive", "cancel"].includes(button.dataset.action) ? confirmAction(button.dataset.action) : runAction(button.dataset.action)));
+  dom.detail.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => ["open", "close", "archive", "cancel", "reset"].includes(button.dataset.action) ? confirmAction(button.dataset.action) : runAction(button.dataset.action)));
   document.querySelector("#save-questions")?.addEventListener("click", async () => {
     try { const id = selectedWeekend().id; const payload = await request(`/api/v1/weekends/${id}/questions`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: document.querySelector("#questions-editor").value }) }); showNotice(`${payload.message} Die automatische Prüfung startet jetzt.`); await refresh(id); if (selectedWeekend()?.actions.prepare) await runAction("prepare"); }
     catch (error) { showNotice(error.message, true); }

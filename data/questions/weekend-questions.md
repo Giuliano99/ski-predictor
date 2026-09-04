@@ -100,7 +100,7 @@ Typ: ANZAHL
 Auswertung: TOP_10
 Grenze: 10
 Rennen: ALLE
-Hinweis: Maßgeblich ist jeweils das offizielle Gesamtergebnis
+Hinweis: Am gesamten Wochenende ist jeweils das offizielle Gesamtergebnis maßgeblich
 Minimum: 0
 Maximum: 30
 
@@ -115,7 +115,7 @@ Personen: ALLE
 Typ: PERSON
 Auswertung: GERINGSTER_RUECKSTAND
 Rennen: ALLE
-Hinweis: Der prozentuale Rückstand macht unterschiedliche Rennen vergleichbar
+Hinweis: Am gesamten Wochenende macht der prozentuale Rückstand unterschiedliche Wertungsgruppen vergleichbar
 Personen: ALLE
 
 ## Wie sieht das interne Oberhachinger Podium aus?
@@ -130,7 +130,7 @@ Positionen: 3
 Typ: ANZAHL
 Auswertung: GEWERTETE
 Rennen: ALLE
-Hinweis: DNS, DNF und DSQ gelten nicht als gewertet
+Hinweis: Am gesamten Wochenende gelten DNS, DNF und DSQ nicht als gewertet
 Minimum: 0
 Maximum: 30
 
@@ -138,7 +138,7 @@ Maximum: 30
 Typ: PLATZIERUNG
 Auswertung: PLATZIERUNG
 Rennen: MINI München Cup 2 Willi-Wein-Gedächtnisrennen RS
-Hinweis: Es zählt die offizielle Platzierung in der Wertungsgruppe U14 weiblich Jahrgang 2013
+Hinweis: Am Samstag im Riesenslalom des MINI München Cups zählt die offizielle Platzierung in der Wertungsgruppe U14 weiblich Jahrgang 2013
 Person: Clara S.
 Minimum: 1
 Maximum: 40
@@ -147,13 +147,13 @@ Maximum: 40
 Typ: DUELL
 Auswertung: DIREKTVERGLEICH
 Rennen: MINI München Cup 2 Willi-Wein-Gedächtnisrennen RS
-Hinweis: Es zählt das offizielle Gesamtergebnis in der gemeinsamen Wertungsgruppe
+Hinweis: Am Samstag im Riesenslalom des MINI München Cups zählt das offizielle Gesamtergebnis in der gemeinsamen Wertungsgruppe
 Personen: Alexander T. | Simon P.
 
 ## Wie lautet die interne Reihenfolge der U14 weiblich Jahrgang 2012?
 Typ: REIHENFOLGE
 Auswertung: INTERNE_REIHENFOLGE
 Rennen: MINI München Cup 2 Willi-Wein-Gedächtnisrennen RS
-Hinweis: Ordne die Oberhachinger Starterinnen nach dem offiziellen Gesamtergebnis
+Hinweis: Ordne die Oberhachinger Starterinnen am Samstag im Riesenslalom des MINI München Cups nach dem offiziellen Gesamtergebnis
 Personen: Marlene E. | Marlene W. | Lea R.
 Positionen: 3

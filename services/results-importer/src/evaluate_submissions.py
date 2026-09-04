@@ -36,6 +36,28 @@ def latest_submissions(submissions: list[dict[str, Any]]) -> list[dict[str, Any]
     return list(latest_by_player.values())
 
 
+def normalize_legacy_test_submission(
+    tip_round: dict[str, Any],
+    submission: dict[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    """Add the missing version to compatible exports from the old local test UI.
+
+    Production submissions and submissions carrying an explicit version always go
+    through the normal strict version check.
+    """
+    if submission.get("tipRoundVersion") is not None:
+        return submission, False
+    if not tip_round.get("testMode") or not str(submission.get("id", "")).startswith("local-"):
+        return submission, False
+    expected_questions = {question["id"] for question in tip_round.get("questions", [])}
+    answers = submission.get("answers")
+    if submission.get("tipRoundId") != tip_round.get("id") or not isinstance(answers, dict) or set(answers) != expected_questions:
+        return submission, False
+    normalized = dict(submission)
+    normalized["tipRoundVersion"] = tip_round["contentVersion"]
+    return normalized, True
+
+
 def build_weekend_evaluation(
     tip_round: dict[str, Any],
     results: list[dict[str, Any]],
@@ -44,9 +66,12 @@ def build_weekend_evaluation(
 ) -> dict[str, Any]:
     evaluations: list[dict[str, Any]] = []
     standings: list[dict[str, Any]] = []
-    for submission in latest_submissions(submissions):
+    for original_submission in latest_submissions(submissions):
+        submission, legacy_version_assumed = normalize_legacy_test_submission(tip_round, original_submission)
         evaluation = evaluate(tip_round, results, submission)
         evaluation["player"] = submission["player"]
+        if legacy_version_assumed:
+            evaluation["legacyTipRoundVersionAssumed"] = True
         evaluations.append(evaluation)
         standings.append({
             "submissionId": submission["id"],

@@ -215,20 +215,21 @@ def resolve_race_scope(value: str, races: list[dict[str, Any]], question_number:
 
     by_reference: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for race in races:
-        by_reference[race["id"].casefold()].append(race)
-        by_reference[race["name"].casefold()].append(race)
+        by_reference[slugify(race["id"])].append(race)
+        by_reference[slugify(race["name"])].append(race)
 
     selected: list[dict[str, Any]] = []
     for reference in (part.strip() for part in value.split("|")):
-        matches = by_reference.get(reference.casefold(), [])
+        matches = by_reference.get(slugify(reference), [])
         if race_date:
             matches = [race for race in matches if race.get("date") == race_date]
         if not matches:
-            suffix = f" on {race_date}" if race_date else ""
-            raise ValueError(f"Question {question_number}: race '{reference}'{suffix} was not found in the weekend")
+            suffix = f" am {race_date}" if race_date else ""
+            known = ", ".join(dict.fromkeys(race["name"] for race in races))
+            raise ValueError(f"Frage {question_number}: Rennen '{reference}'{suffix} wurde nicht gefunden. Erkannte Rennen: {known}")
         unique_matches = {race["id"]: race for race in matches}
         if len(unique_matches) > 1:
-            raise ValueError(f"Question {question_number}: race '{reference}' is ambiguous")
+            raise ValueError(f"Frage {question_number}: Rennen '{reference}' ist nicht eindeutig. Bitte zusätzlich Renndatum angeben.")
         selected.append(next(iter(unique_matches.values())))
     return [race["id"] for race in selected], " · ".join(race["name"] for race in selected)
 

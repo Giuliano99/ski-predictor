@@ -26,6 +26,11 @@ class ReviewWeekendTests(unittest.TestCase):
         self.assertTrue(question_scope_is_clear(clear, self.races, set(self.races)))
         self.assertFalse(question_scope_is_clear(unclear, self.races, set(self.races)))
 
+    def test_single_race_can_be_described_as_specific_race(self):
+        races = {"race-mini": {"id": "race-mini", "name": "MINI München Cup", "day": "Samstag", "discipline": "Riesenslalom"}}
+        question = {"prompt": "Welche Platzierung zählt am Samstag im Riesenslalom des MINI München Cups?", "raceIds": ["race-mini"]}
+        self.assertTrue(question_scope_is_clear(question, races, set(races)))
+
 
 if __name__ == "__main__":
     unittest.main()

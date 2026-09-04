@@ -7,10 +7,47 @@ MODULE_ROOT = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(MODULE_ROOT))
 
 from aggregate_season import aggregate_season  # noqa: E402
-from evaluate_submissions import latest_submissions, ranked  # noqa: E402
+from evaluate_submissions import latest_submissions, normalize_legacy_test_submission, ranked  # noqa: E402
 
 
 class LeaderboardTests(unittest.TestCase):
+    def test_missing_version_is_assumed_only_for_compatible_local_test_submission(self):
+        tip_round = {
+            "id": "round-1",
+            "contentVersion": "sha256-" + "a" * 64,
+            "testMode": True,
+            "questions": [{"id": "question-1"}],
+        }
+        submission = {
+            "id": "local-round-1-player",
+            "tipRoundId": "round-1",
+            "answers": {"question-1": "answer"},
+        }
+
+        normalized, assumed = normalize_legacy_test_submission(tip_round, submission)
+
+        self.assertTrue(assumed)
+        self.assertEqual(normalized["tipRoundVersion"], tip_round["contentVersion"])
+        self.assertNotIn("tipRoundVersion", submission)
+
+    def test_missing_version_is_not_assumed_for_production_submission(self):
+        tip_round = {
+            "id": "round-1",
+            "contentVersion": "sha256-" + "a" * 64,
+            "testMode": False,
+            "questions": [{"id": "question-1"}],
+        }
+        submission = {
+            "id": "local-round-1-player",
+            "tipRoundId": "round-1",
+            "answers": {"question-1": "answer"},
+        }
+
+        normalized, assumed = normalize_legacy_test_submission(tip_round, submission)
+
+        self.assertFalse(assumed)
+        self.assertIs(normalized, submission)
+
     def test_latest_submission_per_player_wins(self):
         submissions = [
             {"id": "old", "submittedAt": "2026-01-01T10:00:00Z", "player": {"id": "max"}},

@@ -11,7 +11,7 @@
   ],
   "tipRound": {
     "output": "data/result-lists/processed/tip-round-startliste3.json",
-    "websiteOutput": "apps/web/src/data/tip-round.local.json",
+    "websiteOutput": "apps/web/src/data/tip-round-2026-01-03.local.json",
     "testMode": true
   },
   "results": [
@@ -24,11 +24,47 @@
   "submissionsDir": "data/submissions/inbox/tip-round-2026-01-03",
   "weekendEvaluation": {
     "output": "data/submissions/processed/weekend-tip-round-2026-01-03.json",
-    "websiteOutput": "apps/web/src/data/weekend-evaluation.local.json"
+    "websiteOutput": "apps/web/src/data/weekend-evaluation-2026-01-03.local.json"
   },
   "seasonLeaderboard": {
     "weekendPattern": "data/submissions/processed/weekend-*.json",
     "output": "data/submissions/processed/season-2026-2027.json",
-    "websiteOutput": "apps/web/src/data/season-leaderboard.local.json"
-  }
+    "websiteOutput": "apps/web/src/data/season-leaderboard-2026-2027.local.json"
+  },
+  "status": "ARCHIVED",
+  "statusHistory": [
+    {
+      "status": "OPEN",
+      "changedAt": "2026-09-04T09:57:36.355470+00:00"
+    },
+    {
+      "status": "CLOSED",
+      "changedAt": "2026-09-04T09:58:46.402794+00:00"
+    },
+    {
+      "status": "EVALUATED",
+      "changedAt": "2026-09-04T10:00:50.708907+00:00"
+    },
+    {
+      "status": "DRAFT",
+      "changedAt": "2026-09-04T10:06:09.428595+00:00",
+      "reason": "TEST_RESET"
+    },
+    {
+      "status": "OPEN",
+      "changedAt": "2026-09-04T10:16:40.176800+00:00"
+    },
+    {
+      "status": "CLOSED",
+      "changedAt": "2026-09-04T10:16:46.960304+00:00"
+    },
+    {
+      "status": "EVALUATED",
+      "changedAt": "2026-09-04T10:16:54.520504+00:00"
+    },
+    {
+      "status": "ARCHIVED",
+      "changedAt": "2026-09-04T10:18:54.664855+00:00"
+    }
+  ]
 }

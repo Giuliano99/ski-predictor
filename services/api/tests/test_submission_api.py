@@ -87,6 +87,55 @@ class SubmissionServiceTests(unittest.TestCase):
                     workflow_service.save_submission(round_id, payload)
             self.assertFalse(submissions_directory.exists())
 
+    def test_reset_test_weekend_keeps_inputs_and_removes_old_evaluation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config_path = root / "config" / "weekends" / "tip-round-2030-01-05.json"
+            tip_round_path = root / "data" / "tip-round.json"
+            website_path = root / "web" / "tip-round.json"
+            evaluation_path = root / "data" / "evaluation.json"
+            evaluation_website_path = root / "web" / "evaluation.json"
+            report_path = root / "reports" / "results.md"
+            submission_path = root / "submissions" / "tip.json"
+            for path in (config_path, tip_round_path, website_path, evaluation_path, evaluation_website_path, report_path, submission_path):
+                path.parent.mkdir(parents=True, exist_ok=True)
+            tip_round = {"id": "tip-round-2030-01-05", "status": "EVALUATED"}
+            tip_round_path.write_text(json.dumps(tip_round), encoding="utf-8")
+            website_path.write_text(json.dumps(tip_round), encoding="utf-8")
+            evaluation_path.write_text("{}", encoding="utf-8")
+            evaluation_website_path.write_text("{}", encoding="utf-8")
+            report_path.write_text("ready", encoding="utf-8")
+            submission_path.write_text("{}", encoding="utf-8")
+            config = {
+                "id": "tip-round-2030-01-05",
+                "status": "EVALUATED",
+                "tipRound": {"testMode": True, "output": "data/tip-round.json", "websiteOutput": "web/tip-round.json"},
+                "weekendEvaluation": {"output": "data/evaluation.json", "websiteOutput": "web/evaluation.json"},
+                "resultReviewReport": "reports/results.md",
+            }
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            with patch.object(workflow_service, "WORKSPACE", root):
+                workflow_service.reset_test_weekend(config_path)
+
+            reset_config = json.loads(config_path.read_text(encoding="utf-8"))
+            self.assertEqual(reset_config["status"], "DRAFT")
+            self.assertEqual(reset_config["statusHistory"][-1]["reason"], "TEST_RESET")
+            self.assertEqual(json.loads(tip_round_path.read_text(encoding="utf-8"))["status"], "DRAFT")
+            self.assertEqual(json.loads(website_path.read_text(encoding="utf-8"))["status"], "DRAFT")
+            self.assertTrue(submission_path.is_file())
+            self.assertFalse(evaluation_path.exists())
+            self.assertFalse(evaluation_website_path.exists())
+            self.assertFalse(report_path.exists())
+
+    def test_production_weekend_cannot_be_reset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps({"tipRound": {"testMode": False}}), encoding="utf-8")
+
+            with self.assertRaisesRegex(workflow_service.WorkflowError, "Testwochenende"):
+                workflow_service.reset_test_weekend(path)
+
 
 if __name__ == "__main__":
     unittest.main()

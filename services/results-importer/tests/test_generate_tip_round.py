@@ -202,6 +202,21 @@ Maximum: 40
 
         self.assertEqual(questions[0]["raceIds"], ["race-sunday"])
 
+    def test_race_name_tolerates_spacing_around_hyphen_and_umlauts(self):
+        athletes = [{"id": "athlete-u14", "displayName": "Clara S.", "ageClass": "U14"}]
+        races = [{"id": "race-mini", "name": "MINI München Cup 2 Willi-Wein- Gedächtnisrennen RS", "date": "2026-01-03"}]
+        content = "\n\n".join(
+            f"## Frage {index}\nTyp: ANZAHL\nAuswertung: TOP_10\n"
+            "Rennen: MINI Munchen Cup 2 Willi-Wein-Gedachtnisrennen RS\nMinimum: 0\nMaximum: 10"
+            for index in range(1, 7)
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "questions.md"
+            path.write_text(content, encoding="utf-8")
+            questions = parse_question_markdown(path, athletes, races)
+
+        self.assertTrue(all(question["raceIds"] == ["race-mini"] for question in questions))
+
     def test_manual_markdown_requires_race_scope(self):
         athletes = [{"id": "athlete-anna", "displayName": "Anna M.", "ageClass": "U12"}]
         races = [{"id": "race-demo", "name": "SVM U12 Cup"}]

@@ -15,7 +15,13 @@ $statusManager = Resolve-WorkspacePath -Path "services/results-importer/src/mana
 
 if ($Status -eq "OPEN") {
     $reviewer = Resolve-WorkspacePath -Path "services/results-importer/src/review_weekend.py" -MustExist
-    $reviewReport = Resolve-WorkspacePath -Path $weekend.reviewReport
+    $reviewReportReference = if ($weekend.reviewReport) {
+        [string]$weekend.reviewReport
+    }
+    else {
+        "output/reports/review-$($weekend.id).md"
+    }
+    $reviewReport = Resolve-WorkspacePath -Path $reviewReportReference
     if ($PSCmdlet.ShouldProcess($reviewReport, "Tipprunde vor dem Öffnen erneut prüfen")) {
         Invoke-PythonStep -PythonCommand $PythonCommand -Label "Tipprunde prüfen" -Arguments @(
             $reviewer, $configPath, "--output", $reviewReport

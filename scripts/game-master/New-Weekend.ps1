@@ -170,7 +170,7 @@ $weekendConfig = [ordered]@{
     tipRound = [ordered]@{
         title = $Title
         output = "$processedDirectory/tip-round.json"
-        websiteOutput = "apps/web/src/data/tip-round.local.json"
+        websiteOutput = "apps/web/src/data/tip-round-$WeekendDate.local.json"
         testMode = $TestMode
     }
     resultsDirectory = $resultsDirectory
@@ -178,12 +178,12 @@ $weekendConfig = [ordered]@{
     submissionsDir = $submissionsDirectory
     weekendEvaluation = [ordered]@{
         output = "data/submissions/processed/weekend-$weekendId.json"
-        websiteOutput = "apps/web/src/data/weekend-evaluation.local.json"
+        websiteOutput = "apps/web/src/data/weekend-evaluation-$WeekendDate.local.json"
     }
     seasonLeaderboard = [ordered]@{
         weekendPattern = "data/submissions/processed/weekend-*.json"
         output = "data/submissions/processed/season-$SeasonId.json"
-        websiteOutput = "apps/web/src/data/season-leaderboard.local.json"
+        websiteOutput = "apps/web/src/data/season-leaderboard-$SeasonId.local.json"
     }
     reviewReport = $reviewReport
     resultReviewReport = "output/reports/results-$weekendId.md"

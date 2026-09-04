@@ -44,8 +44,8 @@ def distinctive_race_name(name: str) -> str:
 def question_scope_is_clear(question: dict[str, Any], races_by_id: dict[str, dict[str, Any]], all_race_ids: set[str]) -> bool:
     race_ids = set(question.get("raceIds", []))
     combined = f"{question.get('prompt', '')} {question.get('hint', '')}".casefold()
-    if race_ids == all_race_ids:
-        return "wochenende" in combined or ("alle" in combined and "rennen" in combined)
+    if race_ids == all_race_ids and ("wochenende" in combined or ("alle" in combined and "rennen" in combined)):
+        return True
     for race_id in race_ids:
         race = races_by_id.get(race_id)
         if not race:

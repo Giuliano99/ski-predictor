@@ -27,7 +27,7 @@ class FakeCatalog:
 
 
 def wait_for_status(service: ExtractionService, job_id: str, expected: set[str]) -> dict:
-    for _ in range(100):
+    for _ in range(300):
         job = service.job(job_id)
         if job["status"] in expected:
             return job

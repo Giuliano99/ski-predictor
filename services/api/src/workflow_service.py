@@ -41,6 +41,13 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def write_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+
+
 def external_storage_root() -> Path:
     settings = read_json(WORKSPACE / "config" / "local-storage.json")
     root = Path(str(settings.get("root", "")))
@@ -132,6 +139,7 @@ def weekend_state(path: Path) -> dict[str, Any]:
         "evaluate": status == "CLOSED" and bool(results) and bool(submissions),
         "archive": status in {"EVALUATED", "CANCELLED"},
         "cancel": status in {"DRAFT", "OPEN", "CLOSED"},
+        "reset": bool(config.get("tipRound", {}).get("testMode")) and status != "DRAFT",
     }
     return {
         "id": config["id"], "title": config.get("tipRound", {}).get("title", config["id"]),
@@ -157,8 +165,19 @@ def run_script(name: str, arguments: list[str]) -> CommandResult:
     executable = shutil.which("pwsh") or shutil.which("powershell")
     if not executable:
         raise WorkflowError("PowerShell wurde nicht gefunden.")
-    process = subprocess.run([executable, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(WORKSPACE / "scripts" / "game-master" / name), *arguments], cwd=WORKSPACE, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180, check=False)
+    environment = os.environ.copy()
+    environment.update({"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
+    process = subprocess.run([executable, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(WORKSPACE / "scripts" / "game-master" / name), *arguments], cwd=WORKSPACE, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180, check=False, env=environment)
     output = "\n".join(part.strip() for part in (process.stdout, process.stderr) if part.strip())
+    repaired_lines = []
+    for line in output.splitlines():
+        if any(marker in line for marker in ("Ã", "Â", "â")):
+            try:
+                line = line.encode("cp1252").decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pass
+        repaired_lines.append(line)
+    output = "\n".join(repaired_lines)
     if process.returncode:
         raise WorkflowError(output or f"{name} ist fehlgeschlagen.")
     return CommandResult(output, process.returncode)
@@ -310,6 +329,40 @@ def upload_file(weekend_id: str, category: str, filename: str, content: bytes) -
     return {"message": f"{destination.name} wurde abgelegt.", "weekend": weekend_state(path)}
 
 
+def reset_test_weekend(path: Path) -> CommandResult:
+    config = read_json(path)
+    if not config.get("tipRound", {}).get("testMode"):
+        raise WorkflowError("Nur ein Testwochenende kann zurückgesetzt werden.")
+
+    for key in ("output", "websiteOutput"):
+        reference = config.get("tipRound", {}).get(key)
+        if not reference:
+            continue
+        artifact_path = resolve_path(reference)
+        if artifact_path.is_file():
+            artifact = read_json(artifact_path)
+            artifact["status"] = "DRAFT"
+            write_json(artifact_path, artifact)
+
+    generated_references = [
+        config.get("weekendEvaluation", {}).get("output"),
+        config.get("weekendEvaluation", {}).get("websiteOutput"),
+        config.get("resultReviewReport", f"output/reports/results-{config['id']}.md"),
+    ]
+    for reference in generated_references:
+        if reference:
+            resolve_path(reference).unlink(missing_ok=True)
+
+    config["status"] = "DRAFT"
+    config.setdefault("statusHistory", []).append({
+        "status": "DRAFT",
+        "changedAt": datetime.now(timezone.utc).isoformat(),
+        "reason": "TEST_RESET",
+    })
+    write_json(path, config)
+    return CommandResult("Testwochenende auf Fragen festlegen zurückgesetzt. PDFs und Tippabgaben wurden beibehalten.", 0)
+
+
 def perform_action(weekend_id: str, action: str) -> dict[str, Any]:
     if not ACTION_LOCK.acquire(blocking=False):
         raise WorkflowError("Es läuft bereits eine automatische Verarbeitung.")
@@ -318,7 +371,9 @@ def perform_action(weekend_id: str, action: str) -> dict[str, Any]:
         if not state["actions"].get(action):
             raise WorkflowError("Diese Aktion ist im aktuellen Zustand nicht möglich.")
         config_reference = path.relative_to(WORKSPACE).as_posix()
-        if action == "prepare":
+        if action == "reset":
+            result, message = reset_test_weekend(path), "Das Testwochenende wurde auf Fragen festlegen zurückgesetzt."
+        elif action == "prepare":
             result, message = run_script("Prepare-Weekend.ps1", ["-Config", config_reference]), "Startlisten und Fragen wurden verarbeitet und geprüft."
         elif action == "evaluate":
             result, message = run_script("Evaluate-Weekend.ps1", ["-Config", config_reference]), "Ergebnisse und Tipps wurden geprüft und ausgewertet."

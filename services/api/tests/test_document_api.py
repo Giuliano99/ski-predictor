@@ -14,10 +14,28 @@ SOURCE_DIRECTORY = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SOURCE_DIRECTORY))
 
 from document_catalog import DocumentCatalog, classify_path  # noqa: E402
+import server as server_module  # noqa: E402
 from server import ApiServer  # noqa: E402
 
 
 class DocumentCatalogTests(unittest.TestCase):
+    def test_current_round_prefers_open_weekend_over_newer_finished_weekend(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config_directory = root / "config" / "weekends"
+            config_directory.mkdir(parents=True)
+            (config_directory / "tip-round-2030-03-02.json").write_text(
+                json.dumps({"id": "newer", "status": "EVALUATED"}), encoding="utf-8"
+            )
+            (config_directory / "tip-round-2030-01-05.json").write_text(
+                json.dumps({"id": "open", "status": "OPEN"}), encoding="utf-8"
+            )
+
+            with patch.object(server_module, "WORKSPACE", root):
+                selected = server_module.current_config()
+
+        self.assertEqual(selected["id"], "open")
+
     def test_classifies_active_and_archived_documents(self) -> None:
         self.assertEqual(
             classify_path(Path("saisons/2025-2026/weekends/2026-03-07/ergebnislisten/rennen.pdf")),

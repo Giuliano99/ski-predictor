@@ -129,10 +129,11 @@ body{{max-width:900px;margin:60px auto;padding:0 24px;color:#211d20;background:#
 
 
 def current_config() -> dict[str, Any]:
-    configs = sorted((WORKSPACE / "config" / "weekends").glob("tip-round-????-??-??.json"), reverse=True)
-    if not configs:
+    paths = sorted((WORKSPACE / "config" / "weekends").glob("tip-round-????-??-??.json"), reverse=True)
+    if not paths:
         raise ValueError("Keine Tipprunde vorhanden.")
-    return read_json(configs[0])
+    configs = [read_json(path) for path in paths]
+    return next((config for config in configs if config.get("status", "DRAFT") == "OPEN"), configs[0])
 
 
 def optional_artifact(reference: str | None) -> dict[str, Any] | None:
