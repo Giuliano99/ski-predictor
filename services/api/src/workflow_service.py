@@ -246,7 +246,11 @@ def validate_submission_answers(tip_round: dict[str, Any], answers: Any) -> dict
     return validated
 
 
-def save_submission(tip_round_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+def save_submission(
+    tip_round_id: str,
+    payload: dict[str, Any],
+    tip_round_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     config_path = weekend_config_path(tip_round_id)
     config = read_json(config_path)
     if config.get("status", "DRAFT") != "OPEN":
@@ -255,7 +259,7 @@ def save_submission(tip_round_id: str, payload: dict[str, Any]) -> dict[str, Any
     tip_round_reference = config.get("tipRound", {}).get("output")
     if not tip_round_reference:
         raise WorkflowError("Die Tipprunde wurde noch nicht vorbereitet.")
-    tip_round = read_json(resolve_path(tip_round_reference))
+    tip_round = tip_round_data or read_json(resolve_path(tip_round_reference))
     if payload.get("schemaVersion") != 1:
         raise WorkflowError("Die Version des Abgabeformats wird nicht unterstützt.")
     if tip_round.get("id") != tip_round_id or payload.get("tipRoundId") != tip_round_id:

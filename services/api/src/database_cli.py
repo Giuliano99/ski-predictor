@@ -54,12 +54,14 @@ def import_existing(database: Database, catalog: DocumentCatalog) -> dict[str, i
                 submissions += 1
         except (OSError, json.JSONDecodeError, KeyError):
             continue
+    predictor = database.sync_predictor_files(WORKSPACE)
     return {
         "documents": len(documents),
         "extractions": extractions,
         "approved": approvals,
         "submissions": submissions,
         "skippedExtractions": missing_documents,
+        **predictor,
     }
 
 

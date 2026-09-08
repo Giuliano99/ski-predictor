@@ -34,7 +34,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.5.0"
+API_VERSION = "1.6.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -327,14 +327,26 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.send_json({"items": race["results"], "total": len(race["results"])})
                     return
             if parts == ["api", "v1", "predictor", "rounds", "current"]:
-                config = current_config()
-                self.send_json(optional_artifact(config["tipRound"]["websiteOutput"]) or optional_artifact(config["tipRound"]["output"]))
+                stored = self.server.database.current_tip_round() if self.server.database else None  # type: ignore[attr-defined]
+                if stored:
+                    self.send_json(stored)
+                else:
+                    config = current_config()
+                    self.send_json(optional_artifact(config["tipRound"]["websiteOutput"]) or optional_artifact(config["tipRound"]["output"]))
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "evaluation":
-                config = read_json(weekend_config_path(parts[4]))
-                self.send_json(optional_artifact(config["weekendEvaluation"]["websiteOutput"]) or {})
+                stored = self.server.database.weekend_evaluation(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
+                if stored:
+                    self.send_json(stored)
+                else:
+                    config = read_json(weekend_config_path(parts[4]))
+                    self.send_json(optional_artifact(config["weekendEvaluation"]["websiteOutput"]) or {})
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "seasons"] and parts[5] == "leaderboard":
+                stored = self.server.database.season_leaderboard(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
+                if stored:
+                    self.send_json(stored)
+                    return
                 configs = [read_json(path) for path in (WORKSPACE / "config" / "weekends").glob("*.json")]
                 config = next((item for item in configs if str(item.get("seasonId")) == parts[4]), None)
                 if not config:
@@ -378,7 +390,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json(upload_file(parts[3], parts[5], first(query, "filename") or "", self.read_body()), HTTPStatus.CREATED)
                 return
             if len(parts) == 5 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "actions":
-                self.send_json(perform_action(parts[3], str(self.read_json_body().get("action", ""))))
+                result = perform_action(parts[3], str(self.read_json_body().get("action", "")))
+                self.server.sync_predictor()  # type: ignore[attr-defined]
+                self.send_json(result)
                 return
             if len(parts) == 5 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "extractions":
                 weekend_id = parts[3]
@@ -387,7 +401,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json({"message": f"{len(jobs)} Extraktionsaufträge wurden berücksichtigt.", "items": jobs, "seasonId": config.get("seasonId")}, HTTPStatus.ACCEPTED)
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
-                result = save_submission(parts[4], self.read_json_body())
+                stored_round = self.server.database.tip_round(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
+                result = save_submission(parts[4], self.read_json_body(), stored_round)
                 if self.server.database:  # type: ignore[attr-defined]
                     self.server.database.save_submission(result["submission"])  # type: ignore[attr-defined]
                 self.send_json(result, HTTPStatus.CREATED)
@@ -426,6 +441,9 @@ class ApiServer(ThreadingHTTPServer):
         self.database = database
         self.extractions = ExtractionService(catalog, database=database)
 
+    def sync_predictor(self) -> dict[str, int]:
+        return self.database.sync_predictor_files(WORKSPACE) if self.database else {"rounds": 0, "evaluations": 0, "leaderboards": 0}
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -439,19 +457,21 @@ def main() -> None:
         try:
             applied = database.migrate()
             documents = database.sync_documents(catalog.documents())
-            print(f"{database.provider_name} bereit: {documents} Dokumente synchronisiert, {len(applied)} Migrationen angewendet.")
+            predictor = database.sync_predictor_files(WORKSPACE)
+            print(f"{database.provider_name} bereit: {documents} Dokumente und {predictor['rounds']} Tipprunden synchronisiert, {len(applied)} Migrationen angewendet.")
         except DatabaseError as error:
             print(f"WARNUNG: {error}")
             print("Die API startet vorübergehend mit JSON-Dateien. Es werden keine Datenbankeinträge geschrieben.")
             database = None
     else:
-        print("PostgreSQL ist nicht konfiguriert. Die API verwendet weiterhin JSON-Dateien.")
+        print("Keine Datenbank konfiguriert. Die API verwendet weiterhin JSON-Dateien.")
     server = ApiServer(("127.0.0.1", arguments.port), catalog, database)
     server.extractions.resume_incomplete()
     stop_event = threading.Event()
     def deadline_loop() -> None:
         while not stop_event.is_set():
             close_expired_weekends()
+            server.sync_predictor()
             stop_event.wait(30)
     threading.Thread(target=deadline_loop, daemon=True).start()
     url = f"http://127.0.0.1:{arguments.port}"

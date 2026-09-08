@@ -4,11 +4,27 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 from evaluate_tip_round import SCORING_MODEL, evaluate
+
+
+API_SOURCE = Path(__file__).resolve().parents[2] / "api" / "src"
+
+
+def stored_submissions(tip_round_id: str) -> list[dict[str, Any]]:
+    if str(API_SOURCE) not in sys.path:
+        sys.path.insert(0, str(API_SOURCE))
+    from database import Database
+
+    database = Database.configured(Path(__file__).resolve().parents[3])
+    if not database:
+        return []
+    database.migrate()
+    return database.submissions(tip_round_id)
 
 
 def ranked(items: list[dict[str, Any]], points_field: str) -> list[dict[str, Any]]:
@@ -97,6 +113,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("tip_round", type=Path)
     parser.add_argument("results", nargs="+", type=Path)
     parser.add_argument("--submissions-dir", type=Path, required=True)
+    parser.add_argument("--database", action="store_true", help="Read submissions primarily from the configured database")
     parser.add_argument("--season-id", default="2026-2027")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--website-output", type=Path)
@@ -105,9 +122,12 @@ def main(argv: Iterable[str] | None = None) -> int:
     tip_round = json.loads(arguments.tip_round.read_text(encoding="utf-8"))
     result_documents = [json.loads(path.read_text(encoding="utf-8")) for path in arguments.results]
     submission_paths = sorted(arguments.submissions_dir.glob("*.json"))
-    if not submission_paths:
+    submissions = stored_submissions(tip_round["id"]) if arguments.database else []
+    submission_source = "database" if submissions else "json"
+    if not submissions:
+        submissions = [json.loads(path.read_text(encoding="utf-8")) for path in submission_paths]
+    if not submissions:
         parser.error(f"no JSON submissions found in {arguments.submissions_dir}")
-    submissions = [json.loads(path.read_text(encoding="utf-8")) for path in submission_paths]
     bundle = build_weekend_evaluation(tip_round, result_documents, submissions, arguments.season_id)
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(bundle, ensure_ascii=False, indent=2) + "\n"
@@ -119,6 +139,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         "tipRoundId": bundle["tipRoundId"],
         "submissions": len(submissions),
         "players": len(bundle["standings"]),
+        "submissionSource": submission_source,
         "output": str(arguments.output),
         "websiteOutput": str(arguments.website_output) if arguments.website_output else None,
     }, ensure_ascii=False))

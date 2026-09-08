@@ -36,6 +36,26 @@ Neben dem vollständigen Rohinhalt sind unter anderem direkt abfragbar:
 Die vollständigen Tabellen der Zuschlagsberechnung bleiben im `source_text`, auch
 wenn sie noch nicht vollständig relational zerlegt werden.
 
+## Predictor-Daten
+
+SQLite ist die primäre Lesequelle der öffentlichen API für veröffentlichte
+Tipprunden, Fragen, Tippabgaben, Wochenendauswertungen und Saisonranglisten. Nach
+jedem Spielleiter-Schritt werden die erzeugten Fachdaten automatisch synchronisiert.
+Die vorhandenen JSON-Dateien bleiben vorerst als nachvollziehbarer Export und
+Rückfalloption bestehen.
+
+Die Wochenendauswertung lädt Tippabgaben ebenfalls zuerst aus der Datenbank. Nur
+wenn dort für eine Runde noch keine Abgabe liegt, verwendet sie ältere JSON-Exporte.
+
+```text
+predictor_rounds
+predictor_questions
+predictor_round_status_history
+predictor_submissions
+weekend_evaluations
+season_leaderboards
+```
+
 ## Lokal starten
 
 ```powershell

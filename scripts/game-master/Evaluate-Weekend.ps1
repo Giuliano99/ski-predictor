@@ -96,6 +96,7 @@ if ($PSCmdlet.ShouldProcess($weekendOutput, "$($submissionFiles.Count) Tippabgab
         $weekendEvaluator, $tipRound
     ) + $normalizedResults + @(
         "--submissions-dir", $submissionsDir,
+        "--database",
         "--season-id", [string]$weekend.seasonId,
         "--output", $weekendOutput,
         "--website-output", $weekendWebsiteOutput

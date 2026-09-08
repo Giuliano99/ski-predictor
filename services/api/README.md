@@ -35,6 +35,13 @@ Es läuft kein eigener Datenbankdienst. Die API führt neue Migrationen und den
 Dokumentabgleich beim Start automatisch aus. `DATABASE_URL` überschreibt die
 lokale Konfiguration und aktiviert später PostgreSQL auf dem Raspberry Pi.
 
+Tipprunden, Fragen, Wochenendauswertungen und Saisonranglisten werden beim Start
+und nach Spielleiter-Aktionen in die Datenbank synchronisiert. Die öffentlichen
+Predictor-Endpunkte lesen primär aus der Datenbank. Nur wenn keine Datenbank
+konfiguriert ist, dienen die bisherigen JSON-Artefakte als Rückfalloption.
+Auch die Wochenendauswertung verwendet Datenbank-Tippabgaben primär und fällt nur
+für ältere Testbestände ohne Datenbankeintrag auf JSON zurück.
+
 ## Endpunkte
 
 ```text

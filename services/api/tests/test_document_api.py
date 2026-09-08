@@ -101,6 +101,34 @@ class DocumentApiTests(unittest.TestCase):
                 thread.join(timeout=2)
         self.assertEqual(payload["weekends"][0]["id"], "tip-round-2030-01-05")
 
+    def test_predictor_reads_round_evaluation_and_leaderboard_from_database(self) -> None:
+        database = Mock()
+        database.current_tip_round.return_value = {
+            "id": "tip-round-2030-01-05", "seasonId": "2029-2030", "status": "OPEN", "questions": [],
+        }
+        database.weekend_evaluation.return_value = {"tipRoundId": "tip-round-2030-01-05", "standings": []}
+        database.season_leaderboard.return_value = {"seasonId": "2029-2030", "standings": []}
+        with tempfile.TemporaryDirectory() as directory:
+            server = ApiServer(("127.0.0.1", 0), DocumentCatalog(Path(directory)), database)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            base_url = f"http://127.0.0.1:{server.server_port}"
+            try:
+                with urllib.request.urlopen(f"{base_url}/api/v1/predictor/rounds/current") as response:
+                    tip_round = json.load(response)
+                with urllib.request.urlopen(f"{base_url}/api/v1/predictor/rounds/tip-round-2030-01-05/evaluation") as response:
+                    evaluation = json.load(response)
+                with urllib.request.urlopen(f"{base_url}/api/v1/predictor/seasons/2029-2030/leaderboard") as response:
+                    leaderboard = json.load(response)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+        self.assertEqual(tip_round["status"], "OPEN")
+        self.assertEqual(evaluation["tipRoundId"], tip_round["id"])
+        self.assertEqual(leaderboard["seasonId"], "2029-2030")
+
     def test_accepts_submission_through_public_api(self) -> None:
         accepted = {"message": "gespeichert", "submission": {"id": "submission-server"}}
         with tempfile.TemporaryDirectory() as directory, patch("server.save_submission", return_value=accepted) as save_submission:

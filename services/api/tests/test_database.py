@@ -47,7 +47,7 @@ class DatabaseConfigurationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             database = SQLiteDatabase(Path(directory) / "ski.sqlite3")
-            self.assertEqual(database.migrate(), ["001_initial"])
+            self.assertEqual(database.migrate(), ["001_initial", "002_predictor_state"])
             document = SimpleNamespace(
                 document_id="doc-test", content_hash="abc", kind="RESULT_LIST",
                 original_name="result.pdf", storage_reference="storage://result.pdf",
@@ -84,6 +84,24 @@ class DatabaseConfigurationTests(unittest.TestCase):
                 "player": {"id": "player-test", "displayName": "Test"},
                 "submittedAt": "2030-01-01T09:00:00Z", "answers": {"q1": "athlete-test"},
             })
+            tip_round = {
+                "id": "tip-round-2030-01-01", "seasonId": "2029-2030", "title": "Test",
+                "status": "OPEN", "contentVersion": "sha256-round",
+                "opensAt": "2029-12-20T08:00:00Z", "closesAt": "2030-01-01T00:00:00Z",
+                "questions": [{"id": "q1", "type": "ATHLETE", "prompt": "Wer gewinnt?", "raceLabel": "Testcup"}],
+            }
+            config = {
+                "id": tip_round["id"], "seasonId": "2029-2030", "status": "OPEN",
+                "statusHistory": [{"status": "OPEN", "changedAt": "2029-12-20T08:00:00Z"}],
+            }
+            database.save_tip_round(config, tip_round)
+            database.save_weekend_evaluation({
+                "tipRoundId": tip_round["id"], "seasonId": "2029-2030",
+                "tipRoundVersion": "sha256-round", "generatedAt": "2030-01-01T12:00:00Z", "standings": [],
+            })
+            database.save_season_leaderboard({
+                "seasonId": "2029-2030", "generatedAt": "2030-01-01T12:00:00Z", "standings": [],
+            })
 
             with database.connect() as connection:
                 points = connection.execute("SELECT federation_points FROM race_participants").fetchone()[0]
@@ -95,6 +113,10 @@ class DatabaseConfigurationTests(unittest.TestCase):
             self.assertEqual(database.import_by_id("extract-test")["raw"]["pointsCalculations"][0]["fValue"], 1010.0)
             self.assertEqual(database.counts()["run_results"], 1)
             self.assertEqual(database.counts()["predictor_submissions"], 1)
+            self.assertEqual(database.current_tip_round()["id"], tip_round["id"])
+            self.assertEqual(database.weekend_evaluation(tip_round["id"])["tipRoundVersion"], "sha256-round")
+            self.assertEqual(database.season_leaderboard("2029-2030")["standings"], [])
+            self.assertEqual(database.counts()["predictor_questions"], 1)
 
 
 if __name__ == "__main__":

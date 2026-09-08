@@ -231,7 +231,8 @@ class PostgreSQLDatabase:
 
     def counts(self) -> dict[str, int]:
         tables = ("source_documents", "extraction_imports", "events", "races", "athletes",
-                  "race_participants", "run_results", "predictor_submissions")
+                  "race_participants", "run_results", "predictor_rounds", "predictor_questions",
+                  "weekend_evaluations", "season_leaderboards", "predictor_submissions")
         with self.connect() as connection:
             return {table: connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0] for table in tables}
 
@@ -279,6 +280,143 @@ class PostgreSQLDatabase:
             "raw": self._json_result(row[8]), "normalized": self._json_result(row[9]),
             "sourceText": row[10], "review": self._json_result(row[11]),
         }
+
+    @staticmethod
+    def _artifact(workspace: Path, section: dict[str, Any], *keys: str) -> dict[str, Any] | None:
+        for key in keys:
+            reference = section.get(key)
+            if not reference:
+                continue
+            path = Path(str(reference))
+            path = path if path.is_absolute() else workspace / path
+            if path.is_file():
+                try:
+                    value = json.loads(path.read_text(encoding="utf-8"))
+                    if isinstance(value, dict):
+                        return value
+                except (OSError, json.JSONDecodeError):
+                    continue
+        return None
+
+    def save_tip_round(self, config: dict[str, Any], payload: dict[str, Any]) -> None:
+        Jsonb = self.json_value
+        published = json.loads(json.dumps(payload, ensure_ascii=False))
+        published["status"] = config.get("status", published.get("status", "DRAFT"))
+        tip_round_id = str(config["id"])
+        weekend_date = tip_round_id.removeprefix("tip-round-")
+        with self.connect() as connection:
+            connection.execute(
+                """INSERT INTO predictor_rounds
+                (id,season_id,weekend_date,title,status,content_version,opens_at,closes_at,payload)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO UPDATE SET
+                  season_id=excluded.season_id,weekend_date=excluded.weekend_date,title=excluded.title,
+                  status=excluded.status,content_version=excluded.content_version,
+                  opens_at=excluded.opens_at,closes_at=excluded.closes_at,payload=excluded.payload,
+                  updated_at=now()""",
+                (tip_round_id, config.get("seasonId") or published.get("seasonId") or "unknown",
+                 weekend_date, published.get("title", tip_round_id), published["status"],
+                 published.get("contentVersion"), published.get("opensAt"), published.get("closesAt"),
+                 Jsonb(published)),
+            )
+            connection.execute("DELETE FROM predictor_questions WHERE tip_round_id=%s", (tip_round_id,))
+            for position, question in enumerate(published.get("questions", []), 1):
+                connection.execute(
+                    """INSERT INTO predictor_questions
+                    (tip_round_id,id,position,question_type,prompt,race_label,payload)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                    (tip_round_id, question["id"], position, question.get("type", "UNKNOWN"),
+                     question.get("prompt", question["id"]), question.get("raceLabel"), Jsonb(question)),
+                )
+            connection.execute("DELETE FROM predictor_round_status_history WHERE tip_round_id=%s", (tip_round_id,))
+            for position, item in enumerate(config.get("statusHistory", []), 1):
+                connection.execute(
+                    """INSERT INTO predictor_round_status_history
+                    (tip_round_id,position,status,changed_at,reason,payload) VALUES (%s,%s,%s,%s,%s,%s)""",
+                    (tip_round_id, position, item.get("status", "UNKNOWN"), item.get("changedAt"),
+                     item.get("reason"), Jsonb(item)),
+                )
+
+    def save_weekend_evaluation(self, payload: dict[str, Any]) -> None:
+        Jsonb = self.json_value
+        with self.connect() as connection:
+            connection.execute(
+                """INSERT INTO weekend_evaluations
+                (tip_round_id,season_id,tip_round_version,generated_at,payload)
+                VALUES (%s,%s,%s,%s,%s) ON CONFLICT (tip_round_id) DO UPDATE SET
+                  season_id=excluded.season_id,tip_round_version=excluded.tip_round_version,
+                  generated_at=excluded.generated_at,payload=excluded.payload,updated_at=now()""",
+                (payload["tipRoundId"], payload.get("seasonId", "unknown"), payload.get("tipRoundVersion"),
+                 payload.get("generatedAt"), Jsonb(payload)),
+            )
+
+    def delete_weekend_evaluation(self, tip_round_id: str) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM weekend_evaluations WHERE tip_round_id=%s", (tip_round_id,))
+
+    def save_season_leaderboard(self, payload: dict[str, Any]) -> None:
+        Jsonb = self.json_value
+        with self.connect() as connection:
+            connection.execute(
+                """INSERT INTO season_leaderboards (season_id,generated_at,payload)
+                VALUES (%s,%s,%s) ON CONFLICT (season_id) DO UPDATE SET
+                  generated_at=excluded.generated_at,payload=excluded.payload,updated_at=now()""",
+                (payload["seasonId"], payload.get("generatedAt"), Jsonb(payload)),
+            )
+
+    def sync_predictor_files(self, workspace: Path = WORKSPACE) -> dict[str, int]:
+        counts = {"rounds": 0, "evaluations": 0, "leaderboards": 0}
+        for config_path in sorted((workspace / "config" / "weekends").glob("tip-round-????-??-??.json")):
+            try:
+                config = json.loads(config_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            tip_round = self._artifact(workspace, config.get("tipRound", {}), "output", "websiteOutput")
+            if not tip_round:
+                continue
+            self.save_tip_round(config, tip_round)
+            counts["rounds"] += 1
+            evaluation = self._artifact(workspace, config.get("weekendEvaluation", {}), "output", "websiteOutput")
+            if evaluation:
+                self.save_weekend_evaluation(evaluation)
+                counts["evaluations"] += 1
+            else:
+                self.delete_weekend_evaluation(str(config["id"]))
+            leaderboard = self._artifact(workspace, config.get("seasonLeaderboard", {}), "output", "websiteOutput")
+            if leaderboard:
+                self.save_season_leaderboard(leaderboard)
+                counts["leaderboards"] += 1
+        return counts
+
+    def current_tip_round(self) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT payload FROM predictor_rounds "
+                "ORDER BY CASE WHEN status='OPEN' THEN 0 ELSE 1 END, weekend_date DESC LIMIT 1"
+            ).fetchone()
+        return self._json_result(row[0]) if row else None
+
+    def tip_round(self, tip_round_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT payload FROM predictor_rounds WHERE id=%s", (tip_round_id,)).fetchone()
+        return self._json_result(row[0]) if row else None
+
+    def weekend_evaluation(self, tip_round_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT payload FROM weekend_evaluations WHERE tip_round_id=%s", (tip_round_id,)).fetchone()
+        return self._json_result(row[0]) if row else None
+
+    def season_leaderboard(self, season_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT payload FROM season_leaderboards WHERE season_id=%s", (season_id,)).fetchone()
+        return self._json_result(row[0]) if row else None
+
+    def submissions(self, tip_round_id: str) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT raw_payload FROM predictor_submissions WHERE tip_round_id=%s ORDER BY submitted_at",
+                (tip_round_id,),
+            ).fetchall()
+        return [self._json_result(row[0]) for row in rows]
 
 
 class SQLiteConnection:
