@@ -1118,6 +1118,167 @@
       ]
     },
     {
+      "raceId": "race-startliste-u8-u10-2026-03-08",
+      "official": true,
+      "groups": [
+        {
+          "id": "u8-female-2019",
+          "winnerTimeSeconds": 55.63,
+          "slowestClassifiedTimeSeconds": 66.41,
+          "entries": [
+            {
+              "startNumber": 7,
+              "status": "DSQ",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 66.41,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2019",
+          "winnerTimeSeconds": 49.83,
+          "slowestClassifiedTimeSeconds": 59.61,
+          "entries": [
+            {
+              "startNumber": 13,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 59.61,
+              "percentageGap": 19.626731,
+              "targetClub": true
+            }
+          ]
+        },
+        {
+          "id": "u8-female-2018",
+          "winnerTimeSeconds": 48.93,
+          "slowestClassifiedTimeSeconds": 56.69,
+          "entries": [
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 56.69,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2018",
+          "winnerTimeSeconds": 45.21,
+          "slowestClassifiedTimeSeconds": 61.22,
+          "entries": [
+            {
+              "startNumber": 30,
+              "status": "CLASSIFIED",
+              "rank": 4,
+              "officialTimeSeconds": 47.26,
+              "percentageGap": 4.534395,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900003,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 61.22,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2017",
+          "winnerTimeSeconds": 46.28,
+          "slowestClassifiedTimeSeconds": 58.95,
+          "entries": [
+            {
+              "startNumber": 43,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900004,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 58.95,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2017",
+          "winnerTimeSeconds": 41.85,
+          "slowestClassifiedTimeSeconds": 53.86,
+          "entries": [
+            {
+              "startNumber": 62,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 42.76,
+              "percentageGap": 2.174432,
+              "targetClub": true
+            },
+            {
+              "startNumber": 56,
+              "status": "CLASSIFIED",
+              "rank": 5,
+              "officialTimeSeconds": 45.3,
+              "percentageGap": 8.243728,
+              "targetClub": true
+            },
+            {
+              "startNumber": 52,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 46.37,
+              "percentageGap": 10.800478,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900005,
+              "status": "CLASSIFIED",
+              "rank": 17,
+              "officialTimeSeconds": 53.86,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2016",
+          "winnerTimeSeconds": 44.99,
+          "slowestClassifiedTimeSeconds": 51.4,
+          "entries": [
+            {
+              "startNumber": 900006,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 51.4,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2016",
+          "winnerTimeSeconds": 41.99,
+          "slowestClassifiedTimeSeconds": 55.33,
+          "entries": [
+            {
+              "startNumber": 900007,
+              "status": "CLASSIFIED",
+              "rank": 22,
+              "officialTimeSeconds": 55.33,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    },
+    {
       "raceId": "race-startliste-u12-2026-03-07",
       "official": true,
       "groups": [
@@ -1370,238 +1531,6 @@
       ]
     },
     {
-      "raceId": "race-startliste-u8-u10-2026-03-08",
-      "official": true,
-      "groups": [
-        {
-          "id": "u8-female-2019",
-          "winnerTimeSeconds": 55.63,
-          "slowestClassifiedTimeSeconds": 66.41,
-          "entries": [
-            {
-              "startNumber": 7,
-              "status": "DSQ",
-              "targetClub": true
-            },
-            {
-              "startNumber": 900000,
-              "status": "CLASSIFIED",
-              "rank": 3,
-              "officialTimeSeconds": 66.41,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u8-male-2019",
-          "winnerTimeSeconds": 49.83,
-          "slowestClassifiedTimeSeconds": 59.61,
-          "entries": [
-            {
-              "startNumber": 13,
-              "status": "CLASSIFIED",
-              "rank": 7,
-              "officialTimeSeconds": 59.61,
-              "percentageGap": 19.626731,
-              "targetClub": true
-            }
-          ]
-        },
-        {
-          "id": "u8-female-2018",
-          "winnerTimeSeconds": 48.93,
-          "slowestClassifiedTimeSeconds": 56.69,
-          "entries": [
-            {
-              "startNumber": 900002,
-              "status": "CLASSIFIED",
-              "rank": 8,
-              "officialTimeSeconds": 56.69,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u8-male-2018",
-          "winnerTimeSeconds": 45.21,
-          "slowestClassifiedTimeSeconds": 61.22,
-          "entries": [
-            {
-              "startNumber": 30,
-              "status": "CLASSIFIED",
-              "rank": 4,
-              "officialTimeSeconds": 47.26,
-              "percentageGap": 4.534395,
-              "targetClub": true
-            },
-            {
-              "startNumber": 900003,
-              "status": "CLASSIFIED",
-              "rank": 10,
-              "officialTimeSeconds": 61.22,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u10-female-2017",
-          "winnerTimeSeconds": 46.28,
-          "slowestClassifiedTimeSeconds": 58.95,
-          "entries": [
-            {
-              "startNumber": 43,
-              "status": "DNS",
-              "targetClub": true
-            },
-            {
-              "startNumber": 900004,
-              "status": "CLASSIFIED",
-              "rank": 8,
-              "officialTimeSeconds": 58.95,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u10-male-2017",
-          "winnerTimeSeconds": 41.85,
-          "slowestClassifiedTimeSeconds": 53.86,
-          "entries": [
-            {
-              "startNumber": 62,
-              "status": "CLASSIFIED",
-              "rank": 3,
-              "officialTimeSeconds": 42.76,
-              "percentageGap": 2.174432,
-              "targetClub": true
-            },
-            {
-              "startNumber": 56,
-              "status": "CLASSIFIED",
-              "rank": 5,
-              "officialTimeSeconds": 45.3,
-              "percentageGap": 8.243728,
-              "targetClub": true
-            },
-            {
-              "startNumber": 52,
-              "status": "CLASSIFIED",
-              "rank": 7,
-              "officialTimeSeconds": 46.37,
-              "percentageGap": 10.800478,
-              "targetClub": true
-            },
-            {
-              "startNumber": 900005,
-              "status": "CLASSIFIED",
-              "rank": 17,
-              "officialTimeSeconds": 53.86,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u10-female-2016",
-          "winnerTimeSeconds": 44.99,
-          "slowestClassifiedTimeSeconds": 51.4,
-          "entries": [
-            {
-              "startNumber": 900006,
-              "status": "CLASSIFIED",
-              "rank": 10,
-              "officialTimeSeconds": 51.4,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u10-male-2016",
-          "winnerTimeSeconds": 41.99,
-          "slowestClassifiedTimeSeconds": 55.33,
-          "entries": [
-            {
-              "startNumber": 900007,
-              "status": "CLASSIFIED",
-              "rank": 22,
-              "officialTimeSeconds": 55.33,
-              "targetClub": false
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "raceId": "race-startliste-u12-2026-03-08",
-      "official": true,
-      "groups": [
-        {
-          "id": "u12-female",
-          "winnerTimeSeconds": 86.43,
-          "slowestClassifiedTimeSeconds": 107.28,
-          "entries": [
-            {
-              "startNumber": 11,
-              "status": "CLASSIFIED",
-              "rank": 14,
-              "officialTimeSeconds": 94.47999999999999,
-              "percentageGap": 9.313896,
-              "targetClub": true
-            },
-            {
-              "startNumber": 10,
-              "status": "CLASSIFIED",
-              "rank": 25,
-              "officialTimeSeconds": 103.45,
-              "percentageGap": 19.692236,
-              "targetClub": true
-            },
-            {
-              "startNumber": 900000,
-              "status": "CLASSIFIED",
-              "rank": 26,
-              "officialTimeSeconds": 107.28,
-              "targetClub": false
-            }
-          ]
-        },
-        {
-          "id": "u12-male",
-          "winnerTimeSeconds": 86.56,
-          "slowestClassifiedTimeSeconds": 108.15,
-          "entries": [
-            {
-              "startNumber": 47,
-              "status": "CLASSIFIED",
-              "rank": 18,
-              "officialTimeSeconds": 95.85,
-              "percentageGap": 10.73244,
-              "targetClub": true
-            },
-            {
-              "startNumber": 45,
-              "status": "CLASSIFIED",
-              "rank": 27,
-              "officialTimeSeconds": 106.08,
-              "percentageGap": 22.550832,
-              "targetClub": true
-            },
-            {
-              "startNumber": 59,
-              "status": "DNS",
-              "targetClub": true
-            },
-            {
-              "startNumber": 900001,
-              "status": "CLASSIFIED",
-              "rank": 28,
-              "officialTimeSeconds": 108.15,
-              "targetClub": false
-            }
-          ]
-        }
-      ]
-    },
-    {
       "raceId": "race-startliste-u14-u16-2026-03-08",
       "official": true,
       "groups": [
@@ -1766,6 +1695,77 @@
           ]
         }
       ]
+    },
+    {
+      "raceId": "race-startliste-u12-2026-03-08",
+      "official": true,
+      "groups": [
+        {
+          "id": "u12-female",
+          "winnerTimeSeconds": 86.43,
+          "slowestClassifiedTimeSeconds": 107.28,
+          "entries": [
+            {
+              "startNumber": 11,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 94.47999999999999,
+              "percentageGap": 9.313896,
+              "targetClub": true
+            },
+            {
+              "startNumber": 10,
+              "status": "CLASSIFIED",
+              "rank": 25,
+              "officialTimeSeconds": 103.45,
+              "percentageGap": 19.692236,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900000,
+              "status": "CLASSIFIED",
+              "rank": 26,
+              "officialTimeSeconds": 107.28,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u12-male",
+          "winnerTimeSeconds": 86.56,
+          "slowestClassifiedTimeSeconds": 108.15,
+          "entries": [
+            {
+              "startNumber": 47,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 95.85,
+              "percentageGap": 10.73244,
+              "targetClub": true
+            },
+            {
+              "startNumber": 45,
+              "status": "CLASSIFIED",
+              "rank": 27,
+              "officialTimeSeconds": 106.08,
+              "percentageGap": 22.550832,
+              "targetClub": true
+            },
+            {
+              "startNumber": 59,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 28,
+              "officialTimeSeconds": 108.15,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
     }
   ],
   "submissions": [
@@ -1834,13 +1834,13 @@
         "rank": 1,
         "playerId": "local-gg",
         "displayName": "GG",
-        "weekendPoints": 650
+        "weekendPoints": 520
       },
       {
         "rank": 2,
         "playerId": "local-bw",
         "displayName": "BW",
-        "weekendPoints": 550
+        "weekendPoints": 440
       }
     ],
     "questionPointsByPlayer": {

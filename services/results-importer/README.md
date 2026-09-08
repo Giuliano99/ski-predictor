@@ -118,3 +118,13 @@ python services/results-importer/src/generate_tip_round.py data/result-lists/pro
 ```powershell
 python -m unittest discover services/results-importer/tests
 ```
+
+Vor größeren technischen Änderungen prüft der Corpus-Stresstest zusätzlich alle in
+`config/weekends` konfigurierten Original-PDFs, ihre Startnummernzuordnung und die
+reproduzierbaren Wochenendwertungen. Er verändert keine Renn- oder Tippdaten.
+
+```powershell
+python services/results-importer/src/stress_test_corpus.py
+```
+
+Der ausführliche Prüfbericht wird unter `output/reports/stress-test.md` abgelegt.

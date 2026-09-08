@@ -13,6 +13,7 @@ from extract_start_list import (
     FORMAT_DSVALPIN,
     FORMAT_RACE_CODE,
     FORMAT_RACE_SIMPLE,
+    FORMAT_VOLA,
     TARGET_CLUB,
     clean_space,
     detect_format,
@@ -48,17 +49,15 @@ def group_from_line(line: str, event_name: str) -> dict[str, Any] | None:
         age_class = f"U{age_match.group(1)}" if age_match else "OPEN"
         category = "FEMALE" if normalized in {"mädchen", "maedchen"} else "MALE"
     else:
-        age_match = re.fullmatch(
-            r"U(\d+)(?:\s+(?:Jg\.?\s*)?((?:19|20)\d{2}))?\s+(weiblich|männlich|maennlich|mädchen|maedchen|buben)",
-            line,
-            re.IGNORECASE,
-        )
-        if not age_match:
+        age_match = re.search(r"\bU(\d+)\b", line, re.IGNORECASE)
+        gender_match = re.search(r"weiblich|männlich|maennlich|mädchen|maedchen|buben", line, re.IGNORECASE)
+        if not age_match or not gender_match:
             return None
         age_class = f"U{age_match.group(1)}"
-        if age_match.group(2):
-            birth_years = [int(age_match.group(2))]
-        category = "FEMALE" if age_match.group(3).casefold() in {"weiblich", "mädchen", "maedchen"} else "MALE"
+        year_match = re.search(r"\b((?:19|20)\d{2})\b", line)
+        if year_match:
+            birth_years = [int(year_match.group(1))]
+        category = "FEMALE" if gender_match.group(0).casefold() in {"weiblich", "mädchen", "maedchen"} else "MALE"
     group_id = f"{age_class}-{category}"
     if birth_years:
         group_id += f"-{birth_years[0]}"
@@ -190,6 +189,119 @@ def dsvalpin_group_from_start_list(group: dict[str, Any]) -> dict[str, Any]:
         "classificationMethod": group.get("classificationMethod", "SUM_OF_RUNS"),
         "entries": [],
     }
+
+
+def vola_group_from_start_list(group: dict[str, Any]) -> dict[str, Any]:
+    result = dsvalpin_group_from_start_list(group)
+    result["classificationMethod"] = "OFFICIAL_TOTAL"
+    return result
+
+
+def parse_vola(lines: list[str], start_list: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    groups = [vola_group_from_start_list(group) for group in start_list["groups"]]
+    groups_by_id = {group["id"]: group for group in groups}
+    starter_by_number: dict[int, tuple[dict[str, Any], dict[str, Any]]] = {
+        starter["startNumber"]: (groups_by_id[group["id"]], starter)
+        for group in start_list["groups"]
+        for starter in group["starters"]
+    }
+    entries_by_number: dict[int, dict[str, Any]] = {}
+    warnings: list[str] = []
+    current_status: str | None = None
+    current_run = 1
+    in_results = False
+    classified_pattern = re.compile(r"^(\d+)\s+(\d+)\s+(.+?)\s+((?:19|20)\d{2})(?:\s+(.*))?$")
+    status_pattern = re.compile(
+        r"^(Nicht am Start|Nicht im Ziel|Disqualifiziert)(?:\s*-\s*Lauf\s*(\d+))?",
+        re.IGNORECASE,
+    )
+    time_pattern = re.compile(r"\d+(?:\.\d{2}|:\d{2}[.,]\d{2})$")
+
+    def identity(starter: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: starter[key]
+            for key in ("startNumber", "externalAthleteId", "fullName", "displayName", "birthYear", "federation", "club", "targetClub")
+            if key in starter
+        }
+
+    for line in lines:
+        if line.startswith("Platz Nr. Name und Vorname"):
+            in_results = True
+            current_status = None
+            continue
+        if re.fullmatch(r"(?:weiblich|männlich|maennlich)\s*/\s*(?:19|20)\d{2}", line, re.IGNORECASE):
+            current_status = None
+            continue
+        status_match = status_pattern.match(line)
+        if status_match:
+            current_status = {
+                "nicht am start": "DNS",
+                "nicht im ziel": "DNF",
+                "disqualifiziert": "DSQ",
+            }[status_match.group(1).casefold()]
+            current_run = int(status_match.group(2) or 1)
+            continue
+        if not in_results:
+            continue
+
+        if current_status:
+            status_entry = re.match(r"^(\d+)\s+.+?\s+(?:19|20)\d{2}(?:\s+.*)?$", line)
+            if not status_entry:
+                continue
+            start_number = int(status_entry.group(1))
+            pair = starter_by_number.get(start_number)
+            if not pair:
+                warnings.append(f"Keine Wertungsgruppe für Startnummer {start_number} gefunden")
+                continue
+            target_group, starter = pair
+            entry = entries_by_number.get(start_number)
+            run = {"runNumber": current_run, "status": current_status}
+            if entry:
+                if run not in entry["runResults"]:
+                    entry["runResults"].append(run)
+                if current_status == "DSQ" or entry["status"] == "DNS":
+                    entry["status"] = current_status
+            else:
+                entry = {**identity(starter), "status": current_status, "runResults": [run]}
+                target_group["entries"].append(entry)
+                entries_by_number[start_number] = entry
+            continue
+
+        match = classified_pattern.match(line)
+        if not match:
+            continue
+        rank, start_number = int(match.group(1)), int(match.group(2))
+        pair = starter_by_number.get(start_number)
+        if not pair:
+            warnings.append(f"Keine Wertungsgruppe für Startnummer {start_number} gefunden")
+            continue
+        remainder = (match.group(5) or "").split()
+        first_time = next(
+            (index for index in range(max(0, len(remainder) - 5), len(remainder) - 2) if all(time_pattern.fullmatch(token) for token in remainder[index:index + 3])),
+            None,
+        )
+        if first_time is None:
+            warnings.append(f"Ergebnis für Startnummer {start_number} nicht erkannt: {line[:100]}")
+            continue
+        values = remainder[first_time:]
+        run_one, run_two, total = values[:3]
+        gap = values[-1] if len(values) in {4, 5} else None
+        target_group, starter = pair
+        entry = {
+            **identity(starter),
+            "status": "CLASSIFIED",
+            "rank": rank,
+            "officialTimeSeconds": seconds(total),
+            "gapSeconds": seconds(gap) if gap else 0.0,
+            "runResults": [
+                {"runNumber": 1, "status": "CLASSIFIED", "timeSeconds": seconds(run_one)},
+                {"runNumber": 2, "status": "CLASSIFIED", "timeSeconds": seconds(run_two)},
+            ],
+        }
+        target_group["entries"].append(entry)
+        entries_by_number[start_number] = entry
+
+    return [group for group in groups if group["entries"]], list(dict.fromkeys(warnings))
 
 
 def parse_dsvalpin_detail(detail: str, previous_entry: dict[str, Any] | None, position: int) -> dict[str, Any] | None:
@@ -379,7 +491,7 @@ def race_id_for(start_list: dict[str, Any] | None, result_path: Path, event: dic
 def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, target_club: str = TARGET_CLUB) -> dict[str, Any]:
     lines, text = extract_pdf_text(path)
     source_format = detect_format(text)
-    if source_format not in {FORMAT_DSVALPIN, FORMAT_RACE_CODE, FORMAT_RACE_SIMPLE}:
+    if source_format not in {FORMAT_DSVALPIN, FORMAT_RACE_CODE, FORMAT_RACE_SIMPLE, FORMAT_VOLA}:
         raise ValueError(f"Unsupported result format in {path.name}")
     event = event_metadata(lines, text)
     groups: list[dict[str, Any]] = []
@@ -391,6 +503,10 @@ def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, ta
         if not start_list:
             raise ValueError("DSValpin result lists require --start-list for group assignment")
         groups, warnings = parse_dsvalpin(lines, start_list, target_club)
+    elif source_format == FORMAT_VOLA:
+        if not start_list:
+            raise ValueError("Vola result lists require --start-list for group assignment")
+        groups, warnings = parse_vola(lines, start_list)
     else:
         for line in lines:
             group = group_from_line(line, event["name"])

@@ -1,0 +1,1414 @@
+{
+  "description": "Fachlicher Referenzfall Rennwochenende 7. und 8. März 2026",
+  "tipRound": {
+    "id": "tip-round-2027-01-13",
+    "contentVersion": "sha256-1e61dfdbdff04c08dce0494f3fc5d83113497211a2f8c3d07b9b5a7442ac1afe",
+    "races": [
+      {
+        "id": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+        "name": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+        "discipline": "Riesenslalom",
+        "day": "Mittwoch",
+        "date": "2027-01-13",
+        "sourceFile": "2023-02-15_Startliste 1.DG_U8U10_RS.pdf",
+        "location": "Hopfgarten, Schernthannhang",
+        "originalDate": "2023-02-15"
+      },
+      {
+        "id": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+        "name": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+        "discipline": "Slalom",
+        "day": "Mittwoch",
+        "date": "2027-01-13",
+        "sourceFile": "2023-02-15_Startliste 1.DG_U8U10_SL.pdf",
+        "location": "Hopfgarten, Schernthannhang",
+        "originalDate": "2023-02-15"
+      }
+    ],
+    "athletes": [
+      {
+        "id": "athlete-local-d07c70349f62",
+        "displayName": "Alexander T.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 120
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 94
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-46a0d9964908",
+        "displayName": "Annika V.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 26
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 26
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-6220b00972a7",
+        "displayName": "Anton J.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 121
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 106
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-3c589354831c",
+        "displayName": "Antonin S.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 125
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 101
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-59accf7c649d",
+        "displayName": "Carla R.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 29
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 32
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-4829d2e99164",
+        "displayName": "Clara S.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2013",
+            "ageClass": "U10",
+            "startNumber": 51
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-963864e3dbd1",
+        "displayName": "Diego F.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 137
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 102
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-d0795783da47",
+        "displayName": "Ella H.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2013",
+            "ageClass": "U10",
+            "startNumber": 68
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-416bbc3b36e5",
+        "displayName": "Ferdinand S.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 99
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-f46d1f2b2554",
+        "displayName": "Filippa W.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 38
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 34
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-f88da2200a24",
+        "displayName": "Laura S.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 32
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 21
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-982da8d1bd6e",
+        "displayName": "Louka W.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2013",
+            "ageClass": "U10",
+            "startNumber": 53
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-afa779703c19",
+        "displayName": "Luisa W.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 41
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-7caf98f5e3d6",
+        "displayName": "Maja H.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2013",
+            "ageClass": "U10",
+            "startNumber": 48
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-9ad5e6cc3fe2",
+        "displayName": "Maria-Emilia G.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 33
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 37
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-4941cfc30be8",
+        "displayName": "Markus H.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 140
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 95
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-37c26bef4a61",
+        "displayName": "Mira C.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 23
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-female-2014",
+            "ageClass": "U10",
+            "startNumber": 30
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-200193ee59df",
+        "displayName": "Nico W.",
+        "ageClass": "U10",
+        "birthYear": 2014,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2014",
+            "ageClass": "U10",
+            "startNumber": 98
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2014",
+            "ageClass": "U10",
+            "startNumber": 84
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-cedda9c98256",
+        "displayName": "Simon P.",
+        "ageClass": "U10",
+        "birthYear": 2013,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 132
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u10-male-2013",
+            "ageClass": "U10",
+            "startNumber": 91
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-79ad01469a6d",
+        "displayName": "Carolina T.",
+        "ageClass": "U8",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 12
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 14
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-a72596575e74",
+        "displayName": "Emmi K.",
+        "ageClass": "U8",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 22
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-5a4187970f42",
+        "displayName": "Filipa S.",
+        "ageClass": "U8",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 11
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 18
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-08b48b944dba",
+        "displayName": "Jonas S.",
+        "ageClass": "U8",
+        "birthYear": 2016,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-male-2016",
+            "ageClass": "U8",
+            "startNumber": 72
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u8-male-2016",
+            "ageClass": "U8",
+            "startNumber": 57
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-36de86ebc80b",
+        "displayName": "Marie J.",
+        "ageClass": "U8",
+        "birthYear": 2016,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-female-2016",
+            "ageClass": "U8",
+            "startNumber": 3
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u8-female-2016",
+            "ageClass": "U8",
+            "startNumber": 6
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-65e2231cdc16",
+        "displayName": "Nicolas W.",
+        "ageClass": "U8",
+        "birthYear": 2016,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-male-2016",
+            "ageClass": "U8",
+            "startNumber": 78
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u8-male-2016",
+            "ageClass": "U8",
+            "startNumber": 54
+          }
+        ]
+      },
+      {
+        "id": "athlete-local-0d4955e42c76",
+        "displayName": "Theresa E.",
+        "ageClass": "U8",
+        "birthYear": 2015,
+        "starts": [
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-rs-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 16
+          },
+          {
+            "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+            "groupId": "race-2023-02-15-startliste-1-dg-u8u10-sl-u8-female-2015",
+            "ageClass": "U8",
+            "startNumber": 16
+          }
+        ]
+      }
+    ],
+    "questions": [
+      {
+        "id": "weekend-podium-count",
+        "type": "NUMBER",
+        "prompt": "Wie viele Podiumsplätze erreicht Oberhaching in allen 2 Rennen des Wochenendes?",
+        "hint": "Alle Rennen und offiziellen Wertungsgruppen des Wochenendes zählen zusammen.",
+        "evaluationMetric": "PODIUM_COUNT",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs",
+          "race-2023-02-15-startliste-1-dg-u8u10-sl"
+        ],
+        "raceLabel": "Alle 2 Rennen des Wochenendes",
+        "minimum": 0,
+        "maximum": 29
+      },
+      {
+        "id": "weekend-best-result",
+        "type": "ATHLETE",
+        "prompt": "Wer erzielt das beste Ergebnis in allen Rennen des Wochenendes?",
+        "hint": "Pro Person zählt nur das beste offizielle Ergebnis des Wochenendes.",
+        "evaluationMetric": "BEST_RESULT",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs",
+          "race-2023-02-15-startliste-1-dg-u8u10-sl"
+        ],
+        "raceLabel": "Alle 2 Rennen des Wochenendes",
+        "athleteIds": [
+          "athlete-local-d07c70349f62",
+          "athlete-local-46a0d9964908",
+          "athlete-local-6220b00972a7",
+          "athlete-local-3c589354831c",
+          "athlete-local-59accf7c649d",
+          "athlete-local-4829d2e99164",
+          "athlete-local-963864e3dbd1",
+          "athlete-local-d0795783da47",
+          "athlete-local-416bbc3b36e5",
+          "athlete-local-f46d1f2b2554",
+          "athlete-local-f88da2200a24",
+          "athlete-local-982da8d1bd6e",
+          "athlete-local-afa779703c19",
+          "athlete-local-7caf98f5e3d6",
+          "athlete-local-9ad5e6cc3fe2",
+          "athlete-local-4941cfc30be8",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-200193ee59df",
+          "athlete-local-cedda9c98256",
+          "athlete-local-79ad01469a6d",
+          "athlete-local-a72596575e74",
+          "athlete-local-5a4187970f42",
+          "athlete-local-08b48b944dba",
+          "athlete-local-36de86ebc80b",
+          "athlete-local-65e2231cdc16",
+          "athlete-local-0d4955e42c76"
+        ]
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-rs-u10-top-ten",
+        "type": "NUMBER",
+        "prompt": "Wie viele Top-10-Ergebnisse erzielt Oberhaching am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in der U10?",
+        "hint": "Es zählt ausschließlich am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in allen offiziellen U10-Wertungsgruppen.",
+        "evaluationMetric": "TOP_N_COUNT",
+        "threshold": 10,
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10 · U10",
+        "ageClasses": [
+          "U10"
+        ],
+        "minimum": 0,
+        "maximum": 18,
+        "athleteIds": [
+          "athlete-local-d07c70349f62",
+          "athlete-local-46a0d9964908",
+          "athlete-local-6220b00972a7",
+          "athlete-local-3c589354831c",
+          "athlete-local-59accf7c649d",
+          "athlete-local-4829d2e99164",
+          "athlete-local-963864e3dbd1",
+          "athlete-local-d0795783da47",
+          "athlete-local-416bbc3b36e5",
+          "athlete-local-f46d1f2b2554",
+          "athlete-local-f88da2200a24",
+          "athlete-local-982da8d1bd6e",
+          "athlete-local-afa779703c19",
+          "athlete-local-7caf98f5e3d6",
+          "athlete-local-9ad5e6cc3fe2",
+          "athlete-local-4941cfc30be8",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-200193ee59df",
+          "athlete-local-cedda9c98256"
+        ]
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-sl-u10-top-ten",
+        "type": "NUMBER",
+        "prompt": "Wie viele Top-10-Ergebnisse erzielt Oberhaching am Mittwoch im Slalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in der U10?",
+        "hint": "Es zählt ausschließlich am Mittwoch im Slalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in allen offiziellen U10-Wertungsgruppen.",
+        "evaluationMetric": "TOP_N_COUNT",
+        "threshold": 10,
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-sl"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10 · U10",
+        "ageClasses": [
+          "U10"
+        ],
+        "minimum": 0,
+        "maximum": 14,
+        "athleteIds": [
+          "athlete-local-d07c70349f62",
+          "athlete-local-46a0d9964908",
+          "athlete-local-6220b00972a7",
+          "athlete-local-3c589354831c",
+          "athlete-local-59accf7c649d",
+          "athlete-local-4829d2e99164",
+          "athlete-local-963864e3dbd1",
+          "athlete-local-d0795783da47",
+          "athlete-local-416bbc3b36e5",
+          "athlete-local-f46d1f2b2554",
+          "athlete-local-f88da2200a24",
+          "athlete-local-982da8d1bd6e",
+          "athlete-local-afa779703c19",
+          "athlete-local-7caf98f5e3d6",
+          "athlete-local-9ad5e6cc3fe2",
+          "athlete-local-4941cfc30be8",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-200193ee59df",
+          "athlete-local-cedda9c98256"
+        ]
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-rs-u10-lowest-gap",
+        "type": "ATHLETE",
+        "prompt": "Wer hat am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in der U10 den geringsten prozentualen Rückstand?",
+        "hint": "Verglichen wird der prozentuale Rückstand auf den Sieger oder die Siegerin der jeweiligen offiziellen Wertungsgruppe.",
+        "evaluationMetric": "LOWEST_PERCENTAGE_GAP",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10 · U10",
+        "ageClasses": [
+          "U10"
+        ],
+        "athleteIds": [
+          "athlete-local-d07c70349f62",
+          "athlete-local-46a0d9964908",
+          "athlete-local-6220b00972a7",
+          "athlete-local-3c589354831c",
+          "athlete-local-59accf7c649d",
+          "athlete-local-4829d2e99164",
+          "athlete-local-963864e3dbd1",
+          "athlete-local-d0795783da47",
+          "athlete-local-416bbc3b36e5",
+          "athlete-local-f46d1f2b2554",
+          "athlete-local-f88da2200a24",
+          "athlete-local-982da8d1bd6e",
+          "athlete-local-afa779703c19",
+          "athlete-local-7caf98f5e3d6",
+          "athlete-local-9ad5e6cc3fe2",
+          "athlete-local-4941cfc30be8",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-200193ee59df",
+          "athlete-local-cedda9c98256"
+        ]
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-rs-marie-j-placement",
+        "type": "PLACEMENT",
+        "prompt": "Welche Platzierung erreicht Marie J. am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in Schüler U8 / weiblich / Jg. 2016?",
+        "hint": "Es zählt die offizielle Platzierung in der genannten Wertungsgruppe.",
+        "evaluationMetric": "EXACT_PLACEMENT",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10 · U8",
+        "ageClasses": [
+          "U8"
+        ],
+        "athleteId": "athlete-local-36de86ebc80b",
+        "minimum": 1,
+        "maximum": 60
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-rs-filipa-s-carolina-t-duel",
+        "type": "HEAD_TO_HEAD",
+        "prompt": "Wer ist am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in Schüler U8 / weiblich / Jg. 2015 besser: Filipa S. oder Carolina T.?",
+        "hint": "Es zählt das offizielle Gesamtergebnis derselben Wertungsgruppe.",
+        "evaluationMetric": "DIRECT_COMPARISON",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+        "athleteIds": [
+          "athlete-local-5a4187970f42",
+          "athlete-local-79ad01469a6d"
+        ]
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-rs-schuler-u8-weiblich-jg-2015-ranking",
+        "type": "INTERNAL_RANKING",
+        "prompt": "Wie lautet am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ die interne Oberhachinger Reihenfolge in Schüler U8 / weiblich / Jg. 2015?",
+        "hint": "Alle genannten Personen fahren in derselben offiziellen Wertungsgruppe.",
+        "evaluationMetric": "INTERNAL_ORDER",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+        "positions": 3,
+        "athleteIds": [
+          "athlete-local-5a4187970f42",
+          "athlete-local-79ad01469a6d",
+          "athlete-local-0d4955e42c76",
+          "athlete-local-a72596575e74"
+        ]
+      },
+      {
+        "id": "2023-02-15-startliste-1-dg-u8u10-rs-u10-classified",
+        "type": "NUMBER",
+        "prompt": "Wie viele Oberhachinger Starter kommen am Mittwoch im Riesenslalom beim Rennen „SVM ROSSIGNOL HERO Kids Cup U8 U10“ in der U10 in die Wertung?",
+        "hint": "DNS, DNF und DSQ zählen nicht als offiziell gewertet.",
+        "evaluationMetric": "CLASSIFIED_COUNT",
+        "raceIds": [
+          "race-2023-02-15-startliste-1-dg-u8u10-rs"
+        ],
+        "raceLabel": "SVM ROSSIGNOL HERO Kids Cup U8 U10 · U10",
+        "ageClasses": [
+          "U10"
+        ],
+        "minimum": 0,
+        "maximum": 18,
+        "athleteIds": [
+          "athlete-local-d07c70349f62",
+          "athlete-local-46a0d9964908",
+          "athlete-local-6220b00972a7",
+          "athlete-local-3c589354831c",
+          "athlete-local-59accf7c649d",
+          "athlete-local-4829d2e99164",
+          "athlete-local-963864e3dbd1",
+          "athlete-local-d0795783da47",
+          "athlete-local-416bbc3b36e5",
+          "athlete-local-f46d1f2b2554",
+          "athlete-local-f88da2200a24",
+          "athlete-local-982da8d1bd6e",
+          "athlete-local-afa779703c19",
+          "athlete-local-7caf98f5e3d6",
+          "athlete-local-9ad5e6cc3fe2",
+          "athlete-local-4941cfc30be8",
+          "athlete-local-37c26bef4a61",
+          "athlete-local-200193ee59df",
+          "athlete-local-cedda9c98256"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "raceId": "race-2023-02-15-startliste-1-dg-u8u10-rs",
+      "official": true,
+      "groups": [
+        {
+          "id": "u8-female-2016",
+          "winnerTimeSeconds": 59.54,
+          "slowestClassifiedTimeSeconds": 71.87,
+          "entries": [
+            {
+              "startNumber": 3,
+              "status": "CLASSIFIED",
+              "rank": 6,
+              "officialTimeSeconds": 71.87,
+              "percentageGap": 20.708767,
+              "targetClub": true
+            }
+          ]
+        },
+        {
+          "id": "u8-female-2015",
+          "winnerTimeSeconds": 53.27,
+          "slowestClassifiedTimeSeconds": 66.11,
+          "entries": [
+            {
+              "startNumber": 16,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 61.61,
+              "percentageGap": 15.656092,
+              "targetClub": true
+            },
+            {
+              "startNumber": 12,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 63.24,
+              "percentageGap": 18.715975,
+              "targetClub": true
+            },
+            {
+              "startNumber": 11,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 63.26,
+              "percentageGap": 18.75352,
+              "targetClub": true
+            },
+            {
+              "startNumber": 22,
+              "status": "DNS",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900001,
+              "status": "CLASSIFIED",
+              "rank": 13,
+              "officialTimeSeconds": 66.11,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2014",
+          "winnerTimeSeconds": 49.71,
+          "slowestClassifiedTimeSeconds": 69.36,
+          "entries": [
+            {
+              "startNumber": 26,
+              "status": "CLASSIFIED",
+              "rank": 3,
+              "officialTimeSeconds": 51.86,
+              "percentageGap": 4.325085,
+              "targetClub": true
+            },
+            {
+              "startNumber": 32,
+              "status": "CLASSIFIED",
+              "rank": 9,
+              "officialTimeSeconds": 55.57,
+              "percentageGap": 11.788373,
+              "targetClub": true
+            },
+            {
+              "startNumber": 29,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 55.6,
+              "percentageGap": 11.848723,
+              "targetClub": true
+            },
+            {
+              "startNumber": 41,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 57.45,
+              "percentageGap": 15.570308,
+              "targetClub": true
+            },
+            {
+              "startNumber": 33,
+              "status": "CLASSIFIED",
+              "rank": 16,
+              "officialTimeSeconds": 59.39,
+              "percentageGap": 19.472943,
+              "targetClub": true
+            },
+            {
+              "startNumber": 38,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 60.48,
+              "percentageGap": 21.665661,
+              "targetClub": true
+            },
+            {
+              "startNumber": 23,
+              "status": "CLASSIFIED",
+              "rank": 19,
+              "officialTimeSeconds": 61.55,
+              "percentageGap": 23.818145,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 21,
+              "officialTimeSeconds": 69.36,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2013",
+          "winnerTimeSeconds": 49.82,
+          "slowestClassifiedTimeSeconds": 74.77,
+          "entries": [
+            {
+              "startNumber": 53,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 59.59,
+              "percentageGap": 19.610598,
+              "targetClub": true
+            },
+            {
+              "startNumber": 68,
+              "status": "CLASSIFIED",
+              "rank": 17,
+              "officialTimeSeconds": 65.72,
+              "percentageGap": 31.914894,
+              "targetClub": true
+            },
+            {
+              "startNumber": 48,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 66.8,
+              "percentageGap": 34.082698,
+              "targetClub": true
+            },
+            {
+              "startNumber": 51,
+              "status": "DNF",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900003,
+              "status": "CLASSIFIED",
+              "rank": 19,
+              "officialTimeSeconds": 74.77,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2016",
+          "winnerTimeSeconds": 52.73,
+          "slowestClassifiedTimeSeconds": 61.31,
+          "entries": [
+            {
+              "startNumber": 78,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 57.47,
+              "percentageGap": 8.98919,
+              "targetClub": true
+            },
+            {
+              "startNumber": 72,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 58.59,
+              "percentageGap": 11.113218,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900004,
+              "status": "CLASSIFIED",
+              "rank": 12,
+              "officialTimeSeconds": 61.31,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2015",
+          "winnerTimeSeconds": 49.16,
+          "slowestClassifiedTimeSeconds": 62.1,
+          "entries": [
+            {
+              "startNumber": 900005,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 62.1,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2014",
+          "winnerTimeSeconds": 49.0,
+          "slowestClassifiedTimeSeconds": 63.04,
+          "entries": [
+            {
+              "startNumber": 98,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 53.26,
+              "percentageGap": 8.693878,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900006,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 63.04,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2013",
+          "winnerTimeSeconds": 47.49,
+          "slowestClassifiedTimeSeconds": 60.68,
+          "entries": [
+            {
+              "startNumber": 121,
+              "status": "CLASSIFIED",
+              "rank": 6,
+              "officialTimeSeconds": 48.19,
+              "percentageGap": 1.473995,
+              "targetClub": true
+            },
+            {
+              "startNumber": 125,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 51.01,
+              "percentageGap": 7.412087,
+              "targetClub": true
+            },
+            {
+              "startNumber": 137,
+              "status": "CLASSIFIED",
+              "rank": 16,
+              "officialTimeSeconds": 51.44,
+              "percentageGap": 8.317541,
+              "targetClub": true
+            },
+            {
+              "startNumber": 140,
+              "status": "CLASSIFIED",
+              "rank": 18,
+              "officialTimeSeconds": 51.95,
+              "percentageGap": 9.391451,
+              "targetClub": true
+            },
+            {
+              "startNumber": 132,
+              "status": "CLASSIFIED",
+              "rank": 24,
+              "officialTimeSeconds": 54.35,
+              "percentageGap": 14.445146,
+              "targetClub": true
+            },
+            {
+              "startNumber": 120,
+              "status": "CLASSIFIED",
+              "rank": 25,
+              "officialTimeSeconds": 55.1,
+              "percentageGap": 16.024426,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900007,
+              "status": "CLASSIFIED",
+              "rank": 26,
+              "officialTimeSeconds": 60.68,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "raceId": "race-2023-02-15-startliste-1-dg-u8u10-sl",
+      "official": true,
+      "groups": [
+        {
+          "id": "u8-female-2016",
+          "winnerTimeSeconds": 60.25,
+          "slowestClassifiedTimeSeconds": 68.15,
+          "entries": [
+            {
+              "startNumber": 6,
+              "status": "CLASSIFIED",
+              "rank": 5,
+              "officialTimeSeconds": 68.15,
+              "percentageGap": 13.112033,
+              "targetClub": true
+            }
+          ]
+        },
+        {
+          "id": "u8-female-2015",
+          "winnerTimeSeconds": 54.3,
+          "slowestClassifiedTimeSeconds": 66.47,
+          "entries": [
+            {
+              "startNumber": 14,
+              "status": "CLASSIFIED",
+              "rank": 5,
+              "officialTimeSeconds": 63.32,
+              "percentageGap": 16.611418,
+              "targetClub": true
+            },
+            {
+              "startNumber": 18,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 66.47,
+              "percentageGap": 22.412523,
+              "targetClub": true
+            },
+            {
+              "startNumber": 16,
+              "status": "DNS",
+              "targetClub": true
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2014",
+          "winnerTimeSeconds": 52.26,
+          "slowestClassifiedTimeSeconds": 69.69,
+          "entries": [
+            {
+              "startNumber": 26,
+              "status": "CLASSIFIED",
+              "rank": 2,
+              "officialTimeSeconds": 52.3,
+              "percentageGap": 0.07654,
+              "targetClub": true
+            },
+            {
+              "startNumber": 21,
+              "status": "CLASSIFIED",
+              "rank": 9,
+              "officialTimeSeconds": 58.98,
+              "percentageGap": 12.858783,
+              "targetClub": true
+            },
+            {
+              "startNumber": 34,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 60.08,
+              "percentageGap": 14.963643,
+              "targetClub": true
+            },
+            {
+              "startNumber": 30,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 60.25,
+              "percentageGap": 15.28894,
+              "targetClub": true
+            },
+            {
+              "startNumber": 37,
+              "status": "CLASSIFIED",
+              "rank": 14,
+              "officialTimeSeconds": 62.94,
+              "percentageGap": 20.43628,
+              "targetClub": true
+            },
+            {
+              "startNumber": 32,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 64.0,
+              "percentageGap": 22.4646,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900002,
+              "status": "CLASSIFIED",
+              "rank": 16,
+              "officialTimeSeconds": 69.69,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-female-2013",
+          "winnerTimeSeconds": 50.62,
+          "slowestClassifiedTimeSeconds": 71.16,
+          "entries": [
+            {
+              "startNumber": 900003,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 71.16,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2016",
+          "winnerTimeSeconds": 58.01,
+          "slowestClassifiedTimeSeconds": 67.84,
+          "entries": [
+            {
+              "startNumber": 54,
+              "status": "CLASSIFIED",
+              "rank": 5,
+              "officialTimeSeconds": 60.96,
+              "percentageGap": 5.08533,
+              "targetClub": true
+            },
+            {
+              "startNumber": 57,
+              "status": "DSQ",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900004,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 67.84,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u8-male-2015",
+          "winnerTimeSeconds": 56.17,
+          "slowestClassifiedTimeSeconds": 66.23,
+          "entries": [
+            {
+              "startNumber": 900005,
+              "status": "CLASSIFIED",
+              "rank": 10,
+              "officialTimeSeconds": 66.23,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2014",
+          "winnerTimeSeconds": 52.98,
+          "slowestClassifiedTimeSeconds": 71.25,
+          "entries": [
+            {
+              "startNumber": 84,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 60.63,
+              "percentageGap": 14.439411,
+              "targetClub": true
+            },
+            {
+              "startNumber": 900006,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 71.25,
+              "targetClub": false
+            }
+          ]
+        },
+        {
+          "id": "u10-male-2013",
+          "winnerTimeSeconds": 51.65,
+          "slowestClassifiedTimeSeconds": 60.49,
+          "entries": [
+            {
+              "startNumber": 95,
+              "status": "CLASSIFIED",
+              "rank": 4,
+              "officialTimeSeconds": 54.01,
+              "percentageGap": 4.569216,
+              "targetClub": true
+            },
+            {
+              "startNumber": 94,
+              "status": "CLASSIFIED",
+              "rank": 7,
+              "officialTimeSeconds": 55.2,
+              "percentageGap": 6.873185,
+              "targetClub": true
+            },
+            {
+              "startNumber": 102,
+              "status": "CLASSIFIED",
+              "rank": 8,
+              "officialTimeSeconds": 56.13,
+              "percentageGap": 8.673766,
+              "targetClub": true
+            },
+            {
+              "startNumber": 101,
+              "status": "CLASSIFIED",
+              "rank": 11,
+              "officialTimeSeconds": 56.41,
+              "percentageGap": 9.215876,
+              "targetClub": true
+            },
+            {
+              "startNumber": 91,
+              "status": "CLASSIFIED",
+              "rank": 13,
+              "officialTimeSeconds": 57.64,
+              "percentageGap": 11.597289,
+              "targetClub": true
+            },
+            {
+              "startNumber": 106,
+              "status": "DNF",
+              "targetClub": true
+            },
+            {
+              "startNumber": 99,
+              "status": "DSQ",
+              "targetClub": true
+            },
+            {
+              "startNumber": 900007,
+              "status": "CLASSIFIED",
+              "rank": 15,
+              "officialTimeSeconds": 60.49,
+              "targetClub": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "submissions": [
+    {
+      "id": "submission-b3e72cf87d2543de9ed17ca3682e6f7c",
+      "tipRoundId": "tip-round-2027-01-13",
+      "tipRoundVersion": "sha256-1e61dfdbdff04c08dce0494f3fc5d83113497211a2f8c3d07b9b5a7442ac1afe",
+      "player": {
+        "id": "local-bw",
+        "displayName": "BW"
+      },
+      "submittedAt": "2026-09-07T08:10:37.069377Z",
+      "answers": {
+        "weekend-podium-count": 3,
+        "weekend-best-result": "athlete-local-4829d2e99164",
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-top-ten": 4,
+        "2023-02-15-startliste-1-dg-u8u10-sl-u10-top-ten": 5,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-lowest-gap": "athlete-local-46a0d9964908",
+        "2023-02-15-startliste-1-dg-u8u10-rs-marie-j-placement": 8,
+        "2023-02-15-startliste-1-dg-u8u10-rs-filipa-s-carolina-t-duel": "athlete-local-79ad01469a6d",
+        "2023-02-15-startliste-1-dg-u8u10-rs-schuler-u8-weiblich-jg-2015-ranking": [
+          "athlete-local-a72596575e74",
+          "athlete-local-0d4955e42c76",
+          "athlete-local-79ad01469a6d"
+        ],
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-classified": 18
+      }
+    },
+    {
+      "id": "submission-825b72f8ee30499fb3460ef8643d826c",
+      "tipRoundId": "tip-round-2027-01-13",
+      "tipRoundVersion": "sha256-1e61dfdbdff04c08dce0494f3fc5d83113497211a2f8c3d07b9b5a7442ac1afe",
+      "player": {
+        "id": "local-gg",
+        "displayName": "GG"
+      },
+      "submittedAt": "2026-09-07T08:09:59.602426Z",
+      "answers": {
+        "weekend-podium-count": 2,
+        "weekend-best-result": "athlete-local-46a0d9964908",
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-top-ten": 5,
+        "2023-02-15-startliste-1-dg-u8u10-sl-u10-top-ten": 4,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-lowest-gap": "athlete-local-4829d2e99164",
+        "2023-02-15-startliste-1-dg-u8u10-rs-marie-j-placement": 10,
+        "2023-02-15-startliste-1-dg-u8u10-rs-filipa-s-carolina-t-duel": "athlete-local-79ad01469a6d",
+        "2023-02-15-startliste-1-dg-u8u10-rs-schuler-u8-weiblich-jg-2015-ranking": [
+          "athlete-local-a72596575e74",
+          "athlete-local-0d4955e42c76",
+          "athlete-local-79ad01469a6d"
+        ],
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-classified": 15
+      }
+    }
+  ],
+  "expected": {
+    "standings": [
+      {
+        "rank": 1,
+        "playerId": "local-bw",
+        "displayName": "BW",
+        "weekendPoints": 640
+      },
+      {
+        "rank": 2,
+        "playerId": "local-gg",
+        "displayName": "GG",
+        "weekendPoints": 620
+      }
+    ],
+    "questionPointsByPlayer": {
+      "local-bw": {
+        "weekend-podium-count": 80,
+        "weekend-best-result": 0,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-top-ten": 80,
+        "2023-02-15-startliste-1-dg-u8u10-sl-u10-top-ten": 60,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-lowest-gap": 80,
+        "2023-02-15-startliste-1-dg-u8u10-rs-marie-j-placement": 60,
+        "2023-02-15-startliste-1-dg-u8u10-rs-filipa-s-carolina-t-duel": 100,
+        "2023-02-15-startliste-1-dg-u8u10-rs-schuler-u8-weiblich-jg-2015-ranking": 100,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-classified": 80
+      },
+      "local-gg": {
+        "weekend-podium-count": 100,
+        "weekend-best-result": 100,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-top-ten": 100,
+        "2023-02-15-startliste-1-dg-u8u10-sl-u10-top-ten": 40,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-lowest-gap": 0,
+        "2023-02-15-startliste-1-dg-u8u10-rs-marie-j-placement": 20,
+        "2023-02-15-startliste-1-dg-u8u10-rs-filipa-s-carolina-t-duel": 100,
+        "2023-02-15-startliste-1-dg-u8u10-rs-schuler-u8-weiblich-jg-2015-ranking": 100,
+        "2023-02-15-startliste-1-dg-u8u10-rs-u10-classified": 60
+      }
+    }
+  }
+}

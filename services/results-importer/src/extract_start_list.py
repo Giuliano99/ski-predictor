@@ -18,6 +18,7 @@ FORMAT_DSVALPIN = "DSVALPIN"
 FORMAT_RACE_CODE = "RACE_HOROLOGY_CODE"
 FORMAT_RACE_SIMPLE = "RACE_HOROLOGY_SIMPLE"
 FORMAT_RECONSTRUCTED = "SKI_PREDICTOR_RECONSTRUCTED"
+FORMAT_VOLA = "VOLA_SKIALP"
 TARGET_CLUB = "Skiteam Oberhaching"
 
 
@@ -63,7 +64,15 @@ def name_without_comma(raw_name: str) -> PersonName:
 
     for index, token in enumerate(tokens):
         letters = "".join(character for character in token if character.isalpha())
-        if letters and letters == letters.upper() and not first_name_tokens:
+        # German uppercase surnames can contain ß because many fonts and source
+        # systems do not emit the uppercase ẞ. Requiring ``token == upper``
+        # therefore rejects valid names such as KRÜßELIN. A strong majority of
+        # uppercase letters still identifies the surname reliably while a
+        # title-cased first name such as Emma does not match.
+        uppercase_letters = sum(character.isupper() for character in letters)
+        lowercase_letters = sum(character.islower() for character in letters)
+        looks_like_surname = uppercase_letters > lowercase_letters
+        if letters and looks_like_surname and not first_name_tokens:
             surname_tokens.append(token)
         else:
             first_name_tokens = tokens[index:]
@@ -78,6 +87,17 @@ def name_without_comma(raw_name: str) -> PersonName:
     return PersonName(full_name=f"{given} {surname}", display_name=f"{given} {initial}.")
 
 
+def name_surname_first(raw_name: str) -> PersonName:
+    """Split Vola's ``surname given-name`` column without relying on casing."""
+    tokens = clean_space(raw_name).split(" ")
+    if len(tokens) < 2:
+        raise ValueError(f"Name cannot be separated: {raw_name}")
+    surname = " ".join(tokens[:-1])
+    given = tokens[-1]
+    initial = next((character.upper() for character in surname if character.isalpha()), "?")
+    return PersonName(full_name=f"{given} {surname}", display_name=f"{given} {initial}.")
+
+
 def extract_pdf_text(path: Path) -> tuple[list[str], str]:
     reader = PdfReader(str(path))
     page_texts = [page.extract_text() or "" for page in reader.pages]
@@ -88,6 +108,8 @@ def extract_pdf_text(path: Path) -> tuple[list[str], str]:
 def detect_format(text: str) -> str:
     if "Aus der offiziellen Ergebnisliste rekonstruiert" in text:
         return FORMAT_RECONSTRUCTED
+    if "VolaSoftControlPdf" in text or "Vola Timing" in text:
+        return FORMAT_VOLA
     if "DSValpin" in text:
         return FORMAT_DSVALPIN
     if re.search(r"Stnr\s+Code\s+Teilnehmer", text, re.IGNORECASE):
@@ -189,6 +211,52 @@ def parse_group(line: str) -> dict[str, Any] | None:
         "competitionCategory": category,
         "birthYears": birth_years,
         "starters": [],
+    }
+
+
+def vola_age_class(birth_year: int, event_date: str | None) -> str:
+    if not event_date:
+        return "OPEN"
+    race_date = datetime.fromisoformat(event_date).date()
+    season_year = race_date.year + (1 if race_date.month >= 7 else 0)
+    age = max(1, season_year - birth_year)
+    return f"U{max(8, ((age + 1) // 2) * 2)}"
+
+
+def parse_vola_group(line: str, event_date: str | None) -> dict[str, Any] | None:
+    match = re.fullmatch(r"(weiblich|männlich|maennlich)\s*/\s*((?:19|20)\d{2})", line, re.IGNORECASE)
+    if not match:
+        return None
+    birth_year = int(match.group(2))
+    age_class = vola_age_class(birth_year, event_date)
+    category = "FEMALE" if match.group(1).casefold() == "weiblich" else "MALE"
+    return {
+        "id": slugify(f"{age_class}-{category}-{birth_year}"),
+        "label": line,
+        "ageClass": age_class,
+        "competitionCategory": category,
+        "birthYears": [birth_year],
+        "starters": [],
+    }
+
+
+def parse_vola_entry(line: str, target_club: str) -> dict[str, Any] | None:
+    match = re.match(
+        r"^(\d+)\s+(.+?)\s+((?:19|20)\d{2})\s*(.*?)\s+(?:Rot|Blau)\s+\.{3,}$",
+        line,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    person = name_surname_first(match.group(2))
+    club = normalize_club(match.group(4))
+    return {
+        "startNumber": int(match.group(1)),
+        "fullName": person.full_name,
+        "displayName": person.display_name,
+        "birthYear": int(match.group(3)),
+        "club": club,
+        "targetClub": is_target_club(club, target_club),
     }
 
 
@@ -359,6 +427,21 @@ def extract_start_list(path: Path, target_club: str = TARGET_CLUB) -> dict[str, 
 
     if source_format == FORMAT_RECONSTRUCTED:
         groups, warnings = parse_reconstructed(lines, target_club)
+    elif source_format == FORMAT_VOLA:
+        metadata = event_metadata(lines, text)
+        for line in lines:
+            group = parse_vola_group(line, metadata.get("date"))
+            if group:
+                current_group = group
+                groups.append(group)
+                continue
+            if current_group is None:
+                continue
+            entry = parse_vola_entry(line, target_club)
+            if entry:
+                current_group["starters"].append(entry)
+            elif re.match(r"^\d+\s+", line) and not re.match(r"^\d{1,2}[./-]\d{1,2}[./-]\d{4}", line):
+                warnings.append(f"Nicht erkannte Tabellenzeile in {current_group['label']}: {line[:120]}")
     else:
         for line in lines:
             group = parse_group(line)

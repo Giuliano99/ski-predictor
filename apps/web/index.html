@@ -8,19 +8,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="src/styles/main.css" />
+    <link rel="stylesheet" href="src/styles/main.css?v=20260908a" />
   </head>
   <body>
     <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Zur Vereinswebsite ↗</a></div>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
       <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#wochenende">Wochenende</a><a href="#tipp">Mein Tipp</a><a href="#auswertung">Auswertung</a><a href="#rangliste">Rangliste</a><a href="punkte.html">Punkte</a></nav>
-      <button class="profile-button" type="button" aria-label="Demo Profil öffnen">GG</button>
+      <a class="header-cta" href="#tipp">Tippen</a>
     </header>
 
     <main id="top">
       <section class="hero" id="rennen">
-        <div class="hero-overlay"></div>
         <div class="hero-content">
           <span class="kicker kicker-light">Nächstes Rennen</span>
           <p class="hero-series" id="hero-series">Rennwochenende · Skiteam Oberhaching</p>
@@ -28,7 +27,9 @@
           <p class="hero-intro">Tippe Platzierungen, Podiumsanzahl, interne Ranglisten und direkte Duelle der Oberhachinger Athleten.</p>
           <div class="hero-actions"><a class="button button-primary" href="#tipp">Jetzt tippen <span>→</span></a><span class="hero-date" id="hero-date"><strong>Renntermin</strong> Wird aus den Startlisten geladen</span></div>
         </div>
-        <div class="hero-badge" aria-hidden="true"><strong>OHA</strong><span>READY TO RACE</span></div>
+        <div class="hero-logo-panel">
+          <img src="public/images/skiteam-logo.png" alt="Logo des Skiteams Oberhaching" />
+        </div>
       </section>
 
       <section class="deadline-strip" aria-label="Tipp Countdown">

@@ -11,6 +11,7 @@ from extract_start_list import (  # noqa: E402
     FORMAT_RACE_CODE,
     FORMAT_RACE_SIMPLE,
     FORMAT_RECONSTRUCTED,
+    FORMAT_VOLA,
     detect_format,
     event_metadata,
     name_from_comma,
@@ -21,10 +22,31 @@ from extract_start_list import (  # noqa: E402
     parse_group,
     parse_reconstructed,
     parse_simple_entry,
+    parse_vola_entry,
+    parse_vola_group,
 )
 
 
 class ExtractStartListTests(unittest.TestCase):
+    def test_uppercase_surname_with_sharp_s_is_separated(self) -> None:
+        person = name_without_comma("KRÜßELIN Emma")
+
+        self.assertEqual(person.full_name, "Emma KRÜßELIN")
+        self.assertEqual(person.display_name, "Emma K.")
+
+    def test_vola_format_and_rows(self) -> None:
+        self.assertEqual(detect_format("VolaSoftControlPdf"), FORMAT_VOLA)
+        group = parse_vola_group("weiblich / 2016", "2025-03-08")
+        starter = parse_vola_entry(
+            "33 Spöttl Lena 2016 TSV Vaterstetten Rot .........................",
+            "Skiteam Oberhaching",
+        )
+
+        self.assertEqual(group["ageClass"], "U10")
+        self.assertEqual(group["competitionCategory"], "FEMALE")
+        self.assertEqual(starter["fullName"], "Lena Spöttl")
+        self.assertEqual(starter["club"], "TSV Vaterstetten")
+
     def test_display_name_from_comma_format(self):
         person = name_from_comma("MUSTERMANN", "Anna Maria")
         self.assertEqual(person.display_name, "Anna Maria M.")

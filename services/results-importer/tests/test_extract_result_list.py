@@ -15,11 +15,42 @@ from extract_result_list import (  # noqa: E402
     parse_dsvalpin_single_line,
     parse_simple_classified,
     parse_simple_unclassified,
+    parse_vola,
     seconds,
 )
 
 
 class ExtractResultListTests(unittest.TestCase):
+    def test_vola_result_uses_official_total_and_start_list_identity(self) -> None:
+        start_list = {
+            "groups": [{
+                "id": "u10-female-2016", "label": "weiblich / 2016", "ageClass": "U10",
+                "competitionCategory": "FEMALE", "birthYears": [2016],
+                "starters": [
+                    {"startNumber": 33, "fullName": "Lena Spöttl", "displayName": "Lena S.",
+                     "birthYear": 2016, "club": "TSV Vaterstetten", "targetClub": False},
+                    {"startNumber": 34, "fullName": "Chiara Huber", "displayName": "Chiara H.",
+                     "birthYear": 2016, "club": "TSV Tengling", "targetClub": False},
+                ],
+            }],
+        }
+        groups, warnings = parse_vola([
+            "Platz Nr. Name und Vorname Jahrgang Verein Lauf 1 Lauf 2 Zeit Strafe Abstand",
+            "weiblich / 2016",
+            "1 33 Spöttl Lena 2016 TSV Vaterstetten 18.45 18.49 36.94",
+            "Nicht am Start - Lauf 1 (1)",
+            "34 Huber Chiara 2016 TSV Tengling",
+            "Nicht am Start - Lauf 2 (1)",
+            "34 Huber Chiara 2016 TSV Tengling",
+        ], start_list)
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(groups[0]["classificationMethod"], "OFFICIAL_TOTAL")
+        self.assertEqual(groups[0]["entries"][0]["officialTimeSeconds"], 36.94)
+        self.assertEqual(groups[0]["entries"][0]["fullName"], "Lena Spöttl")
+        self.assertEqual(groups[0]["entries"][1]["status"], "DNS")
+        self.assertEqual(len(groups[0]["entries"][1]["runResults"]), 2)
+
     def test_time_conversion(self):
         self.assertEqual(seconds("50,64"), 50.64)
         self.assertEqual(seconds("2:13,06"), 133.06)
@@ -53,6 +84,12 @@ class ExtractResultListTests(unittest.TestCase):
         self.assertEqual(group["id"], "u8-female-2019")
         self.assertEqual(group["birthYears"], [2019])
         self.assertEqual(group["classificationMethod"], "BEST_VALID_RUN")
+
+    def test_dsvalpin_group_accepts_prefixes_and_slashes(self):
+        group = group_from_line("Schüler U10 / männlich / Jg. 2013", "U8/U10 Cup")
+
+        self.assertEqual(group["id"], "u10-male-2013")
+        self.assertEqual(group["birthYears"], [2013])
 
     def test_year_specific_group_accepts_dsvalpin_jg_label(self):
         group = group_from_line("U8 Jg 2016 weiblich", "ROSSIGNOL HERO Kids Cup")
