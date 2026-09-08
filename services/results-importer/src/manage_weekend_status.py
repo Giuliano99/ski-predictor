@@ -34,6 +34,13 @@ def report_is_ready(path: Path) -> bool:
     return path.is_file() and "**Status: BEREIT**" in path.read_text(encoding="utf-8")
 
 
+def result_report_is_acceptable(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    content = path.read_text(encoding="utf-8")
+    return "**Status: BEREIT**" in content or "**Status: WARNUNGEN**" in content
+
+
 def change_status(
     workspace: Path,
     config_path: Path,
@@ -57,7 +64,7 @@ def change_status(
     if target == "EVALUATED":
         report_path = resolve_path(workspace, config.get("resultReviewReport", f"output/reports/results-{config['id']}.md"))
         evaluation_path = resolve_path(workspace, config["weekendEvaluation"]["output"])
-        if not report_is_ready(report_path) or not evaluation_path.is_file():
+        if not result_report_is_acceptable(report_path) or not evaluation_path.is_file():
             raise ValueError("Die Tipprunde kann erst nach erfolgreicher Ergebnisprüfung und Auswertung abgeschlossen werden.")
 
     artifact_paths = [

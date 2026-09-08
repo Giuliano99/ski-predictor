@@ -131,7 +131,7 @@ async function uploadFiles(category, files) {
     showNotice(`${files.length} Datei${files.length === 1 ? "" : "en"} erfolgreich abgelegt.`);
     await refresh(weekend.id);
     if (category === "results" && selectedWeekend()?.actions.evaluate) await runAction("evaluate");
-    if (category === "start-lists" && selectedWeekend()?.actions.prepare && !/\[[A-ZÄÖÜ0-9 ]+\]/.test(selectedWeekend().questions)) await runAction("prepare");
+    if (category === "start-lists" && selectedWeekend()?.actions.prepare) await runAction("prepare");
   } catch (error) { showNotice(error.message, true); } finally { clearBusy(); }
 }
 

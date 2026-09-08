@@ -7,6 +7,16 @@ param(
 
 . (Join-Path $PSScriptRoot "Workflow.Common.ps1")
 
+function New-AuditFileRecord {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $resolved = Resolve-WorkspacePath -Path $Path -MustExist
+    return [ordered]@{
+        path = ConvertTo-PortablePath -Path $resolved
+        sha256 = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+}
+
 $configPath = Resolve-WorkspacePath -Path $Config -MustExist
 $weekend = Read-WeekendConfig -ConfigPath $Config
 $tipRound = Resolve-WorkspacePath -Path $weekend.tipRound.websiteOutput -MustExist
@@ -119,6 +129,38 @@ if (-not $SkipSeason) {
     }
 }
 
+$auditDirectory = Resolve-WorkspacePath -Path "output/audit/$($weekend.id)"
+if ($PSCmdlet.ShouldProcess($auditDirectory, "Auswertung mit Datei-Prüfsummen protokollieren")) {
+    New-Item -ItemType Directory -Path $auditDirectory -Force | Out-Null
+    $previousAudit = Get-ChildItem -LiteralPath $auditDirectory -Filter "*.json" -File | Sort-Object Name | Select-Object -Last 1
+    $sourceResults = @($weekend.results | ForEach-Object { New-AuditFileRecord -Path $_.pdf })
+    $normalizedResultsAudit = @($weekend.results | ForEach-Object { New-AuditFileRecord -Path $_.output })
+    $submissionsAudit = @($submissionFiles | ForEach-Object { New-AuditFileRecord -Path $_.FullName })
+    $evaluationBundle = Get-Content -Raw -Encoding UTF8 -LiteralPath $weekendOutput | ConvertFrom-Json
+    $auditTimestamp = (Get-Date).ToUniversalTime()
+    $auditPath = Join-Path $auditDirectory ($auditTimestamp.ToString("yyyyMMddTHHmmssfffZ") + ".json")
+    $auditRecord = [ordered]@{
+        schemaVersion = 1
+        recordType = "WEEKEND_EVALUATION"
+        recordedAt = $auditTimestamp.ToString("o")
+        tipRoundId = [string]$weekend.id
+        tipRoundVersion = [string]$evaluationBundle.tipRoundVersion
+        scoringModel = [string]$evaluationBundle.scoringModel
+        previousAuditSha256 = if ($previousAudit) { (Get-FileHash -LiteralPath $previousAudit.FullName -Algorithm SHA256).Hash.ToLowerInvariant() } else { $null }
+        inputs = [ordered]@{
+            tipRound = New-AuditFileRecord -Path $weekend.tipRound.websiteOutput
+            sourceResults = $sourceResults
+            normalizedResults = $normalizedResultsAudit
+            submissions = $submissionsAudit
+        }
+        outputs = [ordered]@{
+            evaluation = New-AuditFileRecord -Path $weekendOutput
+            resultReview = New-AuditFileRecord -Path $resultReviewReport
+        }
+    }
+    Write-Utf8Json -Value $auditRecord -Path $auditPath
+}
+
 if ($PSCmdlet.ShouldProcess($weekend.id, "Wochenendstatus auf EVALUATED setzen")) {
     Invoke-PythonStep -PythonCommand $PythonCommand -Label "Wochenende abschließen" -Arguments @(
         $statusManager, (Resolve-WorkspacePath -Path $Config -MustExist), "EVALUATED"
@@ -129,3 +171,4 @@ Write-Host "`nAuswertung abgeschlossen: $($weekend.id)" -ForegroundColor Green
 Write-Host "Tippabgaben: $($submissionFiles.Count)"
 Write-Host "Website aktualisiert: $weekendWebsiteOutput"
 Write-Host "Ergebnis-Prüfbericht: $resultReviewReport"
+if ($auditPath) { Write-Host "Auswertungsprotokoll: $auditPath" }

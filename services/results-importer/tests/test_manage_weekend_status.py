@@ -60,6 +60,16 @@ class ManageWeekendStatusTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "EVALUATED")
 
+    def test_evaluated_accepts_non_blocking_result_warnings(self):
+        temporary, workspace, config_path = self.create_workspace("CLOSED")
+        self.addCleanup(temporary.cleanup)
+        (workspace / "result-review.md").write_text("**Status: WARNUNGEN**", encoding="utf-8")
+        (workspace / "evaluation.json").write_text("{}", encoding="utf-8")
+
+        result = change_status(workspace, config_path, "EVALUATED")
+
+        self.assertEqual(result["status"], "EVALUATED")
+
 
 if __name__ == "__main__":
     unittest.main()

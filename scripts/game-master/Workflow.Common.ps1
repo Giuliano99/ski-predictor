@@ -70,12 +70,12 @@ function ConvertTo-PortablePath {
     $resolved = [System.IO.Path]::GetFullPath($Path)
     $workspacePrefix = $script:WorkspaceRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
     if ($resolved.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        return [System.IO.Path]::GetRelativePath($script:WorkspaceRoot, $resolved).Replace("\", "/")
+        return $resolved.Substring($workspacePrefix.Length).Replace("\", "/")
     }
     $externalRoot = Get-ExternalStorageRoot
     $externalPrefix = $externalRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
     if ($resolved.StartsWith($externalPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        return $script:StoragePrefix + [System.IO.Path]::GetRelativePath($externalRoot, $resolved).Replace("\", "/")
+        return $script:StoragePrefix + $resolved.Substring($externalPrefix.Length).Replace("\", "/")
     }
     throw "Pfad liegt außerhalb des Repositories und des Datenspeichers: $Path"
 }

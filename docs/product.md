@@ -145,25 +145,26 @@ Jeder Podiumsplatz wird einzeln bewertet. Eine richtige Person auf dem richtigen
 
 ## 8. Wochenendwertung
 
-Die Wertung eines Wochenendes wird normalisiert, damit Wochenenden mit unterschiedlich vielen Tippfragen gleich wichtig sind.
+Die Wertung eines Wochenendes ist die Summe der erreichten Fragepunkte. Es findet keine Normalisierung statt. Damit zählt jede einzelne Frage in der Saisonwertung gleich viel.
 
 ```text
-Wochenendpunkte = erreichte Fragepunkte / maximal mögliche Fragepunkte × 1.000
+Wochenendpunkte = Summe aller erreichten Fragepunkte
+Maximale Wochenendpunkte = Anzahl gültiger Fragen × 100
 ```
 
-Das Ergebnis wird auf eine ganze Zahl gerundet. Eine vollständig richtige Tipprunde bringt somit immer 1.000 Wochenendpunkte, unabhängig von der Anzahl der Fragen.
+Eine vollständig richtige Tipprunde mit acht Fragen bringt 800 Punkte. Eine vollständig richtige Tipprunde mit sechs Fragen bringt 600 Punkte. Eine richtige Frage ist in beiden Fällen genau 100 Saisonpunkte wert.
 
 Annullierte Fragen werden weder bei den erreichten noch bei den maximal möglichen Punkten berücksichtigt.
 
 ## 9. Nicht gewertete Läufe und Penalty-Zeit
 
-Die Status `DNS`, `DNF` und `DSQ` werden fachlich gleich behandelt. In allen drei Fällen liegt kein gewerteter Lauf vor.
+Bei `DNS` liegt keine Teilnahme vor. Die Person fällt aus der betroffenen Frage heraus. `DNF` und `DSQ` gelten als gestartete, aber nicht regulär gewertete Läufe.
 
 ### Platzierungsfragen
 
-Eine Person ohne gewerteten Lauf wird hinter allen Personen mit einem offiziellen Ergebnis eingeordnet. Gibt es mehrere Personen ohne gewerteten Lauf, erhalten diese untereinander keine Reihenfolge.
+Eine Person mit `DNF` oder `DSQ` wird hinter allen Personen mit einem offiziellen Ergebnis eingeordnet. Gibt es mehrere solche Personen, teilen sie sich den letzten Platz. Eine Person mit `DNS` wird nicht berücksichtigt.
 
-Wird eine Person ohne gewerteten Lauf als beste Person, Podiumsplatz oder konkrete interne Position getippt, erhält dieser Teil des Tipps 0 Punkte. Haben in der für eine Frage betrachteten Gruppe überhaupt keine Personen einen gewerteten Lauf, wird die betroffene Frage annulliert.
+Die Punkte ergeben sich auch für `DNF` und `DSQ` aus der Abweichung zur getippten Position. Haben in der für eine Frage betrachteten Gruppe überhaupt keine Personen einen gewerteten Lauf, wird die betroffene Frage annulliert.
 
 ### Zeit- und Rückstandsfragen
 
@@ -206,14 +207,9 @@ Einzellaufzeiten und Einzellaufstatus werden zusätzlich gespeichert. Sie dienen
 
 ## 11. Saisonwertung
 
-Die Saisonwertung ist die Summe aller Wochenendpunkte. Wer nicht an einer gültigen Tipprunde teilnimmt, erhält für diese Runde 0 Punkte.
+Die Saisonwertung ist die Summe aller Fragepunkte aus allen Wochenenden. Wer nicht an einer gültigen Tipprunde teilnimmt, erhält für diese Runde 0 Punkte. Wochenenden werden nicht auf einen gemeinsamen Maximalwert normalisiert.
 
-Bei Punktgleichheit gelten zunächst folgende Kriterien:
-
-1. mehr Tipprunden mit 1.000 Punkten
-2. mehr Tippfragen mit 100 Punkten
-3. mehr gespielte Tipprunden
-4. geteilter Rang, wenn weiterhin Gleichstand besteht
+Bei Punktgleichheit gewinnt, wer mehr Spieltagssiege erreicht hat. Als Spieltagssieg zählt Rang 1 einer Wochenendwertung. Teilen sich mehrere Personen Rang 1, erhalten alle einen Spieltagssieg. Sind Saisonpunkte und Anzahl der Spieltagssiege gleich, wird der Saisonrang geteilt.
 
 Es gibt keine Streichergebnisse. Jede gültige Tipprunde zählt vollständig zur Saisonwertung.
 
@@ -277,5 +273,5 @@ Der erste fachliche MVP ist erreicht, wenn lokal ohne Anmeldung und Datenbank fo
 3. Abgabeschluss berücksichtigen
 4. Ergebnisse manuell erfassen
 5. alle Fragen automatisch nach den definierten Regeln auswerten
-6. normalisierte Wochenendpunkte berechnen
+6. Fragepunkte ohne Wochenendnormalisierung addieren
 7. eine lokale Saisonrangliste anzeigen

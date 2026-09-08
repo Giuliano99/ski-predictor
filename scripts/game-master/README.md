@@ -66,6 +66,8 @@ Nach Ablauf der Tippfrist wird die Runde geschlossen:
 
 Ergebnislisten werden importiert, alle abgegebenen Tipps ausgewertet und Wochenend- sowie Saisonrangliste für die Website aktualisiert.
 
+Jeder Lauf erzeugt zusätzlich unter `output/audit/<Tipprunden-ID>` ein datiertes Auswertungsprotokoll. Darin stehen die SHA-256-Prüfsummen der Tipprunde, Ergebnis-PDFs, normalisierten Ergebnisse, Tippabgaben und erzeugten Auswertung. Jeder neue Eintrag verweist außerdem auf die Prüfsumme des vorherigen Protokolls. So bleiben Änderungen an Ergebnislisten und erneute Auswertungen nachvollziehbar.
+
 Bei einem neu angelegten Wochenende reicht es, alle Ergebnis-PDFs in den erzeugten `results` Ordner zu kopieren. Der Ergebnis-Assistent ordnet sie anhand von Datum, Rennname, Disziplin und Altersklasse automatisch den Startlisten zu.
 
 ```powershell

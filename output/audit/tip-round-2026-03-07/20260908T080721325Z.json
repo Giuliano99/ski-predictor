@@ -1,0 +1,87 @@
+{
+    "schemaVersion":  1,
+    "recordType":  "WEEKEND_EVALUATION",
+    "recordedAt":  "2026-09-08T08:07:21.3254614Z",
+    "tipRoundId":  "tip-round-2026-03-07",
+    "tipRoundVersion":  "sha256-8f7255b133db71f3469367514837cf4c23cd8476b9d134cf4e2b69e3e1593467",
+    "scoringModel":  "EQUAL_QUESTION_POINTS_V1",
+    "previousAuditSha256":  null,
+    "inputs":  {
+                   "tipRound":  {
+                                    "path":  "apps/web/src/data/tip-round.local.json",
+                                    "sha256":  "8915e3483db172f7a3a9403cfc4f41d2e5c88d90186d336560f5f03047c801f9"
+                                },
+                   "sourceResults":  [
+                                         {
+                                             "path":  "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u10.pdf",
+                                             "sha256":  "b148b39a4f93b225e73c6099d7fe33bc0b7fb798c3fbd7951ed0357d7c0e2e15"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u10_2.pdf",
+                                             "sha256":  "84ebe543a36707f940d0405a9ebc2da9a99b319525c036aef0e4c30bff794c81"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u12.pdf",
+                                             "sha256":  "bd528eb31f712c5f5e9decf0c18c534d08e1344ec0b896ef891ddcb72f85d6b8"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u14.pdf",
+                                             "sha256":  "5c684d420e5deef72abad9bb4f6fd3b470fbc13308462efea7a102ee22eaab52"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnisliste_u14_2.pdf",
+                                             "sha256":  "7c199509752c0682e30efdbc6c16bc30165fbc483fe8ee087a191c3b2b940618"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2025-2026/weekends/2026-03-07/ergebnislisten/ergebnislisteu12_2.pdf",
+                                             "sha256":  "bf626bbf419c7e8c0dde743fd86e7097189db3e9ba470a1dc52940a8722ed235"
+                                         }
+                                     ],
+                   "normalizedResults":  [
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u10.json",
+                                                 "sha256":  "584b565771c087d42203701919535ba5b0b7a00910bc13462ccf557cbc58e69c"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u10_2.json",
+                                                 "sha256":  "adc4d8540f05e0ac81baf48d7715b6045295d1335197940e085bb6fba75d9ba7"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u12.json",
+                                                 "sha256":  "c6a40a50438a002d7c5fe77914a1c4b47ae54d418d0ad031221abef32f807470"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u14.json",
+                                                 "sha256":  "d0217f60062c47df95dbd4e1ade992246ead5803b5b06bddeb6c860c4b7b83e1"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2026-03-07/result-ergebnisliste_u14_2.json",
+                                                 "sha256":  "221f0e102b03dde056abe9c77ce205c3b79c95db80d6d653651958ecf5538dbf"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2026-03-07/result-ergebnislisteu12_2.json",
+                                                 "sha256":  "9620db730d78754a3b23d54e5e333dde005bca3d561d2408c0bfafbd639348c1"
+                                             }
+                                         ],
+                   "submissions":  [
+                                       {
+                                           "path":  "data/submissions/inbox/tip-round-2026-03-07/tipp-tip-round-2026-03-07-local-bw-20260903072319.json",
+                                           "sha256":  "b6df31c2664e0d8e9015a7626b8382f112cecb7cc49f45b0434611efa6be56ee"
+                                       },
+                                       {
+                                           "path":  "data/submissions/inbox/tip-round-2026-03-07/tipp-tip-round-2026-03-07-local-gg-20260903072256.json",
+                                           "sha256":  "06f7be4dbba54c08ece014db939dcecc7ddbef9469f64a7f617b9066cbb1f7fa"
+                                       }
+                                   ]
+               },
+    "outputs":  {
+                    "evaluation":  {
+                                       "path":  "data/submissions/processed/weekend-tip-round-2026-03-07.json",
+                                       "sha256":  "7464be0cab57353af02d90f236e2844a98eacfc3f493db0a0d70e067b676fd2e"
+                                   },
+                    "resultReview":  {
+                                         "path":  "output/reports/results-tip-round-2026-03-07.md",
+                                         "sha256":  "dd6c33f0e4ca910c9e68e2cc80924e81af51b5377599ab3a3183264d9ec56bd3"
+                                     }
+                }
+}

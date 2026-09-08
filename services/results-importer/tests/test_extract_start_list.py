@@ -12,6 +12,7 @@ from extract_start_list import (  # noqa: E402
     FORMAT_RACE_SIMPLE,
     FORMAT_RECONSTRUCTED,
     detect_format,
+    event_metadata,
     name_from_comma,
     name_without_comma,
     normalize_club,
@@ -76,6 +77,34 @@ class ExtractStartListTests(unittest.TestCase):
         self.assertEqual(row["externalAthleteId"], "29885")
         self.assertEqual(row["displayName"], "Anna M.")
         self.assertTrue(row["targetClub"])
+
+    def test_legacy_dsvalpin_row_with_dotted_columns(self):
+        row = parse_dsvalpin_entry(
+            "45 .................. MUSTERMANN Anna Maria 14 ............ Skiteam Oberhaching ............. ______",
+            "Skiteam Oberhaching",
+        )
+        self.assertEqual(row["startNumber"], 45)
+        self.assertEqual(row["birthYear"], 2014)
+        self.assertEqual(row["displayName"], "Anna Maria M.")
+        self.assertTrue(row["targetClub"])
+        self.assertNotIn("externalAthleteId", row)
+
+    def test_legacy_dsvalpin_row_with_reordered_pdf_text(self):
+        row = parse_dsvalpin_entry(
+            "45 MUSTERMANN Anna Maria .................. 14 Skiteam Oberhaching ............ ______ .............",
+            "Skiteam Oberhaching",
+        )
+        self.assertEqual(row["startNumber"], 45)
+        self.assertEqual(row["displayName"], "Anna Maria M.")
+        self.assertTrue(row["targetClub"])
+
+    def test_dsvalpin_footer_provides_date_and_location(self):
+        metadata = event_metadata(
+            ["Sechzger-Pokal", "14-01-2023 / Jochberg (AUT) Seite 1/4"],
+            "Sechzger-Pokal\nVL-Riesenslalom",
+        )
+        self.assertEqual(metadata["date"], "2023-01-14")
+        self.assertEqual(metadata["location"], "Jochberg")
 
     def test_race_horology_code_row(self):
         row = parse_code_entry(

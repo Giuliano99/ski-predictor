@@ -73,7 +73,7 @@ Jede erzeugte Tipprunde erhält eine SHA-256-Inhaltsversion über Rennen, Starte
 python services/results-importer/src/evaluate_tip_round.py apps/web/src/data/tip-round.local.json data/result-lists/processed/rennen3.json --submission data/submissions/inbox/tipp-tip-round-2026-01-03.json --output apps/web/src/data/evaluation.local.json
 ```
 
-Die JSON Datei wird zuvor in der Website über `Tipp exportieren` heruntergeladen und nach `data/submissions/inbox` verschoben. Der Dateiname im Befehl muss bei Bedarf angepasst werden. Die Engine prüft Tipprunden ID, Vollständigkeit, Wertebereiche und zulässige Athleten. Danach wertet sie alle sechs Fragetypen mit der Staffel 100, 80, 60, 40, 20 und 0 aus und normalisiert das Wochenende auf maximal 1.000 Punkte.
+Die JSON Datei wird zuvor in der Website über `Tipp exportieren` heruntergeladen und nach `data/submissions/inbox` verschoben. Der Dateiname im Befehl muss bei Bedarf angepasst werden. Die Engine prüft Tipprunden ID, Vollständigkeit, Wertebereiche und zulässige Athleten. Danach wertet sie alle sechs Fragetypen mit der Staffel 100, 80, 60, 40, 20 und 0 aus. Die Fragepunkte werden ohne Normalisierung zum Wochenend- und Saisonergebnis addiert. Damit ist jede Frage unabhängig vom Wochenende maximal 100 Punkte wert.
 
 Für lokale technische Tests kann statt einer echten Abgabe weiterhin `--perfect-fixture` verwendet werden:
 

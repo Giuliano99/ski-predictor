@@ -6,7 +6,7 @@ from pathlib import Path
 MODULE_ROOT = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(MODULE_ROOT))
 
-from aggregate_season import aggregate_season  # noqa: E402
+from aggregate_season import aggregate_season, rank_season  # noqa: E402
 from evaluate_submissions import latest_submissions, normalize_legacy_test_submission, ranked  # noqa: E402
 
 
@@ -82,6 +82,47 @@ class LeaderboardTests(unittest.TestCase):
         self.assertEqual(max_standing["averagePoints"], 750)
         self.assertEqual(max_standing["rank"], 1)
         self.assertEqual(season["tipRoundVersions"]["round-1"], "sha256-" + "a" * 64)
+
+    def test_legacy_normalized_weekends_use_raw_question_points(self):
+        bundles = [{
+            "seasonId": "2026-2027",
+            "tipRoundId": "round-1",
+            "tipRoundVersion": "sha256-" + "a" * 64,
+            "standings": [{
+                "submissionId": "submission-1",
+                "playerId": "max",
+                "displayName": "Max M.",
+                "weekendPoints": 750,
+            }],
+            "evaluations": [{
+                "submissionId": "submission-1",
+                "rawPoints": 600,
+                "maximumRawPoints": 800,
+            }],
+        }]
+
+        standing = aggregate_season(bundles)["standings"][0]
+
+        self.assertEqual(standing["seasonPoints"], 600)
+        self.assertEqual(standing["maximumSeasonPoints"], 800)
+        self.assertEqual(standing["scoredQuestions"], 8)
+        self.assertEqual(standing["averageQuestionPoints"], 75)
+
+    def test_season_tie_is_decided_by_more_weekend_wins(self):
+        standings = rank_season([
+            {"displayName": "Anna", "seasonPoints": 200, "weekendWins": 2},
+            {"displayName": "Berta", "seasonPoints": 200, "weekendWins": 1},
+        ])
+
+        self.assertEqual([(item["displayName"], item["rank"]) for item in standings], [("Anna", 1), ("Berta", 2)])
+
+    def test_season_rank_is_shared_when_points_and_wins_are_equal(self):
+        standings = rank_season([
+            {"displayName": "Berta", "seasonPoints": 200, "weekendWins": 1},
+            {"displayName": "Anna", "seasonPoints": 200, "weekendWins": 1},
+        ])
+
+        self.assertEqual([(item["displayName"], item["rank"]) for item in standings], [("Anna", 1), ("Berta", 1)])
 
 
 if __name__ == "__main__":

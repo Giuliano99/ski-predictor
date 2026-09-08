@@ -6,6 +6,7 @@ import argparse
 import json
 import re
 import unicodedata
+from datetime import date
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Iterable
@@ -35,29 +36,50 @@ def age_classes(value: str) -> set[str]:
 def candidate_score(result_event: dict[str, Any], start_event: dict[str, Any]) -> tuple[float, list[str]] | None:
     result_date = str(result_event.get("date", ""))
     start_date = str(start_event.get("date", ""))
-    reasons: list[str] = []
-    score = 0.0
-    if result_date and start_date:
-        if result_date != start_date:
-            return None
-        score += 60
-        reasons.append("Datum stimmt überein")
-
     result_name = normalized_text(str(result_event.get("name", "")))
     start_name = normalized_text(str(start_event.get("name", "")))
     similarity = SequenceMatcher(None, result_name, start_name).ratio() if result_name and start_name else 0.0
+    result_discipline = normalized_discipline(str(result_event.get("discipline", "")))
+    start_discipline = normalized_discipline(str(start_event.get("discipline", "")))
+
+    # A known, differing discipline is a stronger exclusion criterion than a
+    # shared event title. This is especially important when GS and SL are held
+    # under the same cup name.
+    if result_discipline and start_discipline and result_discipline != start_discipline:
+        return None
+
+    reasons: list[str] = []
+    score = 0.0
+    if result_date and start_date:
+        if result_date == start_date:
+            score += 60
+            reasons.append("Datum stimmt überein")
+        else:
+            try:
+                days_apart = abs((date.fromisoformat(result_date) - date.fromisoformat(start_date)).days)
+            except ValueError:
+                return None
+            # Some systems print a start list several days before the actual
+            # race and put the creation date where the race date would normally
+            # be. Accept that narrow case only when name and discipline provide
+            # strong, independent confirmation.
+            if not (
+                0 < days_apart <= 7
+                and similarity >= 0.75
+                and result_discipline
+                and result_discipline == start_discipline
+            ):
+                return None
+            score += 45 - days_apart
+            reasons.append(f"Startliste {days_apart} Tage vor dem Renntag erstellt")
+
     score += similarity * 30
     if similarity >= 0.75:
         reasons.append("Rennname stimmt weitgehend überein")
 
-    result_discipline = normalized_discipline(str(result_event.get("discipline", "")))
-    start_discipline = normalized_discipline(str(start_event.get("discipline", "")))
     if result_discipline and start_discipline:
-        if result_discipline == start_discipline:
-            score += 5
-            reasons.append("Disziplin stimmt überein")
-        else:
-            score -= 10
+        score += 5
+        reasons.append("Disziplin stimmt überein")
 
     result_ages = age_classes(str(result_event.get("name", "")))
     start_ages = age_classes(str(start_event.get("name", "")))

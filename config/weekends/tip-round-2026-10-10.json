@@ -1,0 +1,40 @@
+{
+    "schemaVersion":  1,
+    "id":  "tip-round-2026-10-10",
+    "seasonId":  "2026-2027",
+    "status":  "DRAFT",
+    "statusHistory":  [
+                          {
+                              "status":  "DRAFT",
+                              "changedAt":  "2026-09-07T07:40:31.6437499+00:00"
+                          }
+                      ],
+    "questionsFile":  "data/questions/weekend-questions-2026-10-10.md",
+    "startListsDirectory":  "storage://saisons/2026-2027/weekends/2026-10-10/startlisten",
+    "startLists":  [
+
+                   ],
+    "tipRound":  {
+                     "title":  "SVM U8/U10 2",
+                     "output":  "data/result-lists/processed/weekend-2026-10-10/tip-round.json",
+                     "websiteOutput":  "apps/web/src/data/tip-round-2026-10-10.local.json",
+                     "testMode":  true,
+                     "testWeekendDate":  "2026-10-10"
+                 },
+    "resultsDirectory":  "storage://saisons/2026-2027/weekends/2026-10-10/ergebnislisten",
+    "results":  [
+
+                ],
+    "submissionsDir":  "data/submissions/inbox/tip-round-2026-10-10",
+    "weekendEvaluation":  {
+                              "output":  "data/submissions/processed/weekend-tip-round-2026-10-10.json",
+                              "websiteOutput":  "apps/web/src/data/weekend-evaluation-2026-10-10.local.json"
+                          },
+    "seasonLeaderboard":  {
+                              "weekendPattern":  "data/submissions/processed/weekend-*.json",
+                              "output":  "data/submissions/processed/season-2026-2027.json",
+                              "websiteOutput":  "apps/web/src/data/season-leaderboard-2026-2027.local.json"
+                          },
+    "reviewReport":  "output/reports/review-tip-round-2026-10-10.md",
+    "resultReviewReport":  "output/reports/results-tip-round-2026-10-10.md"
+}

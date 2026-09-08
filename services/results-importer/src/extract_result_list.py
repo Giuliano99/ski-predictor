@@ -48,7 +48,11 @@ def group_from_line(line: str, event_name: str) -> dict[str, Any] | None:
         age_class = f"U{age_match.group(1)}" if age_match else "OPEN"
         category = "FEMALE" if normalized in {"mädchen", "maedchen"} else "MALE"
     else:
-        age_match = re.fullmatch(r"U(\d+)(?:\s+((?:19|20)\d{2}))?\s+(weiblich|männlich|maennlich|mädchen|maedchen|buben)", line, re.IGNORECASE)
+        age_match = re.fullmatch(
+            r"U(\d+)(?:\s+(?:Jg\.?\s*)?((?:19|20)\d{2}))?\s+(weiblich|männlich|maennlich|mädchen|maedchen|buben)",
+            line,
+            re.IGNORECASE,
+        )
         if not age_match:
             return None
         age_class = f"U{age_match.group(1)}"
@@ -183,7 +187,7 @@ def dsvalpin_group_from_start_list(group: dict[str, Any]) -> dict[str, Any]:
         "ageClass": group["ageClass"],
         "competitionCategory": group["competitionCategory"],
         "birthYears": group.get("birthYears", []),
-        "classificationMethod": "SUM_OF_RUNS",
+        "classificationMethod": group.get("classificationMethod", "SUM_OF_RUNS"),
         "entries": [],
     }
 
@@ -191,28 +195,76 @@ def dsvalpin_group_from_start_list(group: dict[str, Any]) -> dict[str, Any]:
 def parse_dsvalpin_detail(detail: str, previous_entry: dict[str, Any] | None, position: int) -> dict[str, Any] | None:
     tokens = re.sub(r"^\.+\s*", "", detail).split()
     rank_index = next((index for index, token in enumerate(tokens) if re.fullmatch(r"\d+\.", token)), None)
-    time_tokens = [token for token in tokens if re.fullmatch(TIME_PATTERN, token)]
-    if len(time_tokens) < 3:
-        return None
 
     if rank_index is not None:
+        if rank_index == 0 or rank_index + 2 >= len(tokens):
+            return None
         rank = int(tokens[rank_index].rstrip("."))
         total = tokens[rank_index - 1]
         run_tokens = tokens[rank_index + 1:rank_index + 3]
     else:
+        time_tokens = [token for token in tokens if re.fullmatch(TIME_PATTERN, token)]
+        if len(time_tokens) < 3:
+            return None
         total = time_tokens[-3]
         run_tokens = time_tokens[-2:]
         previous_total = previous_entry.get("officialTimeSeconds") if previous_entry else None
         rank = previous_entry["rank"] if previous_total == seconds(total) else position
 
-    if len(run_tokens) != 2 or not all(re.fullmatch(TIME_PATTERN, token) for token in run_tokens):
+    if not re.fullmatch(TIME_PATTERN, total):
+        return None
+    if len(run_tokens) != 2 or not all(re.fullmatch(RUN_TOKEN_PATTERN, token) for token in run_tokens):
         return None
     total_seconds = seconds(total)
     return {
         "status": "CLASSIFIED",
         "rank": rank,
         "officialTimeSeconds": total_seconds,
-        "runResults": [run_result(index, token) for index, token in enumerate(run_tokens, 1)],
+        "runResults": [result for index, token in enumerate(run_tokens, 1) if (result := run_result(index, token))],
+    }
+
+
+def parse_dsvalpin_single_line(line: str, status: str | None, target_club: str) -> dict[str, Any] | None:
+    """Parse compact DSValpin results where each athlete occupies one line."""
+    match = re.match(r"^(\d+)\s+(.+?)\s+\.{3,}\s+(\d{2})\s+(.+)$", line)
+    if not match:
+        return None
+
+    start_number, raw_name, short_birth_year, remainder = match.groups()
+    tokens = remainder.split()
+    if status:
+        club_value = remainder
+        result = {
+            "status": status,
+            "runResults": [{"runNumber": 1, "status": status}],
+        }
+    else:
+        if len(tokens) < 3 or not re.fullmatch(r"\d+\.", tokens[-1]) or not re.fullmatch(TIME_PATTERN, tokens[-2]):
+            return None
+        rank = int(tokens.pop().rstrip("."))
+        total = tokens.pop()
+        gap = tokens.pop() if tokens and re.fullmatch(TIME_PATTERN, tokens[-1]) else None
+        club_value = " ".join(tokens)
+        if not club_value:
+            return None
+        result = {
+            "status": "CLASSIFIED",
+            "rank": rank,
+            "officialTimeSeconds": seconds(total),
+            "gapSeconds": seconds(gap) if gap else 0.0,
+            "runResults": [{"runNumber": 1, "status": "CLASSIFIED", "timeSeconds": seconds(total)}],
+        }
+
+    person = name_without_comma(raw_name)
+    club = normalize_club(club_value)
+    return {
+        "startNumber": int(start_number),
+        "fullName": person.full_name,
+        "displayName": person.display_name,
+        "birthYear": 2000 + int(short_birth_year),
+        "club": club,
+        "targetClub": is_target_club(club, target_club),
+        **result,
     }
 
 
@@ -229,7 +281,7 @@ def parse_dsvalpin(lines: list[str], start_list: dict[str, Any], target_club: st
     current_run = 1
     warnings: list[str] = []
     person_pattern = re.compile(r"^(\d+)\s+(.+?)\s+\.{3,}\s+(\d{2})$")
-    status_pattern = re.compile(r"^(Nicht am Start|Nicht im Ziel|Disqualifiziert)\s+(\d+)\.\s+Durchgang$", re.IGNORECASE)
+    status_pattern = re.compile(r"^(Nicht am Start|Nicht im Ziel|Disqualifiziert)(?:\s+(\d+)\.\s+Durchgang)?$", re.IGNORECASE)
     index = 0
 
     while index < len(lines):
@@ -248,7 +300,19 @@ def parse_dsvalpin(lines: list[str], start_list: dict[str, Any], target_club: st
                 "nicht im ziel": "DNF",
                 "disqualifiziert": "DSQ",
             }[status_match.group(1).casefold()]
-            current_run = int(status_match.group(2))
+            current_run = int(status_match.group(2) or 1)
+            index += 1
+            continue
+
+        compact_entry = parse_dsvalpin_single_line(line, current_status, target_club)
+        if compact_entry:
+            target_group = group_by_start_number.get(compact_entry["startNumber"]) or current_group
+            if target_group is None:
+                warnings.append(f"Keine Wertungsgruppe für Startnummer {compact_entry['startNumber']} gefunden")
+            else:
+                if current_status:
+                    compact_entry["runResults"][0]["runNumber"] = current_run
+                target_group["entries"].append(compact_entry)
             index += 1
             continue
 

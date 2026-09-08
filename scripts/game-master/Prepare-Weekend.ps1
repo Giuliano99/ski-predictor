@@ -57,6 +57,11 @@ foreach ($startList in $weekend.startLists) {
 $tipRoundOutput = Resolve-WorkspacePath -Path $weekend.tipRound.output
 $websiteOutput = Resolve-WorkspacePath -Path $weekend.tipRound.websiteOutput
 $generatorArguments = @($generator) + $normalizedStartLists + @("--questions", $questionsFile, "--output", $tipRoundOutput)
+$questionContent = Get-Content -Raw -Encoding UTF8 -LiteralPath $questionsFile
+$needsQuestionSuggestions = $questionContent.Contains("AUTO_FRAGENVORSCHLAEGE") -or $questionContent -match "\[(RENNNAME|TAG|DISZIPLIN|ALTERSKLASSE|JJJJ-MM-TT|PERSON)"
+if ($needsQuestionSuggestions) {
+    $generatorArguments += @("--suggest-questions-output", $questionsFile)
+}
 $generatorArguments += @("--season-id", [string]$weekend.seasonId)
 $generatorArguments += @("--status", [string]$(if ($weekend.status) { $weekend.status } else { "DRAFT" }))
 if ($weekend.tipRound.title) {

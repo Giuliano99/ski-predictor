@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Punktevergabe im Race Predictor des Skiteams Oberhaching." />
+    <title>Punktevergabe | Race Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/main.css" />
+  </head>
+  <body>
+    <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="index.html">Zur Tipprunde →</a></div>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
+      <nav class="main-nav" aria-label="Hauptnavigation"><a href="index.html#rennen">Rennen</a><a href="index.html#tipp">Mein Tipp</a><a href="index.html#auswertung">Auswertung</a><a href="index.html#rangliste">Rangliste</a><a class="active" href="punkte.html">Punkte</a></nav>
+    </header>
+
+    <main class="rules-page">
+      <span class="kicker">Einfach und nachvollziehbar</span>
+      <h1>Punktevergabe</h1>
+      <p class="rules-intro">Jede Frage ist maximal 100 Punkte wert. Die Punkte werden nicht auf einen festen Wochenendwert hochgerechnet. Für die Saison werden alle tatsächlich erreichten Fragepunkte addiert.</p>
+
+      <section class="rules-highlight">
+        <strong>Eine Frage zählt immer gleich viel.</strong>
+        <p>Acht Fragen ergeben maximal 800 Punkte. Sechs Fragen ergeben maximal 600 Punkte. Eine richtige Antwort bringt in beiden Wochenenden genau 100 Punkte für die Saisonwertung.</p>
+      </section>
+
+      <div class="rules-grid">
+        <article class="rule-card">
+          <h2>Anzahl und Platzierung</h2>
+          <p>Es zählt die absolute Abweichung zwischen Tipp und offiziellem Ergebnis.</p>
+          <table class="points-table"><thead><tr><th>Abweichung</th><th>Punkte</th></tr></thead><tbody><tr><td>exakt</td><td>100</td></tr><tr><td>1 Platz oder Wert</td><td>80</td></tr><tr><td>2</td><td>60</td></tr><tr><td>3</td><td>40</td></tr><tr><td>4</td><td>20</td></tr><tr><td>5 oder mehr</td><td>0</td></tr></tbody></table>
+        </article>
+
+        <article class="rule-card">
+          <h2>Beste Person und Rückstand</h2>
+          <p>Die getippte Person wird in der tatsächlichen internen Oberhachinger Rangfolge gesucht.</p>
+          <table class="points-table"><thead><tr><th>Tatsächliche Position</th><th>Punkte</th></tr></thead><tbody><tr><td>1.</td><td>100</td></tr><tr><td>2.</td><td>80</td></tr><tr><td>3.</td><td>60</td></tr><tr><td>4.</td><td>40</td></tr><tr><td>5.</td><td>20</td></tr><tr><td>ab 6.</td><td>0</td></tr></tbody></table>
+        </article>
+
+        <article class="rule-card">
+          <h2>Interne Reihenfolge</h2>
+          <p>Jede getippte Position wird einzeln über ihre Abweichung bewertet: 100, 80, 60, 40, 20 oder 0 Punkte. Der gerundete Mittelwert ist die Punktzahl der gesamten Frage.</p>
+          <div class="rules-example"><strong>Beispiel:</strong> Die drei Positionen erhalten 100, 80 und 60 Punkte. Die Frage bringt damit 80 Punkte.</div>
+        </article>
+
+        <article class="rule-card">
+          <h2>Podium</h2>
+          <p>Jeder Platz wird einzeln bewertet. Richtige Person am richtigen Platz: 100 Punkte. Richtige Person auf einem anderen Podiumsplatz: 60 Punkte. Person außerhalb des Podiums: 0 Punkte. Der Mittelwert ergibt die Punkte der Frage.</p>
+        </article>
+
+        <article class="rule-card">
+          <h2>Direktvergleich</h2>
+          <table class="points-table"><thead><tr><th>Antwort</th><th>Punkte</th></tr></thead><tbody><tr><td>richtige Person</td><td>100</td></tr><tr><td>falsche Person</td><td>0</td></tr></tbody></table>
+          <p>Ein offiziell nicht auflösbarer Gleichstand führt zur Annullierung der Frage.</p>
+        </article>
+
+        <article class="rule-card">
+          <h2>DNS, DNF und DSQ</h2>
+          <ul><li>DNS wird aus der betreffenden Frage entfernt.</li><li>DNF und DSQ teilen sich hinter allen gewerteten Personen den letzten Platz.</li><li>Für Zeitvergleiche gilt die definierte Penalty-Zeit.</li><li>Eine nicht wertbare oder abgesagte Frage wird annulliert und bringt allen 0 Punkte.</li></ul>
+        </article>
+      </div>
+
+      <div class="rules-example"><strong>Saisonbeispiel:</strong> 520 Punkte am ersten Wochenende plus 640 Punkte am zweiten Wochenende ergeben 1.160 Saisonpunkte. Es gibt keine Normalisierung und keine Streichergebnisse. Bei gleichen Saisonpunkten entscheidet die höhere Anzahl an Spieltagssiegen. Ist auch diese gleich, wird der Rang geteilt.</div>
+      <div class="rules-example"><strong>Punktgleichheit:</strong> Bei gleichen Saisonpunkten gewinnt die Person mit mehr Spieltagssiegen. Sind auch die Spieltagssiege gleich, teilen sich die Personen den Platz.</div>
+    </main>
+
+    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Punktevergabe</span></div><div><a href="index.html">Zur Tipprunde</a><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Vereinswebsite ↗</a></div></footer>
+  </body>
+</html>

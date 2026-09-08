@@ -10,7 +10,7 @@ Vor dem Speichern wird ein Ranglistenname eingegeben. Eine Anmeldung ist dafür 
 
 Eine lokale Tipprunde kann im offenen `testMode` laufen. Dadurch lässt sich ein Beispielrennen unabhängig vom offiziellen Datum ausfüllen und speichern. Der Testmodus darf für eine echte Runde nicht gesetzt sein; dann gilt wieder der fachliche Abgabeschluss.
 
-Nach dem Ergebnisimport kann optional `src/data/evaluation.local.json` erzeugt werden. Gehört sie zur geladenen Tipprunde, zeigt die Website automatisch die Wochenendpunkte und den Soll Ist Vergleich für jede Frage. Fehlt die Datei, wird der Auswertungsbereich ausgeblendet.
+Nach dem Ergebnisimport kann optional `src/data/evaluation.local.json` erzeugt werden. Gehört sie zur geladenen Tipprunde, zeigt die Website automatisch die addierten Fragepunkte und den Soll Ist Vergleich für jede Frage. Jede Frage ist maximal 100 Punkte wert; eine Normalisierung des Wochenendes findet nicht statt. Fehlt die Datei, wird der Auswertungsbereich ausgeblendet. Die vollständigen Regeln stehen auf `punkte.html`.
 
 Bei mehreren Abgaben liefert die API die Wochenend- und Saisonwertung. Die Website zeigt die persönliche Auswertung nur dann, wenn deren Abgabe ID zum lokal gespeicherten Tipp passt.
 

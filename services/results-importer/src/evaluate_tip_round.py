@@ -9,6 +9,7 @@ from typing import Any, Iterable
 
 
 POINTS_BY_DISTANCE = (100, 80, 60, 40, 20)
+SCORING_MODEL = "EQUAL_QUESTION_POINTS_V1"
 CLASSIFIED = "CLASSIFIED"
 DNS = "DNS"
 LAST_PLACE_STATUSES = {"DNF", "DSQ"}
@@ -154,6 +155,15 @@ def rank_distance(athlete_id: str, predicted_position: int, groups: list[list[st
     return None
 
 
+def rank_position(athlete_id: str, groups: list[list[str]]) -> int | None:
+    position = 1
+    for group in groups:
+        if athlete_id in group:
+            return position
+        position += len(group)
+    return None
+
+
 def actual_for_question(question: dict[str, Any], outcomes: list[dict[str, Any]]) -> Any:
     metric = question["evaluationMetric"]
     raw_scoped = scoped_outcomes(question, outcomes, include_dns=True)
@@ -207,39 +217,54 @@ def actual_for_question(question: dict[str, Any], outcomes: list[dict[str, Any]]
     raise ValueError(f"Unsupported evaluation metric: {metric}")
 
 
-def score_question(question: dict[str, Any], submitted: Any, actual: Any) -> tuple[str, int]:
+def score_question(question: dict[str, Any], submitted: Any, actual: Any) -> tuple[str, int, str]:
     if actual is None or (isinstance(actual, list) and not actual):
-        return "ANNULLED", 0
+        return "ANNULLED", 0, "Frage annulliert: Es liegt kein eindeutig wertbares Ergebnis vor."
     if submitted in (None, "", []):
-        return "SCORED", 0
+        return "SCORED", 0, "Kein Tipp abgegeben: 0 Punkte."
 
     metric = question["evaluationMetric"]
     if metric in {"PODIUM_COUNT", "TOP_N_COUNT", "CLASSIFIED_COUNT", "EXACT_PLACEMENT"}:
-        return "SCORED", distance_points(abs(int(submitted) - int(actual)))
+        distance = abs(int(submitted) - int(actual))
+        points = distance_points(distance)
+        explanation = "Exakt getroffen: 100 Punkte." if distance == 0 else f"Abweichung {distance}: {points} Punkte."
+        return "SCORED", points, explanation
     if metric in {"BEST_RESULT", "LOWEST_PERCENTAGE_GAP"}:
         distance = rank_distance(submitted, 0, actual["rankGroups"])
-        return "SCORED", distance_points(distance) if distance is not None else 0
+        position = rank_position(submitted, actual["rankGroups"])
+        points = distance_points(distance) if distance is not None else 0
+        explanation = (
+            f"Getippte Person auf interner Position {position}: {points} Punkte."
+            if position is not None
+            else "Getippte Person nicht in der gewerteten Rangfolge: 0 Punkte."
+        )
+        return "SCORED", points, explanation
     if metric == "DIRECT_COMPARISON":
-        return "SCORED", 100 if submitted == actual else 0
+        points = 100 if submitted == actual else 0
+        return "SCORED", points, "Direktvergleich richtig: 100 Punkte." if points else "Direktvergleich falsch: 0 Punkte."
     if metric == "INTERNAL_ORDER":
         filtered_submission = [athlete_id for athlete_id in submitted if athlete_id not in set(actual.get("dns", []))]
         if not filtered_submission:
-            return "ANNULLED", 0
+            return "ANNULLED", 0, "Frage annulliert: Alle getippten Personen hatten DNS."
         values = []
         for index, athlete_id in enumerate(filtered_submission):
             distance = rank_distance(athlete_id, index, actual["rankGroups"])
             values.append(distance_points(distance) if distance is not None else 0)
-        return "SCORED", round(sum(values) / len(values)) if values else 0
+        points = round(sum(values) / len(values)) if values else 0
+        dns_note = " Personen mit DNS wurden entfernt." if len(filtered_submission) != len(submitted) else ""
+        return "SCORED", points, f"Einzelpunkte: {' + '.join(map(str, values))}. Gerundeter Mittelwert: {points} Punkte.{dns_note}"
     if metric == "PODIUM_ORDER":
         filtered_submission = [athlete_id for athlete_id in submitted if athlete_id not in set(actual.get("dns", []))]
         if not filtered_submission:
-            return "ANNULLED", 0
+            return "ANNULLED", 0, "Frage annulliert: Alle getippten Personen hatten DNS."
         actual_set = set(flatten_groups(actual["rankGroups"]))
         values = []
         for index, athlete_id in enumerate(filtered_submission):
             distance = rank_distance(athlete_id, index, actual["rankGroups"])
             values.append(100 if distance == 0 else 60 if athlete_id in actual_set else 0)
-        return "SCORED", round(sum(values) / len(values)) if values else 0
+        points = round(sum(values) / len(values)) if values else 0
+        dns_note = " Personen mit DNS wurden entfernt." if len(filtered_submission) != len(submitted) else ""
+        return "SCORED", points, f"Podiumsplätze: {' + '.join(map(str, values))}. Gerundeter Mittelwert: {points} Punkte.{dns_note}"
     raise ValueError(f"Unsupported evaluation metric: {metric}")
 
 
@@ -256,7 +281,7 @@ def evaluate(tip_round: dict[str, Any], result_documents: list[dict[str, Any]], 
     for question in tip_round["questions"]:
         actual = actual_for_question(question, outcomes)
         submitted = submission.get("answers", {}).get(question["id"])
-        status, points = score_question(question, submitted, actual)
+        status, points, explanation = score_question(question, submitted, actual)
         evaluations.append({
             "questionId": question["id"],
             "status": status,
@@ -264,14 +289,18 @@ def evaluate(tip_round: dict[str, Any], result_documents: list[dict[str, Any]], 
             "actualAnswer": actual,
             "points": points,
             "maximumPoints": 0 if status == "ANNULLED" else 100,
+            "scoreExplanation": explanation,
         })
 
     scored = [item for item in evaluations if item["status"] != "ANNULLED"]
     earned = sum(item["points"] for item in scored)
     maximum = sum(item["maximumPoints"] for item in scored)
-    weekend_points = round(earned / maximum * 1000) if maximum else 0
+    # Every question has the same season value. Do not scale weekends with a
+    # different number of questions to a shared artificial maximum.
+    weekend_points = earned
     return {
         "schemaVersion": 1,
+        "scoringModel": SCORING_MODEL,
         "tipRoundId": tip_round["id"],
         "tipRoundVersion": tip_round["contentVersion"],
         "submissionId": submission.get("id", "local-submission"),
@@ -280,6 +309,7 @@ def evaluate(tip_round: dict[str, Any], result_documents: list[dict[str, Any]], 
         "rawPoints": earned,
         "maximumRawPoints": maximum,
         "weekendPoints": weekend_points,
+        "maximumWeekendPoints": maximum,
     }
 
 

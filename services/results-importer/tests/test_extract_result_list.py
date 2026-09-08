@@ -12,6 +12,7 @@ from extract_result_list import (  # noqa: E402
     parse_code_classified,
     parse_code_unclassified,
     parse_dsvalpin_detail,
+    parse_dsvalpin_single_line,
     parse_simple_classified,
     parse_simple_unclassified,
     seconds,
@@ -53,6 +54,12 @@ class ExtractResultListTests(unittest.TestCase):
         self.assertEqual(group["birthYears"], [2019])
         self.assertEqual(group["classificationMethod"], "BEST_VALID_RUN")
 
+    def test_year_specific_group_accepts_dsvalpin_jg_label(self):
+        group = group_from_line("U8 Jg 2016 weiblich", "ROSSIGNOL HERO Kids Cup")
+        self.assertEqual(group["id"], "u8-female-2016")
+        self.assertEqual(group["birthYears"], [2016])
+        self.assertEqual(group["classificationMethod"], "BEST_VALID_RUN")
+
     def test_code_entries_support_points_and_dnf(self):
         classified = parse_code_classified(
             "5 12 27983 SCHLAGBOEHMER, Clara 2013 BSV-MU Skiteam Oberhaching 1:04,68 1:08,38 2:13,06 3,04 115,66",
@@ -86,6 +93,37 @@ class ExtractResultListTests(unittest.TestCase):
         self.assertEqual(winner["rank"], 1)
         self.assertAlmostEqual(second["officialTimeSeconds"], 88.23)
         self.assertEqual(tied["rank"], 2)
+
+    def test_dsvalpin_best_run_accepts_a_failed_other_run(self):
+        entry = parse_dsvalpin_detail("............ 11,25 1:10,79 5. DIS 1:10,79", None, 5)
+
+        self.assertEqual(entry["status"], "CLASSIFIED")
+        self.assertAlmostEqual(entry["officialTimeSeconds"], 70.79)
+        self.assertEqual(entry["runResults"][0]["status"], "DSQ")
+        self.assertEqual(entry["runResults"][1]["status"], "CLASSIFIED")
+
+    def test_dsvalpin_compact_single_run_result(self):
+        winner = parse_dsvalpin_single_line(
+            "7 HOURLE Lara .................. 16 TSV 1860 Muenchen 1:00,25 1.",
+            None,
+            "Skiteam Oberhaching",
+        )
+        second = parse_dsvalpin_single_line(
+            "4 NITZSCHE Annika .................. 16 WSV Glonn 1,45 1:01,70 2.",
+            None,
+            "Skiteam Oberhaching",
+        )
+        dns = parse_dsvalpin_single_line(
+            "16 ECKEL Theresa .................. 15 Skiteam Oberhaching",
+            "DNS",
+            "Skiteam Oberhaching",
+        )
+
+        self.assertEqual(winner["rank"], 1)
+        self.assertAlmostEqual(winner["officialTimeSeconds"], 60.25)
+        self.assertAlmostEqual(second["gapSeconds"], 1.45)
+        self.assertEqual(dns["status"], "DNS")
+        self.assertTrue(dns["targetClub"])
 
 
 if __name__ == "__main__":

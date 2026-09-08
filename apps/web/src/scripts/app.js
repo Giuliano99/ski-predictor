@@ -28,6 +28,7 @@ const dom = {
   evaluationStatus: document.querySelector("#evaluation-status"),
   evaluationBadge: document.querySelector("#evaluation-badge"),
   evaluationWeekendPoints: document.querySelector("#evaluation-weekend-points"),
+  evaluationWeekendMaximum: document.querySelector("#evaluation-weekend-maximum"),
   evaluationRawPoints: document.querySelector("#evaluation-raw-points"),
   evaluationQuestionList: document.querySelector("#evaluation-question-list"),
   heroSeries: document.querySelector("#hero-series"),
@@ -151,7 +152,7 @@ function renderTipRound() {
   dom.heroDate.innerHTML = `<strong>${escapeHtml(firstRace.day)}, ${escapeHtml(raceDate)}</strong>${tipRound.races.length} Rennen an diesem Wochenende`;
   dom.seasonLabel.textContent = tipRound.seasonId ? `Saison ${tipRound.seasonId.replace("-", "/")}` : "Saisonwertung";
   dom.title.textContent = tipRound.title;
-  dom.subtitle.textContent = `${tipRound.subtitle} · ${tipRound.questions.length} Fragen · auf maximal 1.000 Wochenendpunkte normiert`;
+  dom.subtitle.textContent = `${tipRound.subtitle} · ${tipRound.questions.length} Fragen · jede Frage zählt maximal 100 Punkte`;
   dom.questionList.innerHTML = tipRound.questions.map(renderQuestion).join("");
   const statusLabels = { DRAFT: "Entwurf", OPEN: "Tippabgabe offen", CLOSED: "Tippabgabe geschlossen", EVALUATED: "Ausgewertet", ARCHIVED: "Archiviert", CANCELLED: "Abgesagt" };
   dom.raceList.innerHTML = tipRound.races.map((race) => `<article class="race-card">
@@ -206,6 +207,7 @@ function renderEvaluation(evaluation) {
   const annulledCount = evaluation.questionEvaluations.length - scoredCount;
 
   dom.evaluationWeekendPoints.textContent = String(evaluation.weekendPoints);
+  dom.evaluationWeekendMaximum.textContent = String(evaluation.maximumWeekendPoints ?? evaluation.maximumRawPoints);
   dom.evaluationRawPoints.textContent = `${evaluation.rawPoints} / ${evaluation.maximumRawPoints}`;
   dom.evaluationStatus.textContent = `${scoredCount} Fragen gewertet${annulledCount ? ` · ${annulledCount} annulliert` : ""}.`;
   dom.evaluationBadge.hidden = !isFixture;
@@ -216,6 +218,7 @@ function renderEvaluation(evaluation) {
     return `<article class="evaluation-card${annulled ? " annulled" : ""}">
       <div class="evaluation-card-head"><span class="question-number">${String(index + 1).padStart(2, "0")}</span><div><span class="question-scope">Rennen: ${escapeHtml(question?.raceLabel ?? "gesamtes Wochenende")}</span><h3>${escapeHtml(question?.prompt ?? item.questionId)}</h3></div><strong class="evaluation-points">${annulled ? "Annulliert" : `${item.points} / ${item.maximumPoints}`}</strong></div>
       <div class="answer-comparison"><div><span>Dein Tipp</span><strong>${escapeHtml(formatEvaluationAnswer(item.submittedAnswer))}</strong></div><div><span>Ergebnis</span><strong>${escapeHtml(formatEvaluationAnswer(item.actualAnswer))}</strong></div></div>
+      <p class="score-explanation">${escapeHtml(item.scoreExplanation ?? "Die Punkte wurden nach der veröffentlichten Wertungstabelle berechnet.")}</p>
       <div class="score-bar" aria-label="${percentage} Prozent der Fragepunkte"><span style="width:${percentage}%"></span></div>
     </article>`;
   }).join("");
@@ -254,7 +257,7 @@ async function loadResults() {
     leaders = season.standings.map((standing) => ({
       rank: standing.rank,
       name: standing.displayName,
-      detail: `${standing.rounds} ${standing.rounds === 1 ? "Tipprunde" : "Tipprunden"} · Ø ${standing.averagePoints}`,
+      detail: `${standing.weekendWins ?? 0} Spieltagssiege · ${standing.scoredQuestions ?? 0} Fragen · Ø ${standing.averageQuestionPoints ?? standing.averagePoints} Punkte`,
       points: standing.seasonPoints,
     }));
   } else if (weekendMatches) {

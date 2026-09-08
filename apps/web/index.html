@@ -14,7 +14,7 @@
     <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Zur Vereinswebsite ↗</a></div>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
-      <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#wochenende">Wochenende</a><a href="#tipp">Mein Tipp</a><a href="#auswertung">Auswertung</a><a href="#rangliste">Rangliste</a><a href="#so-gehts">So geht’s</a></nav>
+      <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#wochenende">Wochenende</a><a href="#tipp">Mein Tipp</a><a href="#auswertung">Auswertung</a><a href="#rangliste">Rangliste</a><a href="punkte.html">Punkte</a></nav>
       <button class="profile-button" type="button" aria-label="Demo Profil öffnen">GG</button>
     </header>
 
@@ -66,7 +66,7 @@
       <section class="evaluation-section section" id="auswertung" hidden>
         <div class="evaluation-summary">
           <div><span class="kicker kicker-light">Ergebnisse</span><h2>Deine Auswertung</h2><p id="evaluation-status">Die offiziellen Gesamtergebnisse wurden ausgewertet.</p><span class="fixture-badge" id="evaluation-badge" hidden>Technische Testauswertung</span></div>
-          <div class="weekend-score"><strong id="evaluation-weekend-points">0</strong><span>von 1.000<br />Wochenendpunkten</span></div>
+          <div class="weekend-score"><strong id="evaluation-weekend-points">0</strong><span>von <b id="evaluation-weekend-maximum">0</b><br />Fragepunkten</span></div>
           <div class="raw-score"><strong id="evaluation-raw-points">0 / 0</strong><span>Fragepunkte</span></div>
         </div>
         <div class="evaluation-list" id="evaluation-question-list"></div>
@@ -81,12 +81,12 @@
 
       <section class="how-it-works section" id="so-gehts">
         <div class="section-title-row"><div><span class="kicker">Einfach mitmachen</span><h2>So funktioniert das Tippspiel</h2></div></div>
-        <div class="steps"><article><span>01</span><div><strong>Rennen auswählen</strong><p>Wähle ein Rennen aus dem Programm des Skiteams.</p></div></article><article><span>02</span><div><strong>Podium tippen</strong><p>Lege deine drei Favoriten vor dem Rennstart fest.</p></div></article><article><span>03</span><div><strong>Punkte sammeln</strong><p>Vergleiche dich nach dem Ergebnis mit dem Team.</p></div></article></div>
+        <div class="steps"><article><span>01</span><div><strong>Rennen ansehen</strong><p>Prüfe die Bewerbe und Oberhachinger Starter.</p></div></article><article><span>02</span><div><strong>Fragen tippen</strong><p>Beantworte alle Fragen vor dem Abgabeschluss.</p></div></article><article><span>03</span><div><strong>Punkte sammeln</strong><p>Jede Frage zählt mit maximal 100 Punkten. <a class="inline-link" href="punkte.html">Wertung ansehen →</a></p></div></article></div>
       </section>
     </main>
 
-    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Demo MVP</span></div><div><a href="https://www.skiteam-oberhaching.de/impressum/" target="_blank" rel="noreferrer">Impressum ↗</a><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Vereinswebsite ↗</a></div></footer>
+    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Demo MVP</span></div><div><a href="punkte.html">Punkte</a><a href="https://www.skiteam-oberhaching.de/impressum/" target="_blank" rel="noreferrer">Impressum ↗</a><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Vereinswebsite ↗</a></div></footer>
     <div class="toast" id="toast" role="status" aria-live="polite">✓ Dein Tipp wurde gespeichert</div>
-    <script src="src/scripts/app.js?v=20260904a"></script>
+    <script src="src/scripts/app.js?v=20260907b"></script>
   </body>
 </html>

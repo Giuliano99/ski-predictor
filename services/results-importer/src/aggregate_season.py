@@ -8,7 +8,36 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-from evaluate_submissions import ranked
+SCORING_MODEL = "EQUAL_QUESTION_POINTS_V1"
+
+
+def standing_question_points(bundle: dict[str, Any], standing: dict[str, Any]) -> tuple[int, int]:
+    """Read equal question points and transparently migrate old weekend bundles."""
+    evaluations = {
+        evaluation.get("submissionId"): evaluation
+        for evaluation in bundle.get("evaluations", [])
+    }
+    evaluation = evaluations.get(standing.get("submissionId"))
+    if evaluation and evaluation.get("rawPoints") is not None:
+        return int(evaluation["rawPoints"]), int(evaluation.get("maximumRawPoints", 0))
+    return int(standing["weekendPoints"]), int(standing.get("maximumWeekendPoints", 0))
+
+
+def rank_season(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rank by total points, then weekend wins; share rank if both are equal."""
+    ordered = sorted(
+        items,
+        key=lambda item: (-item["seasonPoints"], -item["weekendWins"], item["displayName"].casefold()),
+    )
+    previous_result: tuple[int, int] | None = None
+    previous_rank = 0
+    for index, item in enumerate(ordered, start=1):
+        result = (item["seasonPoints"], item["weekendWins"])
+        if result != previous_result:
+            previous_rank = index
+            previous_result = result
+        item["rank"] = previous_rank
+    return ordered
 
 
 def aggregate_season(bundles: list[dict[str, Any]]) -> dict[str, Any]:
@@ -23,22 +52,46 @@ def aggregate_season(bundles: list[dict[str, Any]]) -> dict[str, Any]:
 
     by_player: dict[str, dict[str, Any]] = {}
     for bundle in bundles:
+        weekend_results: list[tuple[str, int]] = []
         for standing in bundle["standings"]:
             player = by_player.setdefault(standing["playerId"], {
                 "playerId": standing["playerId"],
                 "displayName": standing["displayName"],
                 "seasonPoints": 0,
+                "maximumSeasonPoints": 0,
+                "scoredQuestions": 0,
+                "weekendWins": 0,
                 "rounds": 0,
             })
             player["displayName"] = standing["displayName"]
-            player["seasonPoints"] += standing["weekendPoints"]
+            points, maximum = standing_question_points(bundle, standing)
+            player["seasonPoints"] += points
+            player["maximumSeasonPoints"] += maximum
+            player["scoredQuestions"] += maximum // 100
             player["rounds"] += 1
+            weekend_results.append((standing["playerId"], points))
 
-    standings = ranked(list(by_player.values()), "seasonPoints")
+        if weekend_results:
+            winning_points = max(points for _, points in weekend_results)
+            for player_id, points in weekend_results:
+                if points == winning_points:
+                    by_player[player_id]["weekendWins"] += 1
+
+    standings = rank_season(list(by_player.values()))
     for standing in standings:
-        standing["averagePoints"] = round(standing["seasonPoints"] / standing["rounds"])
+        standing["averageQuestionPoints"] = (
+            round(standing["seasonPoints"] / standing["scoredQuestions"])
+            if standing["scoredQuestions"] else 0
+        )
+        # Kept temporarily for older website clients.
+        standing["averagePoints"] = (
+            standing["averageQuestionPoints"]
+            if standing["scoredQuestions"]
+            else round(standing["seasonPoints"] / standing["rounds"])
+        )
     return {
         "schemaVersion": 1,
+        "scoringModel": SCORING_MODEL,
         "seasonId": next(iter(season_ids)),
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "tipRoundIds": tip_round_ids,

@@ -205,7 +205,13 @@ def resolve_athlete_names(value: str, athletes: list[dict[str, Any]], question_n
     return resolved
 
 
-def resolve_race_scope(value: str, races: list[dict[str, Any]], question_number: int, race_date: str = "") -> tuple[list[str], str]:
+def resolve_race_scope(
+    value: str,
+    races: list[dict[str, Any]],
+    question_number: int,
+    race_date: str = "",
+    question_context: str = "",
+) -> tuple[list[str], str]:
     if not value:
         raise ValueError(f"Question {question_number}: Rennen is required")
     if value.strip().upper() in {"ALL", "ALLE"}:
@@ -228,6 +234,14 @@ def resolve_race_scope(value: str, races: list[dict[str, Any]], question_number:
             known = ", ".join(dict.fromkeys(race["name"] for race in races))
             raise ValueError(f"Frage {question_number}: Rennen '{reference}'{suffix} wurde nicht gefunden. Erkannte Rennen: {known}")
         unique_matches = {race["id"]: race for race in matches}
+        if len(unique_matches) > 1 and question_context:
+            context_words = set(slugify(question_context).split("-"))
+            discipline_matches = {
+                race_id: race for race_id, race in unique_matches.items()
+                if slugify(str(race.get("discipline", ""))) in context_words
+            }
+            if len(discipline_matches) == 1:
+                unique_matches = discipline_matches
         if len(unique_matches) > 1:
             raise ValueError(f"Frage {question_number}: Rennen '{reference}' ist nicht eindeutig. Bitte zusätzlich Renndatum angeben.")
         selected.append(next(iter(unique_matches.values())))
@@ -288,6 +302,7 @@ def parse_question_markdown(path: Path, athletes: list[dict[str, Any]], races: l
             races,
             index,
             fields.get("renndatum", fields.get("race date", "")),
+            f"{question_prompt} {question['hint']}",
         )
         question["raceIds"] = race_ids
         question["raceLabel"] = race_label
@@ -434,6 +449,175 @@ def generate_questions(athletes: list[dict[str, Any]], groups: list[dict[str, An
     return questions[: QUESTION_LIMITS[1]]
 
 
+def generate_question_suggestions_markdown(
+    athletes: list[dict[str, Any]],
+    races: list[dict[str, Any]],
+    groups: list[dict[str, Any]],
+    title: str,
+) -> str:
+    """Create an editable, immediately valid question sheet from start-list data."""
+    athlete_by_id = {athlete["id"]: athlete for athlete in athletes}
+    name_counts: dict[str, int] = defaultdict(int)
+    for athlete in athletes:
+        name_counts[athlete["displayName"].casefold()] += 1
+
+    def race_groups(race_id: str) -> list[dict[str, Any]]:
+        return [group for group in groups if group["raceId"] == race_id]
+
+    def preferred_age_class(race: dict[str, Any]) -> tuple[str, int]:
+        counts: dict[str, set[str]] = defaultdict(set)
+        for group in race_groups(race["id"]):
+            counts[group["ageClass"]].update(group["athleteIds"])
+        if not counts:
+            raise ValueError(f"Keine Oberhachinger Altersklasse für {race['name']} gefunden")
+        age_class = max(counts, key=lambda value: (len(counts[value]), value))
+        return age_class, len(counts[age_class])
+
+    def race_scope(race: dict[str, Any]) -> str:
+        return f"am {race['day']} im {race['discipline']} beim Rennen „{race['name']}“"
+
+    def block(prompt: str, fields: list[tuple[str, Any]]) -> str:
+        return "\n".join([f"## {prompt}", *(f"{key}: {value}" for key, value in fields)])
+
+    maximum_podiums = sum(min(3, len(group["athleteIds"])) for group in groups)
+    suggestions = [
+        block(
+            f"Wie viele Podiumsplätze erreicht Oberhaching in allen {len(races)} Rennen des Wochenendes?",
+            [
+                ("ID", "weekend-podium-count"), ("Typ", "ANZAHL"),
+                ("Auswertung", "PODIUMSPLAETZE"), ("Rennen", "ALLE"),
+                ("Hinweis", "Alle Rennen und offiziellen Wertungsgruppen des Wochenendes zählen zusammen."),
+                ("Minimum", 0), ("Maximum", max(1, maximum_podiums)),
+            ],
+        ),
+        block(
+            "Wer erzielt das beste Ergebnis in allen Rennen des Wochenendes?",
+            [
+                ("ID", "weekend-best-result"), ("Typ", "PERSON"),
+                ("Auswertung", "BESTES_ERGEBNIS"), ("Rennen", "ALLE"),
+                ("Hinweis", "Pro Person zählt nur das beste offizielle Ergebnis des Wochenendes."),
+                ("Personen", "ALLE"),
+            ],
+        ),
+    ]
+
+    selected_races = races[:4]
+    for race in selected_races:
+        age_class, starter_count = preferred_age_class(race)
+        suggestions.append(block(
+            f"Wie viele Top-10-Ergebnisse erzielt Oberhaching {race_scope(race)} in der {age_class}?",
+            [
+                ("ID", f"{race['id'].removeprefix('race-')}-{age_class.lower()}-top-ten"),
+                ("Typ", "ANZAHL"), ("Auswertung", "TOP_10"), ("Grenze", 10),
+                ("Rennen", race["id"]), ("Renndatum", race["date"]),
+                ("Altersklasse", age_class),
+                ("Hinweis", f"Es zählt ausschließlich {race_scope(race)} in allen offiziellen {age_class}-Wertungsgruppen."),
+                ("Minimum", 0), ("Maximum", max(1, starter_count)),
+            ],
+        ))
+
+    for race in selected_races[:1]:
+        age_class, _ = preferred_age_class(race)
+        suggestions.append(block(
+            f"Wer hat {race_scope(race)} in der {age_class} den geringsten prozentualen Rückstand?",
+            [
+                ("ID", f"{race['id'].removeprefix('race-')}-{age_class.lower()}-lowest-gap"),
+                ("Typ", "PERSON"), ("Auswertung", "GERINGSTER_RUECKSTAND"),
+                ("Rennen", race["id"]), ("Renndatum", race["date"]),
+                ("Altersklasse", age_class),
+                ("Hinweis", "Verglichen wird der prozentuale Rückstand auf den Sieger oder die Siegerin der jeweiligen offiziellen Wertungsgruppe."),
+                ("Personen", "ALLE"),
+            ],
+        ))
+
+    first_race = races[0]
+    first_groups = race_groups(first_race["id"])
+    unique_name_ids = {
+        athlete_id for athlete_id, athlete in athlete_by_id.items()
+        if name_counts[athlete["displayName"].casefold()] == 1
+    }
+    placement_group = next((group for group in first_groups if any(item in unique_name_ids for item in group["athleteIds"])), None)
+    if placement_group:
+        athlete_id_value = next(item for item in placement_group["athleteIds"] if item in unique_name_ids)
+        display_name = athlete_by_id[athlete_id_value]["displayName"]
+        suggestions.append(block(
+            f"Welche Platzierung erreicht {display_name} {race_scope(first_race)} in {placement_group['label']}?",
+            [
+                ("ID", f"{first_race['id'].removeprefix('race-')}-{slugify(display_name)}-placement"),
+                ("Typ", "PLATZIERUNG"), ("Auswertung", "PLATZIERUNG"),
+                ("Rennen", first_race["id"]), ("Renndatum", first_race["date"]),
+                ("Altersklasse", placement_group["ageClass"]),
+                ("Hinweis", "Es zählt die offizielle Platzierung in der genannten Wertungsgruppe."),
+                ("Person", display_name), ("Minimum", 1), ("Maximum", 60),
+            ],
+        ))
+
+    duel_group = next((group for group in groups if len([item for item in group["athleteIds"] if item in unique_name_ids]) >= 2), None)
+    if duel_group:
+        race = next(item for item in races if item["id"] == duel_group["raceId"])
+        duel_ids = [item for item in duel_group["athleteIds"] if item in unique_name_ids][:2]
+        names = [athlete_by_id[item]["displayName"] for item in duel_ids]
+        suggestions.append(block(
+            f"Wer ist {race_scope(race)} in {duel_group['label']} besser: {names[0]} oder {names[1]}?",
+            [
+                ("ID", f"{race['id'].removeprefix('race-')}-{slugify('-'.join(names))}-duel"),
+                ("Typ", "DUELL"), ("Auswertung", "DIREKTVERGLEICH"),
+                ("Rennen", race["id"]), ("Renndatum", race["date"]),
+                ("Hinweis", "Es zählt das offizielle Gesamtergebnis derselben Wertungsgruppe."),
+                ("Personen", " | ".join(names)),
+            ],
+        ))
+
+    ranking_group = next((group for group in groups if len([item for item in group["athleteIds"] if item in unique_name_ids]) >= 3), None)
+    if ranking_group:
+        race = next(item for item in races if item["id"] == ranking_group["raceId"])
+        ranking_ids = [item for item in ranking_group["athleteIds"] if item in unique_name_ids]
+        names = [athlete_by_id[item]["displayName"] for item in ranking_ids]
+        suggestions.append(block(
+            f"Wie lautet {race_scope(race)} die interne Oberhachinger Reihenfolge in {ranking_group['label']}?",
+            [
+                ("ID", f"{race['id'].removeprefix('race-')}-{slugify(ranking_group['label'])}-ranking"),
+                ("Typ", "REIHENFOLGE"), ("Auswertung", "INTERNE_REIHENFOLGE"),
+                ("Rennen", race["id"]), ("Renndatum", race["date"]),
+                ("Hinweis", "Alle genannten Personen fahren in derselben offiziellen Wertungsgruppe."),
+                ("Personen", " | ".join(names)), ("Positionen", min(3, len(names))),
+            ],
+        ))
+
+    age_class, starter_count = preferred_age_class(first_race)
+    suggestions.append(block(
+        f"Wie viele Oberhachinger Starter kommen {race_scope(first_race)} in der {age_class} in die Wertung?",
+        [
+            ("ID", f"{first_race['id'].removeprefix('race-')}-{age_class.lower()}-classified"),
+            ("Typ", "ANZAHL"), ("Auswertung", "GEWERTETE"),
+            ("Rennen", first_race["id"]), ("Renndatum", first_race["date"]),
+            ("Altersklasse", age_class),
+            ("Hinweis", "DNS, DNF und DSQ zählen nicht als offiziell gewertet."),
+            ("Minimum", 0), ("Maximum", max(1, starter_count)),
+        ],
+    ))
+
+    suggestions = suggestions[: QUESTION_LIMITS[1]]
+    if len(suggestions) < QUESTION_LIMITS[0]:
+        raise ValueError("Aus den Startlisten konnten nicht genügend konkrete Fragen erzeugt werden")
+    return f"# Fragen für {title}\n\n> Automatisch aus den Startlisten vorgeschlagen. Vor dem Öffnen prüfen und bei Bedarf anpassen.\n\n" + "\n\n".join(suggestions) + "\n"
+
+
+def write_question_suggestions(
+    source_paths: list[Path],
+    output_path: Path,
+    title: str,
+    test_weekend_date: date | None = None,
+) -> None:
+    documents = [(path, load_start_list(path)) for path in source_paths]
+    athletes, races, groups = build_snapshot(documents)
+    if test_weekend_date:
+        remap_race_dates(races, test_weekend_date)
+    content = generate_question_suggestions_markdown(athletes, races, groups, title)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(content, encoding="utf-8")
+
+
 def content_version(document: dict[str, Any]) -> str:
     protected_content = {
         "id": document["id"],
@@ -448,6 +632,19 @@ def content_version(document: dict[str, Any]) -> str:
     return f"sha256-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
 
 
+def remap_race_dates(races: list[dict[str, Any]], test_weekend_date: date) -> list[date]:
+    original_start = min(date.fromisoformat(race["date"]) for race in races)
+    remapped_dates: set[date] = set()
+    for race in races:
+        original_date = date.fromisoformat(race["date"])
+        remapped_date = test_weekend_date + (original_date - original_start)
+        race["originalDate"] = race["date"]
+        race["date"] = remapped_date.isoformat()
+        race["day"] = weekday_de(remapped_date)
+        remapped_dates.add(remapped_date)
+    return sorted(remapped_dates)
+
+
 def generate_tip_round(source_paths: list[Path], title: str | None = None, questions_path: Path | None = None, test_weekend_date: date | None = None, season_id: str | None = None, status: str = "DRAFT") -> dict[str, Any]:
     documents = [(path, load_start_list(path)) for path in source_paths]
     event_dates = sorted(date.fromisoformat(document["event"]["date"]) for _, document in documents)
@@ -459,11 +656,7 @@ def generate_tip_round(source_paths: list[Path], title: str | None = None, quest
         raise ValueError("No target-club athletes found in the provided start lists")
 
     if test_weekend_date:
-        for race in races:
-            race["originalDate"] = race["date"]
-            race["date"] = test_weekend_date.isoformat()
-            race["day"] = weekday_de(test_weekend_date)
-        event_dates = [test_weekend_date]
+        event_dates = remap_race_dates(races, test_weekend_date)
 
     zone = ZoneInfo(TIME_ZONE)
     closes_at = deadline_for_event(event_dates[0], zone)
@@ -540,6 +733,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, help="Output path for the tip-round draft")
     parser.add_argument("--title", help="Optional title override")
     parser.add_argument("--questions", type=Path, help="Markdown file containing six to ten manually selected questions")
+    parser.add_argument("--suggest-questions-output", type=Path, help="Replace a placeholder question sheet with concrete suggestions")
     parser.add_argument("--test-weekend-date", type=date.fromisoformat, help="Fixture only: treat all sources as races on this ISO date")
     parser.add_argument("--season-id", help="Season identifier copied into the generated tip round")
     parser.add_argument("--status", choices=["DRAFT", "OPEN", "CLOSED", "EVALUATED", "ARCHIVED", "CANCELLED"], default="DRAFT")
@@ -548,6 +742,15 @@ def main(argv: Iterable[str] | None = None) -> int:
     source_paths = [path.resolve() for path in arguments.start_lists]
     output_path = (arguments.output or default_output_path(source_paths)).resolve()
     questions_path = arguments.questions.resolve() if arguments.questions else None
+    if arguments.suggest_questions_output:
+        suggestions_path = arguments.suggest_questions_output.resolve()
+        write_question_suggestions(
+            source_paths,
+            suggestions_path,
+            arguments.title or f"Rennwochenende {arguments.test_weekend_date or ''}".strip(),
+            arguments.test_weekend_date,
+        )
+        questions_path = suggestions_path
     document = generate_tip_round(source_paths, arguments.title, questions_path, arguments.test_weekend_date, arguments.season_id, arguments.status)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -49,7 +49,7 @@ class EvaluateTipRoundTests(unittest.TestCase):
         self.assertTrue(dnf["penaltyApplied"])
         self.assertAlmostEqual(dnf["effectivePercentageGap"], 30.0)
 
-    def test_all_question_types_are_scored_and_normalized(self):
+    def test_all_question_types_contribute_equal_unscaled_points(self):
         submission = {"schemaVersion": 1, "id": "submission-1", "tipRoundId": "test-round", "tipRoundVersion": VERSION, "player": {"id": "max-m", "displayName": "Max M."}, "submittedAt": "2026-01-01T12:00:00Z", "answers": {
             "podiums": "1",
             "best": "athlete-a",
@@ -62,7 +62,10 @@ class EvaluateTipRoundTests(unittest.TestCase):
         points = {item["questionId"]: item["points"] for item in result["questionEvaluations"]}
         self.assertEqual(points["podiums"], 100)
         self.assertEqual(points["order"], 100)
-        self.assertEqual(result["weekendPoints"], 1000)
+        self.assertEqual(result["weekendPoints"], 600)
+        self.assertEqual(result["maximumWeekendPoints"], 600)
+        self.assertEqual(result["scoringModel"], "EQUAL_QUESTION_POINTS_V1")
+        self.assertEqual(result["questionEvaluations"][0]["scoreExplanation"], "Exakt getroffen: 100 Punkte.")
 
     def test_dnf_and_dsq_share_last_place_in_either_order(self):
         tip_round = {
@@ -123,6 +126,7 @@ class EvaluateTipRoundTests(unittest.TestCase):
         self.assertEqual(evaluations["duel"]["status"], "ANNULLED")
         self.assertEqual(evaluations["order"]["points"], 100)
         self.assertEqual(evaluations["order"]["actualAnswer"]["dns"], ["athlete-b"])
+        self.assertIn("DNS wurden entfernt", evaluations["order"]["scoreExplanation"])
 
     def test_dnf_gets_virtual_last_place_for_placement_question(self):
         tip_round = {

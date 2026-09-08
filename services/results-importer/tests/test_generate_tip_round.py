@@ -15,11 +15,53 @@ from generate_tip_round import (  # noqa: E402
     content_version,
     deadline_for_event,
     generate_questions,
+    generate_question_suggestions_markdown,
     parse_question_markdown,
+    remap_race_dates,
 )
 
 
 class GenerateTipRoundTests(unittest.TestCase):
+    def test_question_suggestions_are_concrete_and_parseable(self):
+        athletes = [
+            {"id": "athlete-anna", "displayName": "Anna M.", "ageClass": "U10", "starts": [{"raceId": "race-saturday"}]},
+            {"id": "athlete-lea", "displayName": "Lea K.", "ageClass": "U10", "starts": [{"raceId": "race-saturday"}, {"raceId": "race-sunday"}]},
+            {"id": "athlete-emma", "displayName": "Emma B.", "ageClass": "U10", "starts": [{"raceId": "race-saturday"}, {"raceId": "race-sunday"}]},
+        ]
+        races = [
+            {"id": "race-saturday", "name": "Samstag Cup", "date": "2027-01-16", "day": "Samstag", "discipline": "Riesenslalom"},
+            {"id": "race-sunday", "name": "Sonntag Cup", "date": "2027-01-17", "day": "Sonntag", "discipline": "Slalom"},
+        ]
+        groups = [
+            {"id": "race-saturday-u10-female", "raceId": "race-saturday", "label": "U10 weiblich", "ageClass": "U10", "athleteIds": ["athlete-anna", "athlete-lea", "athlete-emma"]},
+            {"id": "race-sunday-u10-female", "raceId": "race-sunday", "label": "U10 weiblich", "ageClass": "U10", "athleteIds": ["athlete-lea", "athlete-emma"]},
+        ]
+
+        markdown = generate_question_suggestions_markdown(athletes, races, groups, "Testwochenende")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "questions.md"
+            path.write_text(markdown, encoding="utf-8")
+            questions = parse_question_markdown(path, athletes, races)
+
+        self.assertGreaterEqual(len(questions), 6)
+        self.assertLessEqual(len(questions), 10)
+        self.assertNotIn("[RENNNAME]", markdown)
+        self.assertIn("Rennen: race-saturday", markdown)
+        self.assertEqual(questions[0]["raceIds"], ["race-saturday", "race-sunday"])
+        self.assertTrue(all(question["raceIds"] for question in questions))
+
+    def test_test_weekend_remapping_preserves_day_offsets(self):
+        races = [
+            {"date": "2023-01-14"},
+            {"date": "2023-01-15"},
+        ]
+
+        dates = remap_race_dates(races, date(2027, 1, 16))
+
+        self.assertEqual(dates, [date(2027, 1, 16), date(2027, 1, 17)])
+        self.assertEqual([race["date"] for race in races], ["2027-01-16", "2027-01-17"])
+        self.assertEqual([race["originalDate"] for race in races], ["2023-01-14", "2023-01-15"])
+
     def test_content_version_protects_questions_but_not_lifecycle_status(self):
         document = {
             "id": "round-1",
@@ -201,6 +243,24 @@ Maximum: 40
             questions = parse_question_markdown(path, athletes, races)
 
         self.assertEqual(questions[0]["raceIds"], ["race-sunday"])
+
+    def test_question_discipline_disambiguates_same_name_and_date(self):
+        athletes = [{"id": "athlete-u10", "displayName": "Anna M.", "ageClass": "U10"}]
+        races = [
+            {"id": "race-gs", "name": "SVM Kids Cup", "date": "2027-01-16", "discipline": "Riesenslalom"},
+            {"id": "race-sl", "name": "SVM Kids Cup", "date": "2027-01-16", "discipline": "Slalom"},
+        ]
+        content = "\n\n".join(
+            f"## Frage {index}: Wie viele Top-10-Ergebnisse gibt es im Riesenslalom?\nTyp: ANZAHL\nAuswertung: TOP_10\n"
+            "Rennen: SVM Kids Cup\nRenndatum: 2027-01-16\nMinimum: 0\nMaximum: 10"
+            for index in range(1, 7)
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "questions.md"
+            path.write_text(content, encoding="utf-8")
+            questions = parse_question_markdown(path, athletes, races)
+
+        self.assertTrue(all(question["raceIds"] == ["race-gs"] for question in questions))
 
     def test_race_name_tolerates_spacing_around_hyphen_and_umlauts(self):
         athletes = [{"id": "athlete-u14", "displayName": "Clara S.", "ageClass": "U14"}]

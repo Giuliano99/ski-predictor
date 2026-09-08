@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-from evaluate_tip_round import evaluate
+from evaluate_tip_round import SCORING_MODEL, evaluate
 
 
 def ranked(items: list[dict[str, Any]], points_field: str) -> list[dict[str, Any]]:
@@ -78,9 +78,11 @@ def build_weekend_evaluation(
             "playerId": submission["player"]["id"],
             "displayName": submission["player"]["displayName"],
             "weekendPoints": evaluation["weekendPoints"],
+            "maximumWeekendPoints": evaluation["maximumWeekendPoints"],
         })
     return {
         "schemaVersion": 1,
+        "scoringModel": SCORING_MODEL,
         "seasonId": season_id,
         "tipRoundId": tip_round["id"],
         "tipRoundVersion": tip_round["contentVersion"],

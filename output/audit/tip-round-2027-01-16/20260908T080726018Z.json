@@ -1,0 +1,55 @@
+{
+    "schemaVersion":  1,
+    "recordType":  "WEEKEND_EVALUATION",
+    "recordedAt":  "2026-09-08T08:07:26.0182992Z",
+    "tipRoundId":  "tip-round-2027-01-16",
+    "tipRoundVersion":  "sha256-3c8a97181bb3e8c0b4da6cfbe7b0e6ce9fe044a48051d9235590b2dbfcbd518a",
+    "scoringModel":  "EQUAL_QUESTION_POINTS_V1",
+    "previousAuditSha256":  null,
+    "inputs":  {
+                   "tipRound":  {
+                                    "path":  "apps/web/src/data/tip-round-2027-01-16.local.json",
+                                    "sha256":  "3aca45dd2e4d5784df5093abf8cfd87d15b607640606b37cdc7b1fcb1a18516f"
+                                },
+                   "sourceResults":  [
+                                         {
+                                             "path":  "storage://saisons/2026-2027/weekends/2027-01-16/ergebnislisten/ergebnisliste1.pdf",
+                                             "sha256":  "9d53b1f43a0dc4024b36237b3980e68b43d7b7d5a698974126d4c2edc49544d2"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2026-2027/weekends/2027-01-16/ergebnislisten/ergebnisliste2.pdf",
+                                             "sha256":  "81ceb3adc0a7c863f15a599354566ed5c6f2df3484cdefe81dbba2365fde7f39"
+                                         }
+                                     ],
+                   "normalizedResults":  [
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2027-01-16/result-ergebnisliste1.json",
+                                                 "sha256":  "9247b53b92560e5b78b2281ef4b026b9b0f271bbf42c9b80ef623d061c5a7fbd"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2027-01-16/result-ergebnisliste2.json",
+                                                 "sha256":  "9282883045c73693ab0de00d6972be5ed1baa0c9253bc552544ddb47016e4785"
+                                             }
+                                         ],
+                   "submissions":  [
+                                       {
+                                           "path":  "data/submissions/inbox/tip-round-2027-01-16/tipp-tip-round-2027-01-16-local-bw-20260907070958506708-74369cca.json",
+                                           "sha256":  "c39f9764844f1f538db982c27bbac0f7c318902da579cded246d459440b2f7d8"
+                                       },
+                                       {
+                                           "path":  "data/submissions/inbox/tip-round-2027-01-16/tipp-tip-round-2027-01-16-local-gg-20260907070927958591-6f44c8c8.json",
+                                           "sha256":  "d0bfa2bc84895d30dd3c609236fc94f0472528fd66106c64b505bcdbaf53c314"
+                                       }
+                                   ]
+               },
+    "outputs":  {
+                    "evaluation":  {
+                                       "path":  "data/submissions/processed/weekend-tip-round-2027-01-16.json",
+                                       "sha256":  "1d5f0c1d91ba31e963284e30a26bdf17738fb9504210b3f1ce8a751e4f876dab"
+                                   },
+                    "resultReview":  {
+                                         "path":  "output/reports/results-tip-round-2027-01-16.md",
+                                         "sha256":  "af83b00971388f1bb8e8cb01ee8d6d5e78be6b4acca57a20f13f4784e3a36fea"
+                                     }
+                }
+}

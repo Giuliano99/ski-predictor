@@ -67,6 +67,7 @@ $configFile = "config/weekends/$weekendId.json"
 $reviewReport = "output/reports/review-$weekendId.md"
 $configPath = Resolve-WorkspacePath -Path $configFile
 $questionsPath = Resolve-WorkspacePath -Path $questionsFile
+$questionPlaceholderWriter = Resolve-WorkspacePath -Path "services/results-importer/src/create_question_placeholder.py" -MustExist
 
 foreach ($target in @($configPath, $questionsPath)) {
     if ((Test-Path -LiteralPath $target) -and -not $Force) {
@@ -94,7 +95,7 @@ $questionTemplate = @"
 
 > Passe die Vorschläge nach dem Import der Startlisten an. Jede Frage muss klar sagen, für welches Rennen oder welche Rennen sie gilt.
 
-## Wie viele Podiumsplätze erreicht Oberhaching in allen Rennen des Wochenendes ab $dateLabel?
+## Wie viele Podiumsplätze erreicht Oberhaching in allen Rennen des Wochenendes ab ${dateLabel}?
 ID: weekend-podium-count
 Typ: ANZAHL
 Auswertung: PODIUMSPLAETZE
@@ -103,7 +104,7 @@ Hinweis: Alle Rennen und alle Wertungsgruppen des Wochenendes ab $dateLabel
 Minimum: 0
 Maximum: 100
 
-## Wer erzielt das beste Ergebnis in allen Rennen des Wochenendes ab $dateLabel?
+## Wer erzielt das beste Ergebnis in allen Rennen des Wochenendes ab ${dateLabel}?
 ID: weekend-best-result
 Typ: PERSON
 Auswertung: BESTES_ERGEBNIS
@@ -189,9 +190,18 @@ $weekendConfig = [ordered]@{
     resultReviewReport = "output/reports/results-$weekendId.md"
 }
 
+if ($TestMode) {
+    $weekendConfig.tipRound["testWeekendDate"] = $dateKey
+}
+
 if ($PSCmdlet.ShouldProcess($questionsPath, "Fragenvorlage anlegen")) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $questionsPath) -Force | Out-Null
-    [IO.File]::WriteAllText($questionsPath, $questionTemplate, [Text.UTF8Encoding]::new($false))
+    Invoke-PythonStep -PythonCommand "python" -Label "Fragenvorlage anlegen" -Arguments @(
+        $questionPlaceholderWriter,
+        "--output", $questionsPath,
+        "--title", $Title,
+        "--weekend-date", $dateLabel
+    )
 }
 if ($PSCmdlet.ShouldProcess($configPath, "Wochenendkonfiguration anlegen")) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $configPath) -Force | Out-Null

@@ -40,6 +40,55 @@ class ResultAssistantTests(unittest.TestCase):
             {"name": "SVM Cup", "date": "2026-03-08"},
         ))
 
+    def test_start_list_creation_date_may_precede_race_date(self):
+        results = [
+            {
+                "path": "result-rs.pdf",
+                "event": {
+                    "name": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+                    "date": "2023-02-18",
+                    "discipline": "GS",
+                },
+            },
+            {
+                "path": "result-sl.pdf",
+                "event": {
+                    "name": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+                    "date": "2023-02-19",
+                    "discipline": "SL",
+                },
+            },
+        ]
+        starts = [
+            {
+                "path": "start-rs.json",
+                "event": {
+                    "name": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+                    "date": "2023-02-15",
+                    "discipline": "GS",
+                },
+            },
+            {
+                "path": "start-sl.json",
+                "event": {
+                    "name": "SVM ROSSIGNOL HERO Kids Cup U8 U10",
+                    "date": "2023-02-15",
+                    "discipline": "SL",
+                },
+            },
+        ]
+
+        matches, errors = match_metadata(results, starts)
+
+        self.assertEqual(errors, [])
+        self.assertEqual([item["startList"] for item in matches], ["start-rs.json", "start-sl.json"])
+
+    def test_different_disciplines_never_match_despite_same_name_and_date(self):
+        self.assertIsNone(candidate_score(
+            {"name": "SVM Cup U10", "date": "2026-03-07", "discipline": "GS"},
+            {"name": "SVM Cup U10", "date": "2026-03-07", "discipline": "SL"},
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()

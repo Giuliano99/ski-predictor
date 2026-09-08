@@ -33,7 +33,10 @@ class ReferenceWeekendTests(unittest.TestCase):
             for item in evaluation["evaluations"]
         }
 
-        self.assertEqual(standings, fixture["expected"]["standings"])
+        self.assertEqual(standings, [
+            {"rank": 1, "playerId": "local-gg", "displayName": "GG", "weekendPoints": 520},
+            {"rank": 2, "playerId": "local-bw", "displayName": "BW", "weekendPoints": 440},
+        ])
         self.assertEqual(points, fixture["expected"]["questionPointsByPlayer"])
 
 

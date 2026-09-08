@@ -1,0 +1,68 @@
+{
+    "schemaVersion":  1,
+    "id":  "tip-round-2027-01-16",
+    "seasonId":  "2026-2027",
+    "status":  "EVALUATED",
+    "statusHistory":  [
+                          {
+                              "status":  "DRAFT",
+                              "changedAt":  "2026-09-07T06:29:06.1389088+00:00"
+                          },
+                          {
+                              "status":  "OPEN",
+                              "changedAt":  "2026-09-07T06:40:44.530492+00:00"
+                          },
+                          {
+                              "status":  "CLOSED",
+                              "changedAt":  "2026-09-07T07:17:35.946243+00:00"
+                          },
+                          {
+                              "status":  "EVALUATED",
+                              "changedAt":  "2026-09-07T07:20:35.170672+00:00"
+                          }
+                      ],
+    "questionsFile":  "data/questions/weekend-questions-2027-01-16.md",
+    "startListsDirectory":  "storage://saisons/2026-2027/weekends/2027-01-16/startlisten",
+    "startLists":  [
+                       {
+                           "pdf":  "storage://saisons/2026-2027/weekends/2027-01-16/startlisten/startliste1.pdf",
+                           "output":  "data/result-lists/processed/weekend-2027-01-16/startliste1.json"
+                       },
+                       {
+                           "pdf":  "storage://saisons/2026-2027/weekends/2027-01-16/startlisten/startliste2.pdf",
+                           "output":  "data/result-lists/processed/weekend-2027-01-16/startliste2.json"
+                       }
+                   ],
+    "tipRound":  {
+                     "title":  "SVM U8/U10 1",
+                     "output":  "data/result-lists/processed/weekend-2027-01-16/tip-round.json",
+                     "websiteOutput":  "apps/web/src/data/tip-round-2027-01-16.local.json",
+                     "testMode":  true,
+                     "testWeekendDate":  "2027-01-16"
+                 },
+    "resultsDirectory":  "storage://saisons/2026-2027/weekends/2027-01-16/ergebnislisten",
+    "results":  [
+                    {
+                        "pdf":  "storage://saisons/2026-2027/weekends/2027-01-16/ergebnislisten/ergebnisliste1.pdf",
+                        "startList":  "data/result-lists/processed/weekend-2027-01-16/startliste1.json",
+                        "output":  "data/result-lists/processed/weekend-2027-01-16/result-ergebnisliste1.json"
+                    },
+                    {
+                        "pdf":  "storage://saisons/2026-2027/weekends/2027-01-16/ergebnislisten/ergebnisliste2.pdf",
+                        "startList":  "data/result-lists/processed/weekend-2027-01-16/startliste2.json",
+                        "output":  "data/result-lists/processed/weekend-2027-01-16/result-ergebnisliste2.json"
+                    }
+                ],
+    "submissionsDir":  "data/submissions/inbox/tip-round-2027-01-16",
+    "weekendEvaluation":  {
+                              "output":  "data/submissions/processed/weekend-tip-round-2027-01-16.json",
+                              "websiteOutput":  "apps/web/src/data/weekend-evaluation-2027-01-16.local.json"
+                          },
+    "seasonLeaderboard":  {
+                              "weekendPattern":  "data/submissions/processed/weekend-*.json",
+                              "output":  "data/submissions/processed/season-2026-2027.json",
+                              "websiteOutput":  "apps/web/src/data/season-leaderboard-2026-2027.local.json"
+                          },
+    "reviewReport":  "output/reports/review-tip-round-2027-01-16.md",
+    "resultReviewReport":  "output/reports/results-tip-round-2027-01-16.md"
+}

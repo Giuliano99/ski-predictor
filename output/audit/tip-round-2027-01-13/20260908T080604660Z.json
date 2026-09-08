@@ -1,0 +1,55 @@
+{
+    "schemaVersion":  1,
+    "recordType":  "WEEKEND_EVALUATION",
+    "recordedAt":  "2026-09-08T08:06:04.6605730Z",
+    "tipRoundId":  "tip-round-2027-01-13",
+    "tipRoundVersion":  "sha256-1e61dfdbdff04c08dce0494f3fc5d83113497211a2f8c3d07b9b5a7442ac1afe",
+    "scoringModel":  "EQUAL_QUESTION_POINTS_V1",
+    "previousAuditSha256":  null,
+    "inputs":  {
+                   "tipRound":  {
+                                    "path":  "apps/web/src/data/tip-round-2027-01-13.local.json",
+                                    "sha256":  "6c520824f411c08bfcb20be47cb0041e0b9ad591943741cce0c9eb9c7dce025f"
+                                },
+                   "sourceResults":  [
+                                         {
+                                             "path":  "storage://saisons/2026-2027/weekends/2027-01-13/ergebnislisten/2023-02-15_Ergebnisliste_U8U10_RS.pdf",
+                                             "sha256":  "2879177f7d390d2ef4359d2811d4458419a67cae9a2d2815f975f80a1ea2c22d"
+                                         },
+                                         {
+                                             "path":  "storage://saisons/2026-2027/weekends/2027-01-13/ergebnislisten/2023-02-15_Ergebnisliste_U8U10_SL.pdf",
+                                             "sha256":  "099ae9714e7a8057ca7ae111d539dd4626254b91ae4177c68ffbc2e35908ccab"
+                                         }
+                                     ],
+                   "normalizedResults":  [
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2027-01-13/result-2023-02-15_Ergebnisliste_U8U10_RS.json",
+                                                 "sha256":  "c98f7988dfd1a88299acff5f443f78192fec4c62d63504b65da660f8dc81e6b4"
+                                             },
+                                             {
+                                                 "path":  "data/result-lists/processed/weekend-2027-01-13/result-2023-02-15_Ergebnisliste_U8U10_SL.json",
+                                                 "sha256":  "d2294d35b6eb3b7806b8ab03b7b87716800c95f83d362c87571607d5c210d736"
+                                             }
+                                         ],
+                   "submissions":  [
+                                       {
+                                           "path":  "data/submissions/inbox/tip-round-2027-01-13/tipp-tip-round-2027-01-13-local-bw-20260907081037069377-682e6f7c.json",
+                                           "sha256":  "2385eaf9e7600b4e04314ad3de71a03efe19232aa3f5a525cdddd57415cbd4ca"
+                                       },
+                                       {
+                                           "path":  "data/submissions/inbox/tip-round-2027-01-13/tipp-tip-round-2027-01-13-local-gg-20260907080959602426-643d826c.json",
+                                           "sha256":  "ad2b674576c4d3f9062f6bfae537ef2496f8e432fc17d3b79112a8948357f5fa"
+                                       }
+                                   ]
+               },
+    "outputs":  {
+                    "evaluation":  {
+                                       "path":  "data/submissions/processed/weekend-tip-round-2027-01-13.json",
+                                       "sha256":  "d237a682fcbabef87606d13520bfdeee6d9bcf72764b486a66faf181376f2790"
+                                   },
+                    "resultReview":  {
+                                         "path":  "output/reports/results-tip-round-2027-01-13.md",
+                                         "sha256":  "32f514858bf5d33f3db54be0d3e2ef4d6f6ea741288a235c02bfb6b54cd145ec"
+                                     }
+                }
+}

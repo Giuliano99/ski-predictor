@@ -134,7 +134,11 @@ def event_metadata(lines: list[str], text: str) -> dict[str, Any]:
             date_value = parse_date(reconstructed.group(2))
             location = clean_space(reconstructed.group(3))
             break
-        match = re.match(r"^(\d{1,2}[./-]\d{1,2}[./-]\d{4})(?:\s*/\s*(.+?))?(?:\s+Bewerbsnummer.*)?$", line)
+        match = re.match(
+            r"^(\d{1,2}[./-]\d{1,2}[./-]\d{4})(?:\s*/\s*(.+?))?(?:\s+Bewerbsnummer.*|\s+Seite\s+\d+/\d+)?$",
+            line,
+            re.IGNORECASE,
+        )
         if not match:
             continue
         date_value = parse_date(match.group(1))
@@ -157,7 +161,7 @@ def event_metadata(lines: list[str], text: str) -> dict[str, Any]:
     if date_value:
         metadata["date"] = date_value
     if location:
-        metadata["location"] = re.sub(r"\s*\(GER\).*$", "", location).strip()
+        metadata["location"] = re.sub(r"\s*\([A-Z]{3}\).*$", "", location).strip()
     if competition_match:
         metadata["competitionNumber"] = competition_match.group(1)
     if run_match:
@@ -190,17 +194,36 @@ def parse_group(line: str) -> dict[str, Any] | None:
 
 def parse_dsvalpin_entry(line: str, target_club: str) -> dict[str, Any] | None:
     match = re.match(r"^(\d+)\s+(.+?)\s+(\d{5})\s+(\d{2})\s+(.+?)\s+([A-Z]{3}-[A-Z]+)\s+_+\s+---", line)
-    if not match:
+    if match:
+        person = name_without_comma(match.group(2))
+        club = normalize_club(match.group(5))
+        return {
+            "startNumber": int(match.group(1)),
+            "externalAthleteId": match.group(3),
+            "fullName": person.full_name,
+            "displayName": person.display_name,
+            "birthYear": 2000 + int(match.group(4)),
+            "federation": match.group(6),
+            "club": club,
+            "targetClub": is_target_club(club, target_club),
+        }
+
+    legacy_match = re.match(
+        r"^(\d+)\s+\.{3,}\s+(.+?)\s+(\d{2})\s+\.{3,}\s+(.+?)\s+\.{3,}\s+_+\s*$",
+        line,
+    ) or re.match(
+        r"^(\d+)\s+(.+?)\s+\.{3,}\s+(\d{2})\s+(.+?)\s+\.{3,}\s+_+\s+\.{3,}\s*$",
+        line,
+    )
+    if not legacy_match:
         return None
-    person = name_without_comma(match.group(2))
-    club = normalize_club(match.group(5))
+    person = name_without_comma(legacy_match.group(2))
+    club = normalize_club(legacy_match.group(4))
     return {
-        "startNumber": int(match.group(1)),
-        "externalAthleteId": match.group(3),
+        "startNumber": int(legacy_match.group(1)),
         "fullName": person.full_name,
         "displayName": person.display_name,
-        "birthYear": 2000 + int(match.group(4)),
-        "federation": match.group(6),
+        "birthYear": 2000 + int(legacy_match.group(3)),
         "club": club,
         "targetClub": is_target_club(club, target_club),
     }
