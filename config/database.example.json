@@ -1,0 +1,4 @@
+{
+  "provider": "sqlite",
+  "path": "data/database/ski-predictor.sqlite3"
+}

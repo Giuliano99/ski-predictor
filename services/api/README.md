@@ -1,6 +1,6 @@
 # Ski Document API
 
-Die lokale Backend API stellt Start- und Ergebnislisten als gemeinsame Datenquelle für den Ski Predictor und weitere Projekte bereit. Die Original-PDFs bleiben im externen Datenspeicher. Eine spätere Datenbank enthält nur strukturierte Daten und Dokument-Metadaten.
+Die lokale Backend API stellt Start- und Ergebnislisten als gemeinsame Datenquelle für den Ski Predictor und weitere Projekte bereit. Die Original-PDFs bleiben im externen Datenspeicher. Lokal speichert SQLite Dokument-Metadaten, vollständigen PDF-Text, den unveränderten strukturierten Rohimport und normalisierte Renndaten. PostgreSQL bleibt das Zielsystem für den Raspberry Pi.
 
 ## Starten
 
@@ -23,6 +23,18 @@ http://127.0.0.1:4175/spielleiter/
 http://127.0.0.1:4175/tippspiel/
 ```
 
+## Datenbank einrichten
+
+```powershell
+.\scripts\game-master\Initialize-Database.ps1
+```
+
+`Initialize-Database.ps1` erstellt die lokale SQLite-Datei, führt versionierte
+Migrationen aus und übernimmt vorhandene Dokumente, Extraktionen und Tippabgaben.
+Es läuft kein eigener Datenbankdienst. Die API führt neue Migrationen und den
+Dokumentabgleich beim Start automatisch aus. `DATABASE_URL` überschreibt die
+lokale Konfiguration und aktiviert später PostgreSQL auf dem Raspberry Pi.
+
 ## Endpunkte
 
 ```text
@@ -33,6 +45,8 @@ GET /api/v1/documents/{documentId}/file
 POST /api/v1/documents/{documentId}/extract
 GET /api/v1/documents/{documentId}/extraction
 GET /api/v1/collections
+GET /api/v1/imports
+GET /api/v1/imports/{importId}
 GET /api/v1/weekends
 POST /api/v1/weekends/{weekendId}/extractions
 GET /api/v1/extraction-jobs
@@ -79,11 +93,17 @@ with urllib.request.urlopen(url) as response:
 
 `documentId` identifiziert ein Dokument an seinem Ablageort. `contentHash` identifiziert den unveränderten Dateiinhalt. Andere Projekte können dadurch bereits verarbeitete PDFs erkennen und doppelte Arbeit vermeiden.
 
+`GET /api/v1/imports?documentId=...` listet alle Parser-Versionen eines Dokuments.
+`GET /api/v1/imports/{importId}` liefert den vollständigen PDF-Text, Rohimport,
+normalisierten Import und Prüfbericht. Damit können weitere Projekte auf dieselbe
+Datenbasis zugreifen, ohne Predictor-interne Dateien oder Tabellen zu kennen.
+
 Die API gibt keine absoluten Windows-Pfade aus. Sie liefert ausschließlich portable `storage://`-Referenzen und Download-URLs. Der allgemeine Dokumentenkatalog ist nur lesend. Änderungen am Spielbetrieb sind ausschließlich über die gesonderten Wochenend-Endpunkte möglich, die das lokale Spielleiter-Dashboard verwendet.
 
-Tippabgaben werden mit `POST /api/v1/predictor/rounds/{tipRoundId}/submissions` validiert und automatisch im für das Wochenende konfigurierten `submissionsDir` gespeichert. Die API vergibt Abgabe-ID und Zeitstempel selbst. Nur eine geöffnete, nicht abgelaufene Runde mit passender Inhaltsversion wird angenommen. Eine spätere gültige Abgabe desselben Spielernamens zählt bei der Auswertung automatisch als neueste Abgabe.
+Tippabgaben werden mit `POST /api/v1/predictor/rounds/{tipRoundId}/submissions` validiert und automatisch im für das Wochenende konfigurierten `submissionsDir` sowie in der konfigurierten Datenbank gespeichert. Die API vergibt Abgabe-ID und Zeitstempel selbst. Nur eine geöffnete, nicht abgelaufene Runde mit passender Inhaltsversion wird angenommen. Eine spätere gültige Abgabe desselben Spielernamens zählt bei der Auswertung automatisch als neueste Abgabe.
 
-Die API ist im MVP ausschließlich lokal erreichbar. Vor einer Veröffentlichung im Netzwerk oder Internet müssen Authentifizierung und Zugriffsschutz ergänzt werden. Die Datenbank folgt in einer späteren Ausbaustufe.
+Die API ist im MVP ausschließlich lokal erreichbar. Vor einer Veröffentlichung im Netzwerk oder Internet müssen Authentifizierung und Zugriffsschutz ergänzt werden.
+SQLite öffnet keinen Netzwerk-Port. Auf dem Raspberry Pi wird später ausschließlich die Backend API nach außen freigegeben, niemals der PostgreSQL-Port.
 
 ## PDF-Extraktion
 
@@ -99,6 +119,12 @@ Zu jedem erfolgreichen Auftrag werden drei lokale Artefakte unter `data/extracti
 * unveränderte Extraktion aus dem vorhandenen PDF-Importer
 * allgemeines normalisiertes Renndokument
 * lesbarer Prüfbericht
+
+Parallel legt die Datenbank einen versionierten Rohimport an. Er enthält das komplette
+extrahierte JSON und den vollständigen PDF-Text. U14/U16-Verbands- und Rennpunkte,
+Laufzeiten, Status sowie Zuschlagsberechnungen bleiben dadurch für andere Projekte
+verfügbar. Erst nach Freigabe werden zusätzlich relationale Tabellen für schnelle
+Abfragen nach Athlet, Rennen, Klasse oder Lauf befüllt.
 
 Der Ordner wird nicht in Git eingecheckt. Nur `APPROVED` Daten erscheinen unter `/api/v1/events` und `/api/v1/races`. Der Spielleiter kann alle PDFs eines Wochenendes gesammelt über die Oberfläche anstoßen und einzeln freigeben.
 

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from athlete_identity import AthleteIdentityError, AthleteIdentityRegistry
+from database import Database
 from document_catalog import Document, DocumentCatalog
 
 
@@ -23,7 +24,7 @@ if str(IMPORTER_SOURCE) not in sys.path:
     sys.path.insert(0, str(IMPORTER_SOURCE))
 
 from extract_result_list import extract_result_list  # noqa: E402
-from extract_start_list import extract_start_list, slugify  # noqa: E402
+from extract_start_list import extract_pdf_text, extract_start_list, slugify  # noqa: E402
 
 
 EXTRACTION_VERSION = "ski-predictor-extractor-v2-athlete-identity"
@@ -51,8 +52,9 @@ def stable_id(prefix: str, value: Any) -> str:
 
 
 class ExtractionService:
-    def __init__(self, catalog: DocumentCatalog, data_directory: Path | None = None):
+    def __init__(self, catalog: DocumentCatalog, data_directory: Path | None = None, database: Database | None = None):
         self.catalog = catalog
+        self.database = database
         self.data_directory = (data_directory or WORKSPACE / "data" / "extractions").resolve()
         self.jobs_directory = self.data_directory / "jobs"
         self.identities = AthleteIdentityRegistry(self.data_directory / "athletes.json")
@@ -304,6 +306,9 @@ class ExtractionService:
             atomic_json(directory / "raw.json", extracted)
             atomic_json(directory / "normalized.json", normalized)
             (directory / "report.md").write_text(self._report_markdown(job, review, normalized), encoding="utf-8")
+            if self.database:
+                _, source_text = extract_pdf_text(document.path)
+                self.database.save_extraction(job, document, extracted, normalized, review, source_text)
             with self._lock:
                 job = self._read_job(job_id)
                 job.update({"status": "REVIEW_REQUIRED", "completedAt": utc_now(), "review": review, "raceId": normalized["race"]["id"], "eventId": normalized["event"]["id"]})
@@ -363,6 +368,8 @@ class ExtractionService:
             self.identities.register_artifact(artifact)
             job["status"] = "APPROVED"
             job["approvedAt"] = utc_now()
+            if self.database:
+                self.database.approve_extraction(job, artifact)
             self._write_job(job)
             approved = self.public_job(job)
         if job.get("documentKind") == "START_LIST" and job.get("weekendDate"):

@@ -41,6 +41,58 @@ def seconds(value: str) -> float:
     return int(minutes) * 60 + float(remainder)
 
 
+def decimal_number(value: str) -> float:
+    return float(value.replace(".", "").replace(",", "."))
+
+
+def points_calculations(text: str) -> list[dict[str, Any]]:
+    """Keep the official U14/U16 penalty calculation in structured form.
+
+    The full source text is persisted separately. These summary fields make the
+    most commonly reused DSV values directly queryable without losing the
+    original calculation tables.
+    """
+    calculations: list[dict[str, Any]] = []
+    sections = re.finditer(
+        r"Zuschlagsberechnung\s+(Damen|Herren)/(?P<body>.*?)(?=Zuschlagsberechnung\s+(?:Damen|Herren)/|\Z)",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    labels = {
+        "fValue": r"F-Wert:\s*([\d.,]+)",
+        "calculatedPenalty": r"Berechneter Zuschlag:.*?=\s*([\d.,]+)",
+        "roundedPenalty": r"Gerundet:\s*([\d.,]+)",
+        "listPenalty": r"Punktezuschlag:\s*([\d.,]+)",
+        "minimumPenalty": r"Minimumzuschlag:\s*([\d.,]+)",
+        "appliedPenalty": r"Angewandter Zuschlag:\s*([\d.,]+)",
+    }
+    for section in sections:
+        body = section.group("body")
+        calculation: dict[str, Any] = {
+            "competitionCategory": "FEMALE" if section.group(1).casefold() == "damen" else "MALE"
+        }
+        for field, pattern in labels.items():
+            match = re.search(pattern, body, re.IGNORECASE | re.DOTALL)
+            if match:
+                calculation[field] = decimal_number(match.group(1))
+        calculations.append(calculation)
+    return calculations
+
+
+def competition_statistics(text: str) -> dict[str, int] | None:
+    labels = {
+        "registered": r"Gemeldete Teilnehmer:\s*(\d+)",
+        "classified": r"Gewertete Teilnehmer:\s*(\d+)",
+        "notClassified": r"Ausgeschiedene Teilnehmer:\s*(\d+)",
+    }
+    result = {
+        field: int(match.group(1))
+        for field, pattern in labels.items()
+        if (match := re.search(pattern, text, re.IGNORECASE))
+    }
+    return result or None
+
+
 def group_from_line(line: str, event_name: str) -> dict[str, Any] | None:
     normalized = line.casefold()
     birth_years: list[int] = []
@@ -545,6 +597,10 @@ def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, ta
         "groups": groups,
         "warnings": list(dict.fromkeys(warnings)),
     }
+    if calculations := points_calculations(text):
+        document["pointsCalculations"] = calculations
+    if statistics := competition_statistics(text):
+        document["competitionStatistics"] = statistics
 
     if start_list:
         expected = {

@@ -2,6 +2,27 @@
 
 Alle Befehle werden aus dem Repository Hauptordner ausgeführt.
 
+## Datenbank
+
+Einmalig:
+
+```powershell
+.\scripts\game-master\Initialize-Database.ps1
+```
+
+SQLite benötigt keinen separaten Server. Dieser optionale Befehl führt nur offene
+Migrationen aus und prüft die Datenbank:
+
+```powershell
+.\scripts\game-master\Start-Database.ps1
+```
+
+Status und importierte Datensätze können geprüft werden:
+
+```powershell
+python services/api/src/database_cli.py status
+```
+
 Für den normalen Ablauf steht eine Browseroberfläche zur Verfügung:
 
 ```powershell

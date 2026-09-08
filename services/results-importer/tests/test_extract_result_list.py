@@ -13,6 +13,8 @@ from extract_result_list import (  # noqa: E402
     parse_code_unclassified,
     parse_dsvalpin_detail,
     parse_dsvalpin_single_line,
+    points_calculations,
+    competition_statistics,
     parse_simple_classified,
     parse_simple_unclassified,
     parse_vola,
@@ -21,6 +23,32 @@ from extract_result_list import (  # noqa: E402
 
 
 class ExtractResultListTests(unittest.TestCase):
+    def test_preserves_dsv_points_calculation_summary(self) -> None:
+        text = """Bewerbsstatistik
+Gemeldete Teilnehmer: 142
+Gewertete Teilnehmer: 96
+Ausgeschiedene Teilnehmer: 46
+Zuschlagsberechnung Damen/Mädchen
+F-Wert: 1010,00
+Berechneter Zuschlag: ( 220,8 + 199,79 - 85,47 ) : 10 = 33,512
+Gerundet: 33,51
+Punktezuschlag: 33,51
+Minimumzuschlag: 25,00
+Angewandter Zuschlag: 33,51
+Zuschlagsberechnung Herren/Buben
+F-Wert: 1010,00
+Punktezuschlag: 12,78
+Angewandter Zuschlag: 25,00"""
+
+        calculations = points_calculations(text)
+
+        self.assertEqual(calculations[0]["competitionCategory"], "FEMALE")
+        self.assertEqual(calculations[0]["calculatedPenalty"], 33.512)
+        self.assertEqual(calculations[1]["appliedPenalty"], 25.0)
+        self.assertEqual(competition_statistics(text), {
+            "registered": 142, "classified": 96, "notClassified": 46,
+        })
+
     def test_vola_result_uses_official_total_and_start_list_identity(self) -> None:
         start_list = {
             "groups": [{

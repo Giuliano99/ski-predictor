@@ -68,8 +68,9 @@ Details zur Oberfläche stehen in [`apps/game-master/README.md`](apps/game-maste
 * Wochenend- und Saisonrangliste
 * Karten für kommende Rennen
 * Responsive Darstellung
+* lokale SQLite-Datenbank für Rohimporte, Renndaten und Tippabgaben
 
-Anmeldung und Datenbank sind bewusst noch nicht implementiert.
+Die Authentifizierung ist bewusst noch nicht implementiert.
 
 Weitere Informationen stehen in [docs/architecture.md](docs/architecture.md).
 
@@ -88,6 +89,25 @@ Das fachliche Zielbild und das vorgeschlagene Punktesystem stehen in [docs/produ
 Lokale Ergebnislisten können unter `data/result-lists/inbox` abgelegt werden. Der Ordnerinhalt wird aus Datenschutzgründen nicht in Git übernommen.
 
 Die daraus abgeleiteten Format- und Importregeln stehen in [docs/result-list-analysis.md](docs/result-list-analysis.md).
+
+## Lokale Datenbank
+
+SQLite wird für die Entwicklung ohne Installation und ohne Adminrechte betrieben.
+Einmalig werden Datenbank und vorhandener JSON-Bestand so eingerichtet:
+
+```powershell
+.\scripts\game-master\Initialize-Database.ps1
+```
+
+Danach ist kein Datenbankdienst nötig. Das Portal öffnet die lokale Datei
+automatisch. Eine manuelle Prüfung ist möglich mit:
+
+```powershell
+.\scripts\game-master\Start-Database.ps1
+```
+
+Die Trennung von Original-PDF, vollständigem Rohimport und normalisierten
+Renndaten ist in [docs/database.md](docs/database.md) beschrieben.
 
 Startlisten können mit `services/results-importer/src/extract_start_list.py` automatisch in lokales JSON überführt werden. Die analysierten Formate stehen in [docs/start-list-analysis.md](docs/start-list-analysis.md).
 

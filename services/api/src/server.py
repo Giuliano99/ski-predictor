@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from document_catalog import DOCUMENT_KINDS, DocumentCatalog
+from database import Database, DatabaseError
 from extraction_service import ExtractionError, ExtractionService
 from workflow_service import (
     MAX_UPLOAD_BYTES,
@@ -33,7 +34,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.4.0"
+API_VERSION = "1.5.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -93,6 +94,8 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/documents/{documentId}/extract": {"post": {"summary": "PDF-Extraktion starten", "responses": {"202": {"description": "Auftrag gestartet"}}}},
             "/documents/{documentId}/extraction": {"get": {"summary": "Letzte prüfbare Extraktion", "responses": {"200": {"description": "Extraktion und Prüfbericht"}}}},
             "/collections": {"get": {"summary": "Sammlungen nach Saison und Wochenende", "responses": {"200": {"description": "Sammlungen"}}}},
+            "/imports": {"get": {"summary": "Versionierte PDF-Rohimporte", "responses": {"200": {"description": "Rohimporte"}}}},
+            "/imports/{importId}": {"get": {"summary": "Vollständiger Rohimport mit PDF-Text", "responses": {"200": {"description": "Rohimport"}}}},
             "/health": {"get": {"summary": "Verfügbarkeit prüfen", "responses": {"200": {"description": "API ist bereit"}}}},
             "/weekends": {"get": {"summary": "Spielleiter-Wochenenden", "responses": {"200": {"description": "Wochenenden"}}}},
             "/extraction-jobs": {"get": {"summary": "Extraktionsaufträge", "responses": {"200": {"description": "Aufträge"}}}},
@@ -246,7 +249,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_file(candidate)
                 return
             if parts == ["api", "v1", "health"]:
-                self.send_json({"status": "ok", "version": API_VERSION, "storage": "available", "documents": len(self.catalog.documents())})
+                database_status = "disabled"
+                if self.server.database:  # type: ignore[attr-defined]
+                    database_status = "available" if self.server.database.ping() else "unavailable"  # type: ignore[attr-defined]
+                self.send_json({"status": "ok", "version": API_VERSION, "storage": "available", "database": database_status, "documents": len(self.catalog.documents())})
                 return
             if parts == ["api", "v1", "openapi.json"]:
                 self.send_json(openapi_document(self.server.server_port))
@@ -268,6 +274,17 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return
             if parts == ["api", "v1", "collections"]:
                 self.send_json({"items": self.catalog.collections()})
+                return
+            if parts == ["api", "v1", "imports"]:
+                if not self.server.database:  # type: ignore[attr-defined]
+                    raise DatabaseError("Die Datenbank ist nicht aktiviert.")
+                imports = self.server.database.imports(first(query, "documentId"))  # type: ignore[attr-defined]
+                self.send_json({"items": imports, "total": len(imports)})
+                return
+            if len(parts) == 4 and parts[:3] == ["api", "v1", "imports"]:
+                if not self.server.database:  # type: ignore[attr-defined]
+                    raise DatabaseError("Die Datenbank ist nicht aktiviert.")
+                self.send_json(self.server.database.import_by_id(parts[3]))  # type: ignore[attr-defined]
                 return
             if parts == ["api", "v1", "weekends"]:
                 self.send_json({"weekends": all_weekends()})
@@ -346,7 +363,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.wfile.write(body)
                     return
             self.send_api_error(HTTPStatus.NOT_FOUND, "ROUTE_NOT_FOUND", "Dieser API-Endpunkt existiert nicht.")
-        except (ValueError, OSError, WorkflowError, ExtractionError) as error:
+        except (ValueError, OSError, WorkflowError, ExtractionError, DatabaseError) as error:
             self.send_api_error(HTTPStatus.BAD_REQUEST, "INVALID_REQUEST", str(error))
 
     def do_POST(self) -> None:
@@ -370,7 +387,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json({"message": f"{len(jobs)} Extraktionsaufträge wurden berücksichtigt.", "items": jobs, "seasonId": config.get("seasonId")}, HTTPStatus.ACCEPTED)
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
-                self.send_json(save_submission(parts[4], self.read_json_body()), HTTPStatus.CREATED)
+                result = save_submission(parts[4], self.read_json_body())
+                if self.server.database:  # type: ignore[attr-defined]
+                    self.server.database.save_submission(result["submission"])  # type: ignore[attr-defined]
+                self.send_json(result, HTTPStatus.CREATED)
                 return
             if len(parts) == 5 and parts[:3] == ["api", "v1", "documents"] and parts[4] == "extract":
                 job, created = self.extractions.start(parts[3], self.read_json_body())
@@ -385,7 +405,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json({"message": "Die Athletenidentitäten wurden zusammengeführt.", "athlete": athlete})
                 return
             self.send_api_error(HTTPStatus.NOT_FOUND, "ROUTE_NOT_FOUND", "Dieser API-Endpunkt existiert nicht.")
-        except (ValueError, OSError, WorkflowError, ExtractionError) as error:
+        except (ValueError, OSError, WorkflowError, ExtractionError, DatabaseError) as error:
             self.send_api_error(HTTPStatus.BAD_REQUEST, "INVALID_REQUEST", str(error))
 
     def do_PUT(self) -> None:
@@ -395,15 +415,16 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json(save_questions(parts[3], str(self.read_json_body().get("content", ""))))
                 return
             self.send_api_error(HTTPStatus.NOT_FOUND, "ROUTE_NOT_FOUND", "Dieser API-Endpunkt existiert nicht.")
-        except (ValueError, OSError, WorkflowError, ExtractionError) as error:
+        except (ValueError, OSError, WorkflowError, ExtractionError, DatabaseError) as error:
             self.send_api_error(HTTPStatus.BAD_REQUEST, "INVALID_REQUEST", str(error))
 
 
 class ApiServer(ThreadingHTTPServer):
-    def __init__(self, address: tuple[str, int], catalog: DocumentCatalog):
+    def __init__(self, address: tuple[str, int], catalog: DocumentCatalog, database: Database | None = None):
         super().__init__(address, ApiHandler)
         self.catalog = catalog
-        self.extractions = ExtractionService(catalog)
+        self.database = database
+        self.extractions = ExtractionService(catalog, database=database)
 
 
 def main() -> None:
@@ -413,7 +434,19 @@ def main() -> None:
     parser.add_argument("--start-page", choices=["api", "spielleiter", "tippspiel"], default="api")
     arguments = parser.parse_args()
     catalog = DocumentCatalog(load_storage_root())
-    server = ApiServer(("127.0.0.1", arguments.port), catalog)
+    database = Database.configured()
+    if database:
+        try:
+            applied = database.migrate()
+            documents = database.sync_documents(catalog.documents())
+            print(f"{database.provider_name} bereit: {documents} Dokumente synchronisiert, {len(applied)} Migrationen angewendet.")
+        except DatabaseError as error:
+            print(f"WARNUNG: {error}")
+            print("Die API startet vorübergehend mit JSON-Dateien. Es werden keine Datenbankeinträge geschrieben.")
+            database = None
+    else:
+        print("PostgreSQL ist nicht konfiguriert. Die API verwendet weiterhin JSON-Dateien.")
+    server = ApiServer(("127.0.0.1", arguments.port), catalog, database)
     server.extractions.resume_incomplete()
     stop_event = threading.Event()
     def deadline_loop() -> None:
