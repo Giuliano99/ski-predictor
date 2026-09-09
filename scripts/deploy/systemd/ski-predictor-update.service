@@ -1,0 +1,12 @@
+[Unit]
+Description=Ski Predictor aus GitHub aktualisieren
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ski-predictor
+ExecStart=/home/pi/ski-predictor/scripts/deploy/Update-Pi.sh
+

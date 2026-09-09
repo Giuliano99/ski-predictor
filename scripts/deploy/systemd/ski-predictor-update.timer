@@ -1,0 +1,12 @@
+[Unit]
+Description=Ski Predictor regelmaessig aus GitHub aktualisieren
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+RandomizedDelaySec=15s
+Persistent=true
+Unit=ski-predictor-update.service
+
+[Install]
+WantedBy=timers.target
