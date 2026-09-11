@@ -25,6 +25,12 @@ main { max-width:1380px; margin:0 auto; padding:36px 28px 70px; }
 .dot.open { background:#62d9a9; }.dot.evaluated { background:#ffd36e; }.dot.draft { background:white; }
 .notice { margin-top:20px; padding:14px 18px; border-left:4px solid var(--green); color:var(--green); background:var(--green-bg); font-weight:600; white-space:pre-line; }
 .notice.error { border-color:var(--club); color:var(--club-dark); background:var(--red-bg); }
+.quality-panel { margin-top:20px; padding:22px 25px; background:white; box-shadow:var(--shadow); display:grid; grid-template-columns:1fr auto; align-items:center; gap:16px 24px; }
+.quality-panel h2 { margin:2px 0 0; font-size:21px; }.quality-panel p { margin:6px 0 0; color:var(--muted); }
+.quality-actions { display:flex; align-items:center; gap:10px; }.quality-details { grid-column:1/-1; }
+.quality-details > details > summary { cursor:pointer; font-weight:800; }.quality-grid { margin-top:13px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px; }
+.quality-issue { padding:13px; border-left:4px solid var(--amber); background:var(--amber-bg); display:grid; gap:5px; }.quality-issue.ERROR { border-color:var(--club); background:var(--red-bg); }
+.quality-issue span { color:var(--muted); font-size:12px; }.quality-issue details summary { cursor:pointer; font-weight:700; }.quality-issue ul { margin:7px 0 0; padding-left:18px; max-height:210px; overflow:auto; }
 .dashboard { margin-top:24px; display:grid; grid-template-columns:260px 1fr; gap:22px; align-items:start; }
 .weekend-list,.detail,.empty { background:white; box-shadow:var(--shadow); }
 .weekend-list { position:sticky; top:20px; }
@@ -41,6 +47,7 @@ main { max-width:1380px; margin:0 auto; padding:36px 28px 70px; }
 .season { margin:5px 0 0; color:var(--muted); }
 .status-badge { padding:5px 9px; border-radius:20px; color:var(--muted); background:var(--snow); font-size:10px; font-weight:800; letter-spacing:.08em; }
 .status-badge.OPEN { color:var(--green); background:var(--green-bg); }.status-badge.EVALUATED,.status-badge.ARCHIVED { color:var(--amber); background:var(--amber-bg); }.status-badge.CANCELLED { color:var(--club); background:var(--red-bg); }
+.status-badge.BEREIT { color:var(--green); background:var(--green-bg); }.status-badge.WARNUNGEN { color:var(--amber); background:var(--amber-bg); }.status-badge.FEHLER { color:var(--club); background:var(--red-bg); }
 .steps { counter-reset:step; }
 .step { padding:24px 28px; border-bottom:1px solid var(--line); display:grid; grid-template-columns:44px 1fr; gap:16px; }
 .step:last-child { border-bottom:0; }
@@ -80,4 +87,4 @@ dialog label { margin-top:18px; display:grid; gap:7px; font-weight:700; } dialog
 .check { grid-template-columns:auto 1fr; align-items:start; }.check input { margin-top:5px; }.check strong,.check small { display:block; }.check small { color:var(--muted); font-weight:400; }
 .dialog-actions { margin-top:25px; justify-content:flex-end; }
 @media (max-width:850px) { .dashboard { grid-template-columns:1fr; }.weekend-list { position:static; }.welcome,.detail-header { align-items:flex-start; flex-direction:column; }.legend { white-space:normal; }.topbar { align-items:flex-start; }.header-actions { justify-content:flex-end; }.step { padding:21px 18px; grid-template-columns:36px 1fr; }.detail-header { padding:22px 18px; } }
-@media (max-width:560px) { main { padding:20px 12px 50px; }.topbar { padding:16px; flex-direction:column; }.welcome { padding:23px 20px; }.legend { flex-direction:column; gap:7px; }.file-row { align-items:flex-start; flex-direction:column; }.button { width:100%; }.header-actions,.detail-actions,.card-actions { width:100%; }.step { grid-template-columns:1fr; }.step-number { width:31px; height:31px; }.identity-merge { grid-template-columns:1fr; } }
+@media (max-width:560px) { main { padding:20px 12px 50px; }.topbar { padding:16px; flex-direction:column; }.welcome { padding:23px 20px; }.legend { flex-direction:column; gap:7px; }.quality-panel { grid-template-columns:1fr; padding:19px; }.quality-actions { align-items:stretch; flex-direction:column; }.quality-details { grid-column:1; }.file-row { align-items:flex-start; flex-direction:column; }.button { width:100%; }.header-actions,.detail-actions,.card-actions { width:100%; }.step { grid-template-columns:1fr; }.step-number { width:31px; height:31px; }.identity-merge { grid-template-columns:1fr; } }

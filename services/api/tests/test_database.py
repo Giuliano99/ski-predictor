@@ -79,6 +79,15 @@ class DatabaseConfigurationTests(unittest.TestCase):
             }
             database.save_extraction(job, document, raw, artifact, {"status": "BEREIT"}, "Punktezuschlag: 25,00")
             database.approve_extraction(job, artifact)
+            replacement_job = {
+                **job, "jobId": "extract-replacement", "updatedAt": "2030-01-01T12:00:00Z",
+                "approvedAt": "2030-01-01T12:30:00Z",
+            }
+            replacement_artifact = {
+                **artifact, "race": {**artifact["race"], "id": "race-replacement"},
+            }
+            database.save_extraction(replacement_job, document, raw, replacement_artifact, {"status": "BEREIT"}, "Punktezuschlag: 25,00")
+            database.approve_extraction(replacement_job, replacement_artifact)
             database.save_submission({
                 "id": "submission-test", "tipRoundId": "tip-round-test-test", "tipRoundVersion": "sha256-test",
                 "player": {"id": "player-test", "displayName": "Test"},
@@ -105,10 +114,15 @@ class DatabaseConfigurationTests(unittest.TestCase):
 
             with database.connect() as connection:
                 points = connection.execute("SELECT federation_points FROM race_participants").fetchone()[0]
-                source_text = connection.execute("SELECT source_text FROM extraction_imports").fetchone()[0]
+                source_text = connection.execute("SELECT source_text FROM extraction_imports WHERE id=%s", (replacement_job["jobId"],)).fetchone()[0]
+                import_statuses = dict(connection.execute("SELECT id,status FROM extraction_imports").fetchall())
+                race_documents = connection.execute("SELECT race_id FROM race_documents").fetchall()
 
             self.assertEqual(points, 42.75)
             self.assertIn("Punktezuschlag", source_text)
+            self.assertEqual(import_statuses["extract-test"], "SUPERSEDED")
+            self.assertEqual(import_statuses["extract-replacement"], "APPROVED")
+            self.assertEqual(race_documents, [("race-replacement",)])
             self.assertEqual(database.imports("doc-test")[0]["sourceFormat"], "RACE_HOROLOGY_CODE")
             self.assertEqual(database.import_by_id("extract-test")["raw"]["pointsCalculations"][0]["fValue"], 1010.0)
             self.assertEqual(database.counts()["run_results"], 1)

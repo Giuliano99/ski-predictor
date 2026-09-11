@@ -149,3 +149,18 @@ Jeder Teilnehmer erhält eine dokumentübergreifend stabile `athleteId`. Die Zuo
 Die Prüfberichte zählen `NEW`, `EXACT`, `EXTERNAL_ID`, `FUZZY_REVIEW` und `CONFLICT`. Ein neuer unsicherer Ähnlichkeitstreffer stoppt die Freigabe einmal und zeigt den aktualisierten Prüfbericht. Ein Konflikt muss aufgelöst werden. Doppelte Einträge lassen sich in der Spielleiter-Oberfläche oder über `POST /api/v1/athlete-identities/merge` zusammenführen. Dabei bleibt die alte Kennung als Weiterleitung erhalten.
 
 Die lokale Kartei liegt unter `data/extractions/athletes.json` und wird nicht in Git eingecheckt. `/api/v1/athletes/{athleteId}` liefert alle freigegebenen Starts und Ergebnisse dieser Person. Mit `?targetClub=true` kann die Liste auf das Skiteam Oberhaching eingeschränkt werden.
+
+## Datenqualität prüfen
+
+Der rein lesende Audit prüft fehlende Extraktionen, ausstehende Freigaben,
+unvollständige Rennen, Identitätskonflikte und mögliche doppelte Athleten:
+
+```powershell
+python services/api/src/database_cli.py audit --output output/reports/data-quality.md
+```
+
+Der Bericht verändert keine Daten. Unsichere Korrekturen bleiben eine bewusste
+Entscheidung des Spielleiters.
+
+Im Spielleiter-Portal erscheint derselbe aktuelle Stand unter **Datenqualität**.
+Die maschinenlesbare Variante liefert `GET /api/v1/admin/data-quality`.

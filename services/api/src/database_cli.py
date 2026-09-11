@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from database import Database, DatabaseError
+from data_quality import audit_database, write_report
 from document_catalog import DocumentCatalog
 from server import WORKSPACE, load_storage_root
 
@@ -67,7 +68,8 @@ def import_existing(database: Database, catalog: DocumentCatalog) -> dict[str, i
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("migrate", "import-existing", "status"), nargs="?", default="status")
+    parser.add_argument("command", choices=("migrate", "import-existing", "audit", "status"), nargs="?", default="status")
+    parser.add_argument("--output", type=Path, default=WORKSPACE / "output" / "reports" / "data-quality.md")
     arguments = parser.parse_args()
     try:
         database = Database.configured()
@@ -77,9 +79,17 @@ def main() -> int:
         result: dict[str, Any] = {"database": "available", "migrationsApplied": applied}
         if arguments.command == "import-existing":
             result["import"] = import_existing(database, DocumentCatalog(load_storage_root()))
+        if arguments.command == "audit":
+            catalog = DocumentCatalog(load_storage_root())
+            report = audit_database(database, {document.document_id for document in catalog.documents()})
+            write_report(report, arguments.output)
+            result["audit"] = {
+                "status": report["status"], "errors": report["errors"],
+                "warnings": report["warnings"], "output": str(arguments.output.resolve()),
+            }
         result["counts"] = database.counts()
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0
+        return 2 if arguments.command == "audit" and result["audit"]["errors"] else 0
     except (DatabaseError, OSError, ValueError) as error:
         print(f"Datenbankfehler: {error}", file=sys.stderr)
         return 1

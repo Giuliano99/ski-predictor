@@ -140,6 +140,11 @@ class PostgreSQLDatabase:
         document_id = artifact["documentId"]
         with self.connect() as connection:
             connection.execute(
+                "UPDATE extraction_imports SET status='SUPERSEDED' "
+                "WHERE document_id=%s AND id<>%s AND status='APPROVED'",
+                (document_id, job["jobId"]),
+            )
+            connection.execute(
                 "UPDATE extraction_imports SET status='APPROVED', approved_at=%s, normalized_payload=%s "
                 "WHERE id=%s",
                 (job.get("approvedAt"), Jsonb(artifact), job["jobId"]),
@@ -162,6 +167,7 @@ class PostgreSQLDatabase:
                  race.get("discipline", "OTHER"), race.get("competitionNumber"), Jsonb(race)),
             )
             connection.execute("DELETE FROM race_groups WHERE document_id=%s", (document_id,))
+            connection.execute("DELETE FROM race_documents WHERE document_id=%s", (document_id,))
             connection.execute(
                 """INSERT INTO race_documents (race_id,document_id,extraction_id,document_type)
                 VALUES (%s,%s,%s,%s) ON CONFLICT (race_id,document_id) DO UPDATE SET
@@ -215,6 +221,14 @@ class PostgreSQLDatabase:
                             "VALUES (%s,%s,%s,%s,%s)",
                             (participant_id, run["runNumber"], run["status"], run.get("timeSeconds"), Jsonb(run)),
                         )
+            connection.execute(
+                "DELETE FROM races WHERE NOT EXISTS "
+                "(SELECT 1 FROM race_documents WHERE race_documents.race_id=races.id)"
+            )
+            connection.execute(
+                "DELETE FROM events WHERE NOT EXISTS "
+                "(SELECT 1 FROM races WHERE races.event_id=events.id)"
+            )
 
     def save_submission(self, submission: dict[str, Any]) -> None:
         Jsonb = self.json_value

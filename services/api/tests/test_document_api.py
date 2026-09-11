@@ -101,6 +101,26 @@ class DocumentApiTests(unittest.TestCase):
                 thread.join(timeout=2)
         self.assertEqual(payload["weekends"][0]["id"], "tip-round-2030-01-05")
 
+    def test_exposes_database_quality_report_for_game_master(self) -> None:
+        database = Mock()
+        expected = {"status": "WARNUNGEN", "errors": 0, "warnings": 2, "issues": []}
+        with tempfile.TemporaryDirectory() as directory, patch("server.audit_database", return_value=expected) as audit:
+            root = Path(directory)
+            (root / "startliste.pdf").write_bytes(b"%PDF test")
+            server = ApiServer(("127.0.0.1", 0), DocumentCatalog(root), database)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{server.server_port}/api/v1/admin/data-quality") as response:
+                    payload = json.load(response)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+        self.assertEqual(payload, expected)
+        self.assertEqual(len(audit.call_args.args[1]), 1)
+
     def test_predictor_reads_round_evaluation_and_leaderboard_from_database(self) -> None:
         database = Mock()
         database.current_tip_round.return_value = {

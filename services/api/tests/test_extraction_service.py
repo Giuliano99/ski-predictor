@@ -76,6 +76,11 @@ class ExtractionServiceTests(unittest.TestCase):
             athletes = service.athletes(target_club=True)
             athlete = service.athlete(athletes[0]["id"])
             duplicate, duplicate_created = service.start(document.document_id)
+            with patch("extraction_service.extract_start_list", return_value=raw):
+                replacement, replacement_created = service.start(document.document_id, {"force": True})
+                wait_for_status(service, replacement["jobId"], {"REVIEW_REQUIRED", "FAILED"})
+            replacement_approved = service.approve(replacement["jobId"])
+            previous = service.job(job["jobId"])
             races = service.races()
             race = service.race(races[0]["id"])
 
@@ -87,6 +92,10 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(len(athlete["starts"]), 1)
         self.assertFalse(duplicate_created)
         self.assertEqual(duplicate["jobId"], job["jobId"])
+        self.assertTrue(replacement_created)
+        self.assertEqual(replacement_approved["status"], "APPROVED")
+        self.assertEqual(previous["status"], "SUPERSEDED")
+        self.assertEqual(previous["supersededBy"], replacement["jobId"])
         self.assertTrue(races[0]["hasStartList"])
         self.assertEqual(race["event"]["name"], "Testpokal")
 

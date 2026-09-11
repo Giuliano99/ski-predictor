@@ -16,6 +16,7 @@ from typing import Any
 
 from document_catalog import DOCUMENT_KINDS, DocumentCatalog
 from database import Database, DatabaseError
+from data_quality import audit_database
 from extraction_service import ExtractionError, ExtractionService
 from workflow_service import (
     MAX_UPLOAD_BYTES,
@@ -34,7 +35,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.6.0"
+API_VERSION = "1.7.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -82,6 +83,7 @@ def openapi_document(port: int) -> dict[str, Any]:
         "info": {"title": "Ski Predictor API", "version": API_VERSION, "description": "Gemeinsames lokales Backend für Dokumente, Spielleiter und Tippspiel."},
         "servers": [{"url": f"http://127.0.0.1:{port}/api/v1"}],
         "paths": {
+            "/admin/data-quality": {"get": {"summary": "Datenqualitaet pruefen", "responses": {"200": {"description": "Aktueller Pruefbericht"}, "400": {"description": "Datenbank nicht aktiviert"}}}},
             "/documents": {"get": {"summary": "Dokumente suchen", "parameters": [
                 {"name": "kind", "in": "query", "schema": {"enum": sorted(DOCUMENT_KINDS)}},
                 {"name": "seasonId", "in": "query", "schema": {"type": "string"}},
@@ -256,6 +258,12 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return
             if parts == ["api", "v1", "openapi.json"]:
                 self.send_json(openapi_document(self.server.server_port))
+                return
+            if parts == ["api", "v1", "admin", "data-quality"]:
+                if not self.server.database:  # type: ignore[attr-defined]
+                    raise DatabaseError("Die Datenbank ist nicht aktiviert.")
+                document_ids = {document.document_id for document in self.catalog.documents()}
+                self.send_json(audit_database(self.server.database, document_ids))  # type: ignore[attr-defined]
                 return
             if parts == ["api", "v1", "documents"]:
                 kind = first(query, "kind")

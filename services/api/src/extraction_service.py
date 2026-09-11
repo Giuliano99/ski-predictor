@@ -28,7 +28,7 @@ from extract_start_list import extract_pdf_text, extract_start_list, slugify  # 
 
 
 EXTRACTION_VERSION = "ski-predictor-extractor-v2-athlete-identity"
-JOB_STATUSES = {"PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "FAILED"}
+JOB_STATUSES = {"PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "SUPERSEDED", "FAILED"}
 
 
 class ExtractionError(RuntimeError):
@@ -157,6 +157,11 @@ class ExtractionService:
             job, _ = self.start(document.document_id)
             jobs.append(job)
         return jobs
+
+    def _restart_weekend_results(self, weekend_date: str) -> None:
+        for document in self.catalog.query(weekend_date=weekend_date, archived=False):
+            if document.kind == "RESULT_LIST":
+                self.start(document.document_id, {"force": True})
 
     def _approved_start_list(self, document_id: str | None) -> dict[str, Any] | None:
         if not document_id:
@@ -370,13 +375,20 @@ class ExtractionService:
             job["approvedAt"] = utc_now()
             if self.database:
                 self.database.approve_extraction(job, artifact)
+            for previous in self._all_jobs():
+                if previous.get("jobId") == job_id or previous.get("documentId") != job.get("documentId"):
+                    continue
+                if previous.get("status") == "APPROVED":
+                    previous["status"] = "SUPERSEDED"
+                    previous["supersededBy"] = job_id
+                    self._write_job(previous)
             self._write_job(job)
             approved = self.public_job(job)
         if job.get("documentKind") == "START_LIST" and job.get("weekendDate"):
             start_documents = {item.document_id for item in self.catalog.query(weekend_date=job["weekendDate"], archived=False) if item.kind == "START_LIST"}
             approved_documents = {item.get("documentId") for item in self._all_jobs() if item.get("weekendDate") == job["weekendDate"] and item.get("documentKind") == "START_LIST" and item.get("status") == "APPROVED"}
             if start_documents and start_documents <= approved_documents:
-                self.start_weekend(job["weekendDate"])
+                self._restart_weekend_results(job["weekendDate"])
         return approved
 
     def _approved_artifacts(self) -> list[dict[str, Any]]:

@@ -1,10 +1,11 @@
-const state = { weekends: [], extractionJobs: [], athletes: [], selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
+const state = { weekends: [], extractionJobs: [], athletes: [], dataQuality: null, selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
 const labels = { DRAFT: "Entwurf", OPEN: "Tippen geöffnet", CLOSED: "Tippen geschlossen", EVALUATED: "Ausgewertet", ARCHIVED: "Archiviert", CANCELLED: "Abgesagt", FEHLER: "Fehler" };
-const extractionLabels = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQUIRED: "Prüfung nötig", APPROVED: "Freigegeben", FAILED: "Fehlgeschlagen" };
+const extractionLabels = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQUIRED: "Prüfung nötig", APPROVED: "Freigegeben", SUPERSEDED: "Durch neuere Version ersetzt", FAILED: "Fehlgeschlagen" };
 const dom = {
   dashboard: document.querySelector("#dashboard"), empty: document.querySelector("#empty"), list: document.querySelector("#weekend-list"), detail: document.querySelector("#weekend-detail"),
   notice: document.querySelector("#notice"), newDialog: document.querySelector("#new-weekend-dialog"), newForm: document.querySelector("#new-weekend-form"),
   confirmDialog: document.querySelector("#confirm-dialog"), confirmTitle: document.querySelector("#confirm-title"), confirmText: document.querySelector("#confirm-text"), confirmButton: document.querySelector("#confirm-button"),
+  qualitySummary: document.querySelector("#data-quality-summary"), qualityStatus: document.querySelector("#data-quality-status"), qualityDetails: document.querySelector("#data-quality-details"),
 };
 
 function escapeHtml(value) { const node = document.createElement("div"); node.textContent = String(value ?? ""); return node.innerHTML; }
@@ -22,12 +23,34 @@ async function request(url, options = {}) {
 }
 
 async function refresh(preferredId = state.selectedId) {
-  const [payload, extractions, athletes] = await Promise.all([request("/api/v1/weekends"), request("/api/v1/extraction-jobs"), request("/api/v1/athletes")]);
+  const qualityRequest = request("/api/v1/admin/data-quality").catch((error) => ({ status: "NICHT_AKTIV", errors: 0, warnings: 0, issues: [], message: error.message }));
+  const [payload, extractions, athletes, dataQuality] = await Promise.all([request("/api/v1/weekends"), request("/api/v1/extraction-jobs"), request("/api/v1/athletes"), qualityRequest]);
   state.weekends = payload.weekends;
   state.extractionJobs = extractions.items;
   state.athletes = athletes.items;
+  state.dataQuality = dataQuality;
   state.selectedId = state.weekends.some((weekend) => weekend.id === preferredId) ? preferredId : state.weekends[0]?.id ?? null;
   render();
+}
+
+function renderDataQuality() {
+  const report = state.dataQuality;
+  if (!report) return;
+  const status = report.status ?? "NICHT_AKTIV";
+  dom.qualityStatus.textContent = status.replace("_", " ");
+  dom.qualityStatus.className = `status-badge ${status}`;
+  if (status === "NICHT_AKTIV") {
+    dom.qualitySummary.textContent = report.message || "Die Datenbank ist nicht aktiviert.";
+    dom.qualityDetails.innerHTML = "";
+    return;
+  }
+  dom.qualitySummary.textContent = status === "BEREIT"
+    ? "Alle automatischen Pr\u00fcfungen sind gr\u00fcn."
+    : `${report.errors} Fehler und ${report.warnings} Warnungen m\u00fcssen vor dem \u00f6ffentlichen Test gepr\u00fcft werden.`;
+  const issues = report.issues ?? [];
+  dom.qualityDetails.innerHTML = issues.length
+    ? `<details><summary>${issues.length} Pr\u00fcfpunkt${issues.length === 1 ? "" : "e"} anzeigen</summary><div class="quality-grid">${issues.map((issue) => `<article class="quality-issue ${escapeHtml(issue.severity)}"><strong>${escapeHtml(issue.message)}</strong><span>${escapeHtml(issue.count)} Fund${issue.count === 1 ? "" : "e"} &middot; ${escapeHtml(issue.severity === "ERROR" ? "Fehler" : "Warnung")}</span><details><summary>Details</summary><ul>${(issue.records ?? []).map((record) => `<li>${Object.values(record).map(escapeHtml).join(" &middot; ")}</li>`).join("")}</ul></details></article>`).join("")}</div></details>`
+    : "";
 }
 
 function renderList() {
@@ -113,6 +136,7 @@ function renderDetail(weekend) {
 }
 
 function render() {
+  renderDataQuality();
   const weekend = selectedWeekend();
   dom.empty.hidden = Boolean(weekend);
   dom.dashboard.hidden = !weekend;
@@ -217,6 +241,7 @@ async function mergeAthletes() {
 
 document.querySelector("#new-weekend-button").addEventListener("click", () => dom.newDialog.showModal());
 document.querySelector("#refresh-button").addEventListener("click", () => refresh().catch((error) => showNotice(error.message, true)));
+document.querySelector("#quality-refresh-button").addEventListener("click", () => refresh().catch((error) => showNotice(error.message, true)));
 document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => button.closest("dialog").close()));
 dom.confirmButton.addEventListener("click", () => { const action = state.pendingConfirmation; dom.confirmDialog.close(); if (action) runAction(action); });
 dom.newForm.addEventListener("submit", async (event) => {
