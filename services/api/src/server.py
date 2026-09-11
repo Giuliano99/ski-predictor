@@ -84,6 +84,7 @@ def openapi_document(port: int) -> dict[str, Any]:
         "servers": [{"url": f"http://127.0.0.1:{port}/api/v1"}],
         "paths": {
             "/admin/data-quality": {"get": {"summary": "Datenqualitaet pruefen", "responses": {"200": {"description": "Aktueller Pruefbericht"}, "400": {"description": "Datenbank nicht aktiviert"}}}},
+            "/weekends/{weekendId}/extractions/approve-ready": {"post": {"summary": "Gepruefte Extraktionen gemeinsam freigeben", "responses": {"200": {"description": "Freigegebene Extraktionen"}}}},
             "/documents": {"get": {"summary": "Dokumente suchen", "parameters": [
                 {"name": "kind", "in": "query", "schema": {"enum": sorted(DOCUMENT_KINDS)}},
                 {"name": "seasonId", "in": "query", "schema": {"type": "string"}},
@@ -407,6 +408,12 @@ class ApiHandler(BaseHTTPRequestHandler):
                 config = read_json(weekend_config_path(weekend_id))
                 jobs = self.extractions.start_weekend(weekend_id.removeprefix("tip-round-"))
                 self.send_json({"message": f"{len(jobs)} Extraktionsaufträge wurden berücksichtigt.", "items": jobs, "seasonId": config.get("seasonId")}, HTTPStatus.ACCEPTED)
+                return
+            if len(parts) == 6 and parts[:3] == ["api", "v1", "weekends"] and parts[4:] == ["extractions", "approve-ready"]:
+                weekend_id = parts[3]
+                weekend_config_path(weekend_id)
+                approved = self.extractions.approve_ready(weekend_id.removeprefix("tip-round-"))
+                self.send_json({"message": f"{len(approved)} gepruefte Extraktionen wurden freigegeben.", "items": approved})
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
                 stored_round = self.server.database.tip_round(parts[4]) if self.server.database else None  # type: ignore[attr-defined]

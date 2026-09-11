@@ -47,7 +47,7 @@ class DatabaseConfigurationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             database = SQLiteDatabase(Path(directory) / "ski.sqlite3")
-            self.assertEqual(database.migrate(), ["001_initial", "002_predictor_state"])
+            self.assertEqual(database.migrate(), ["001_initial", "002_predictor_state", "003_extraction_history"])
             document = SimpleNamespace(
                 document_id="doc-test", content_hash="abc", kind="RESULT_LIST",
                 original_name="result.pdf", storage_reference="storage://result.pdf",

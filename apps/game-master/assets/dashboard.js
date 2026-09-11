@@ -96,9 +96,10 @@ function extractionHtml(weekend) {
   }).join("")}</ul>` : `<p>Noch keine wiederverwendbaren Renndaten erzeugt.</p>`;
   const active = jobs.some((job) => ["PENDING", "PROCESSING"].includes(job.status));
   const approved = jobs.filter((job) => job.status === "APPROVED").length;
+  const ready = jobs.filter((job) => job.status === "REVIEW_REQUIRED" && job.review?.status === "BEREIT" && !job.review?.warnings?.length).length;
   const athleteOptions = state.athletes.map((athlete) => `<option value="${athlete.id}">${escapeHtml(athlete.fullName)} · ${athlete.birthYear} · ${escapeHtml(athlete.club)}</option>`).join("");
   const registry = state.athletes.length ? `<details class="athlete-registry"><summary>Athletenkartei verwalten (${state.athletes.length})</summary><p>Nur verwenden, wenn dieselbe Person versehentlich mit zwei Kennungen angelegt wurde.</p><div class="identity-merge"><label>Doppelte Identität<select id="merge-source"><option value="">Bitte auswählen</option>${athleteOptions}</select></label><label>Behaltene Identität<select id="merge-target"><option value="">Bitte auswählen</option>${athleteOptions}</select></label><button class="button secondary" data-merge-athletes type="button">Identitäten zusammenführen</button></div></details>` : "";
-  return `${list}<div class="card-actions"><button class="button secondary" data-extract-weekend type="button" ${active ? "disabled" : ""}>${active ? "PDFs werden ausgelesen …" : "Neue PDFs auslesen"}</button>${approved ? `<a class="button secondary" href="/api/v1/races" target="_blank">${approved} freigegebene Datensätze ansehen</a>` : ""}</div>${registry}`;
+  return `${list}<div class="card-actions"><button class="button secondary" data-extract-weekend type="button" ${active ? "disabled" : ""}>${active ? "PDFs werden ausgelesen …" : "Neue PDFs auslesen"}</button>${ready ? `<button class="button" data-approve-ready type="button">${ready} grüne Prüfungen gemeinsam freigeben</button>` : ""}${approved ? `<a class="button secondary" href="/api/v1/races" target="_blank">${approved} freigegebene Datensätze ansehen</a>` : ""}</div>${registry}`;
 }
 
 function renderDetail(weekend) {
@@ -189,6 +190,7 @@ function bindDetailEvents() {
     catch (error) { showNotice(error.message, true); }
   });
   document.querySelector("[data-extract-weekend]")?.addEventListener("click", startWeekendExtraction);
+  document.querySelector("[data-approve-ready]")?.addEventListener("click", approveReadyExtractions);
   document.querySelector("[data-merge-athletes]")?.addEventListener("click", mergeAthletes);
   dom.detail.querySelectorAll("[data-approve-extraction]").forEach((button) => button.addEventListener("click", () => approveExtraction(button.dataset.approveExtraction)));
 }
@@ -222,6 +224,19 @@ async function approveExtraction(jobId) {
     const token = ++state.extractionPoll;
     await pollExtractions(weekend.id, token);
   } catch (error) { showNotice(error.message, true); await refresh(weekend.id); }
+}
+
+async function approveReadyExtractions() {
+  const weekend = selectedWeekend();
+  if (!window.confirm("Hast du die gr\u00fcnen Pr\u00fcfberichte kontrolliert und m\u00f6chtest alle gemeinsam freigeben?")) return;
+  setBusy("Gepr\u00fcfte Daten werden freigegeben ...");
+  try {
+    const payload = await request(`/api/v1/weekends/${weekend.id}/extractions/approve-ready`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    showNotice(payload.message);
+    const token = ++state.extractionPoll;
+    clearBusy();
+    await pollExtractions(weekend.id, token);
+  } catch (error) { showNotice(error.message, true); clearBusy(); await refresh(weekend.id); }
 }
 
 async function mergeAthletes() {

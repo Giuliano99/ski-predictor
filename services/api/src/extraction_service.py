@@ -391,6 +391,19 @@ class ExtractionService:
                 self._restart_weekend_results(job["weekendDate"])
         return approved
 
+    def approve_ready(self, weekend_date: str) -> list[dict[str, Any]]:
+        selected: dict[str, dict[str, Any]] = {}
+        for job in self._all_jobs():
+            if job.get("weekendDate") != weekend_date or job.get("status") != "REVIEW_REQUIRED":
+                continue
+            selected.setdefault(str(job.get("documentId")), job)
+        approved = []
+        for job in selected.values():
+            review = job.get("review") or {}
+            if review.get("status") == "BEREIT" and not review.get("warnings"):
+                approved.append(self.approve(job["jobId"]))
+        return approved
+
     def _approved_artifacts(self) -> list[dict[str, Any]]:
         artifacts = []
         redirects = self.identities.redirects()

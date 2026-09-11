@@ -121,6 +121,26 @@ class DocumentApiTests(unittest.TestCase):
         self.assertEqual(payload, expected)
         self.assertEqual(len(audit.call_args.args[1]), 1)
 
+    def test_approves_ready_weekend_extractions_in_one_request(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch("server.weekend_config_path"):
+            server, thread, base_url = self.running_server(Path(directory))
+            server.extractions = Mock()
+            server.extractions.approve_ready.return_value = [{"jobId": "extract-ready", "status": "APPROVED"}]
+            request = urllib.request.Request(
+                f"{base_url}/api/v1/weekends/tip-round-2030-01-05/extractions/approve-ready",
+                data=b"{}", headers={"Content-Type": "application/json"}, method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request) as response:
+                    payload = json.load(response)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+        self.assertEqual(len(payload["items"]), 1)
+        server.extractions.approve_ready.assert_called_once_with("2030-01-05")
+
     def test_predictor_reads_round_evaluation_and_leaderboard_from_database(self) -> None:
         database = Mock()
         database.current_tip_round.return_value = {

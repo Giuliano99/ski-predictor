@@ -110,6 +110,32 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(completed["status"], "FAILED")
         self.assertIn("Keine Ergebnisgruppen", completed["error"])
 
+    def test_approves_all_ready_documents_of_a_weekend(self) -> None:
+        def raw(filename: str) -> dict:
+            return {
+                "schemaVersion": 1, "documentType": "START_LIST",
+                "source": {"fileName": filename, "format": "TEST", "extractedAt": "2030-01-01T00:00:00Z"},
+                "event": {"name": filename, "date": "2030-01-05", "discipline": "GS", "competitionNumber": filename},
+                "groups": [{"id": "u12", "label": "U12", "ageClass": "U12", "competitionCategory": "MIXED", "starters": [{"startNumber": 1, "displayName": "Anna A.", "fullName": "Anna Beispiel", "birthYear": 2018, "club": "Skiteam Oberhaching", "targetClub": True}]}],
+                "warnings": [],
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            documents = [
+                self.document(root / "samstag.pdf", document_id="doc-samstag"),
+                self.document(root / "sonntag.pdf", document_id="doc-sonntag"),
+            ]
+            service = ExtractionService(FakeCatalog(documents), root / "extractions")
+            with patch("extraction_service.extract_start_list", side_effect=lambda path: raw(path.name)):
+                jobs = [service.start(document.document_id)[0] for document in documents]
+                for job in jobs:
+                    wait_for_status(service, job["jobId"], {"REVIEW_REQUIRED", "FAILED"})
+            approved = service.approve_ready("2030-01-05")
+
+        self.assertEqual(len(approved), 2)
+        self.assertTrue(all(item["status"] == "APPROVED" for item in approved))
+
     def test_approval_reconciles_parallel_documents_by_external_id(self) -> None:
         def raw(name: str, filename: str) -> dict:
             return {
