@@ -69,6 +69,8 @@ chmod 0640 "$environment_file" "$runtime_root/config/local-storage.json"
 
 install -m 0644 "$repo_dir/scripts/deploy/systemd/ski-predictor-update.service" /etc/systemd/system/ski-predictor-update.service
 install -m 0644 "$repo_dir/scripts/deploy/systemd/ski-predictor-update.timer" /etc/systemd/system/ski-predictor-update.timer
+install -m 0644 "$repo_dir/scripts/deploy/systemd/ski-predictor-backup.service" /etc/systemd/system/ski-predictor-backup.service
+install -m 0644 "$repo_dir/scripts/deploy/systemd/ski-predictor-backup.timer" /etc/systemd/system/ski-predictor-backup.timer
 systemctl daemon-reload
 
 sudo -u "$service_user" docker compose \
@@ -81,6 +83,6 @@ sudo -u "$service_user" docker compose \
   -f "$repo_dir/compose.pi.yaml" \
   exec -T app python services/api/src/database_cli.py import-existing
 
-systemctl enable --now ski-predictor-update.timer
+systemctl enable --now ski-predictor-update.timer ski-predictor-backup.timer
 
 echo "Ski Predictor ist unter http://$(hostname -I | awk '{print $1}'):4175/tippspiel/ erreichbar."

@@ -42,3 +42,27 @@ auf dem Pi mit:
 cd /home/pi/ski-predictor
 sudo ./scripts/deploy/Install-Pi.sh
 ```
+
+## Backup und Wiederherstellungspruefung
+
+Der Timer `ski-predictor-backup.timer` erstellt jeden Tag gegen 03:15 Uhr ein
+Backup unter `/srv/ski-predictor/backups`. Gesichert werden PostgreSQL, der
+Anwendungszustand und die Original-PDFs. Erfolgreiche Sicherungen bleiben
+standardmaessig 14 Tage erhalten.
+
+Backup sofort erstellen:
+
+```bash
+sudo systemctl start ski-predictor-backup.service
+journalctl -u ski-predictor-backup.service --since today
+```
+
+Das aktuelle Backup wird in einer getrennten Testdatenbank wiederhergestellt und
+mit den produktiven Datenmengen verglichen:
+
+```bash
+cd /home/pi/ski-predictor
+./scripts/deploy/Verify-PiBackup.sh
+```
+
+Die produktive Datenbank wird bei dieser Pruefung nicht veraendert.
