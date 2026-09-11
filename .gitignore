@@ -6,3 +6,5 @@ config/local-storage.json
 config/database.local.json
 data/extractions/
 data/database/
+.env
+.env.*

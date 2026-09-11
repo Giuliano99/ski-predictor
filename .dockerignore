@@ -1,0 +1,15 @@
+.git
+.gitignore
+**/__pycache__
+**/*.py[cod]
+tmp
+data/database
+data/extractions
+data/result-lists/inbox
+data/result-lists/processed
+data/submissions/inbox
+data/submissions/processed
+apps/web/src/data/*.local.json
+config/database.local.json
+config/local-storage.json
+output

@@ -447,6 +447,7 @@ class ApiServer(ThreadingHTTPServer):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4175)
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--start-page", choices=["api", "spielleiter", "tippspiel"], default="api")
@@ -465,7 +466,7 @@ def main() -> None:
             database = None
     else:
         print("Keine Datenbank konfiguriert. Die API verwendet weiterhin JSON-Dateien.")
-    server = ApiServer(("127.0.0.1", arguments.port), catalog, database)
+    server = ApiServer((arguments.host, arguments.port), catalog, database)
     server.extractions.resume_incomplete()
     stop_event = threading.Event()
     def deadline_loop() -> None:
@@ -474,7 +475,8 @@ def main() -> None:
             server.sync_predictor()
             stop_event.wait(30)
     threading.Thread(target=deadline_loop, daemon=True).start()
-    url = f"http://127.0.0.1:{arguments.port}"
+    display_host = "127.0.0.1" if arguments.host in {"0.0.0.0", "::"} else arguments.host
+    url = f"http://{display_host}:{arguments.port}"
     print(f"Ski Document API: {url}")
     print("Zum Beenden Strg+C drücken.")
     if not arguments.no_browser:

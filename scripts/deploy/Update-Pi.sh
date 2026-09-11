@@ -39,3 +39,12 @@ fi
 
 git merge --ff-only "$remote_commit"
 echo "Aktualisiert: $local_commit -> $remote_commit"
+
+runtime_root="${SKI_PREDICTOR_RUNTIME:-/srv/ski-predictor}"
+if [[ -f "$runtime_root/config/auto-deploy-enabled" ]]; then
+  echo "Container werden aktualisiert ..."
+  docker compose \
+    --env-file "$runtime_root/config/runtime.env" \
+    -f compose.pi.yaml \
+    up -d --build --remove-orphans
+fi

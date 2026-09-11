@@ -22,5 +22,23 @@ Manueller Test:
 sudo systemctl start ski-predictor-update.service
 ```
 
-Der Dienst aktualisiert vorerst nur den Quellcode. Das Neubauen und Neustarten
-der Container wird mit dem produktiven Compose-Deployment ergaenzt.
+Wenn `/srv/ski-predictor/config/auto-deploy-enabled` vorhanden ist, baut der
+Dienst nach einem neuen Commit die Container neu und startet sie kontrolliert.
+
+## Laufzeitdaten
+
+Quellcode und Laufzeitdaten sind getrennt:
+
+```text
+/home/pi/ski-predictor     Git-Klon
+/srv/ski-predictor         Daten, Konfiguration und Backups
+```
+
+PostgreSQL ist nur im internen Docker-Netz erreichbar. Ausschliesslich Port 4175
+der Anwendung wird im lokalen Netz veroeffentlicht. Die Ersteinrichtung erfolgt
+auf dem Pi mit:
+
+```bash
+cd /home/pi/ski-predictor
+sudo ./scripts/deploy/Install-Pi.sh
+```

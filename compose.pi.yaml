@@ -1,0 +1,54 @@
+name: ski-predictor
+
+services:
+  database:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    init: true
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+    ports:
+      - "${SKI_BIND_ADDRESS:-0.0.0.0}:${SKI_PORT:-4175}:4175"
+    volumes:
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/config/local-storage.json:/app/config/local-storage.json:ro
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/documents:/data/documents
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/config/weekends:/app/config/weekends
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/data/questions:/app/data/questions
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/data/extractions:/app/data/extractions
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/data/submissions:/app/data/submissions
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/data/result-lists/processed:/app/data/result-lists/processed
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/apps/web/src/data:/app/apps/web/src/data
+      - ${SKI_RUNTIME_ROOT:-/srv/ski-predictor}/state/output:/app/output
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,urllib.request; value=json.load(urllib.request.urlopen('http://127.0.0.1:4175/api/v1/health')); assert value['status']=='ok' and value['database']=='available'"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  postgres_data:
