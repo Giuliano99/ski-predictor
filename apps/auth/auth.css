@@ -1,0 +1,23 @@
+:root { --club:#cc0337; --club-dark:#9f0029; --ink:#1a171b; --muted:#716c70; --line:#e4e1e3; --snow:#f6f5f6; }
+* { box-sizing:border-box; }
+body { min-height:100vh; margin:0; padding:24px; color:var(--ink); background:var(--snow); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; display:grid; place-items:center; }
+.auth-shell { width:min(920px,100%); min-height:560px; background:white; box-shadow:0 24px 70px rgba(26,23,27,.13); display:grid; grid-template-columns:1fr 1fr; }
+.auth-brand { padding:55px; color:white; background:var(--ink); display:flex; flex-direction:column; justify-content:center; }
+.auth-brand img { width:190px; padding:18px; margin-bottom:35px; background:white; }
+.auth-brand span { color:#f27b9b; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.auth-brand h1 { margin:8px 0 15px; font-size:44px; line-height:1; text-transform:uppercase; }
+.auth-brand p { margin:0; color:#d8d3d6; }
+.auth-card { padding:48px; align-self:center; }
+.tabs { margin-bottom:28px; border-bottom:1px solid var(--line); display:flex; }
+.tabs button { flex:1; padding:13px 5px; border:0; border-bottom:3px solid transparent; color:var(--muted); background:none; font:inherit; font-weight:700; cursor:pointer; }
+.tabs button.active { color:var(--club); border-color:var(--club); }
+form { display:grid; gap:18px; }
+label { display:grid; gap:7px; font-size:12px; font-weight:750; }
+input { width:100%; min-height:48px; padding:11px 13px; border:1px solid var(--line); border-radius:3px; font:inherit; font-size:16px; }
+input:focus { border-color:var(--club); outline:3px solid rgba(204,3,55,.1); }
+form button { min-height:50px; margin-top:4px; border:0; border-radius:3px; color:white; background:var(--club); font:inherit; font-weight:800; cursor:pointer; }
+form button:hover { background:var(--club-dark); }
+form button:disabled { opacity:.55; cursor:wait; }
+small { margin-top:-10px; color:var(--muted); }
+.message { min-height:23px; margin:0 0 15px; color:var(--club-dark); font-weight:650; }
+@media (max-width:720px) { body { padding:0; place-items:stretch; }.auth-shell { min-height:100vh; grid-template-columns:1fr; }.auth-brand { min-height:220px; padding:30px; }.auth-brand img { width:120px; margin-bottom:20px; padding:10px; }.auth-brand h1 { font-size:34px; }.auth-card { padding:30px 24px 45px; align-self:start; } }

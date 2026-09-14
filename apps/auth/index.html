@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anmeldung | Race Predictor</title>
+    <link rel="stylesheet" href="/login/auth.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-brand">
+        <img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" />
+        <span>Skiteam Oberhaching</span>
+        <h1>Race Predictor</h1>
+        <p>Das interne Tippspiel f&uuml;r Rennwochenenden des Skiteams.</p>
+      </section>
+      <section class="auth-card">
+        <div class="tabs" role="tablist">
+          <button class="active" data-tab="login" type="button">Anmelden</button>
+          <button data-tab="register" type="button">Neu registrieren</button>
+        </div>
+        <p class="message" id="message" role="status"></p>
+        <form id="login-form">
+          <label>Benutzername<input name="username" autocomplete="username" required minlength="3" maxlength="32" /></label>
+          <label>Passwort<input name="password" type="password" autocomplete="current-password" required minlength="10" maxlength="128" /></label>
+          <button type="submit">Anmelden</button>
+        </form>
+        <form id="register-form" hidden>
+          <label>Anzeigename<input name="displayName" autocomplete="name" required minlength="2" maxlength="40" placeholder="z. B. Giuliano G." /></label>
+          <label>Benutzername<input name="username" autocomplete="username" required minlength="3" maxlength="32" /></label>
+          <label>Passwort<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="128" /></label>
+          <label>Einladungscode<input name="inviteCode" type="password" autocomplete="off" required /></label>
+          <small>Den Einladungscode erh&auml;ltst du vom Spielleiter.</small>
+          <button type="submit">Registrieren und anmelden</button>
+        </form>
+      </section>
+    </main>
+    <script src="/login/auth.js"></script>
+  </body>
+</html>

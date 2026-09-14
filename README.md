@@ -69,8 +69,9 @@ Details zur Oberfläche stehen in [`apps/game-master/README.md`](apps/game-maste
 * Karten für kommende Rennen
 * Responsive Darstellung
 * lokale SQLite-Datenbank für Rohimporte, Renndaten und Tippabgaben
+* Registrierung per Einladungscode und rollenbasierte Anmeldung
 
-Die Authentifizierung ist bewusst noch nicht implementiert.
+Die Authentifizierung bleibt in der lokalen Entwicklung standardmäßig deaktiviert und wird auf dem Pi kontrolliert aktiviert.
 
 Weitere Informationen stehen in [docs/architecture.md](docs/architecture.md).
 

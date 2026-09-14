@@ -1,4 +1,4 @@
-const state = { weekends: [], extractionJobs: [], athletes: [], dataQuality: null, selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
+const state = { weekends: [], extractionJobs: [], athletes: [], dataQuality: null, user: null, selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
 const labels = { DRAFT: "Entwurf", OPEN: "Tippen geöffnet", CLOSED: "Tippen geschlossen", EVALUATED: "Ausgewertet", ARCHIVED: "Archiviert", CANCELLED: "Abgesagt", FEHLER: "Fehler" };
 const extractionLabels = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQUIRED: "Prüfung nötig", APPROVED: "Freigegeben", SUPERSEDED: "Durch neuere Version ersetzt", FAILED: "Fehlgeschlagen" };
 const dom = {
@@ -6,6 +6,7 @@ const dom = {
   notice: document.querySelector("#notice"), newDialog: document.querySelector("#new-weekend-dialog"), newForm: document.querySelector("#new-weekend-form"),
   confirmDialog: document.querySelector("#confirm-dialog"), confirmTitle: document.querySelector("#confirm-title"), confirmText: document.querySelector("#confirm-text"), confirmButton: document.querySelector("#confirm-button"),
   qualitySummary: document.querySelector("#data-quality-summary"), qualityStatus: document.querySelector("#data-quality-status"), qualityDetails: document.querySelector("#data-quality-details"),
+  signedInUser: document.querySelector("#signed-in-user"), logoutButton: document.querySelector("#logout-button"),
 };
 
 function escapeHtml(value) { const node = document.createElement("div"); node.textContent = String(value ?? ""); return node.innerHTML; }
@@ -15,14 +16,26 @@ function setBusy(label) { let overlay = document.querySelector("#busy"); if (!ov
 function clearBusy() { const overlay = document.querySelector("#busy"); if (overlay) overlay.hidden = true; }
 
 async function request(url, options = {}) {
+  const method = String(options.method ?? "GET").toUpperCase();
+  if (!["GET", "HEAD", "OPTIONS"].includes(method) && state.user?.csrfToken) {
+    options.headers = { ...(options.headers ?? {}), "X-CSRF-Token": state.user.csrfToken };
+  }
   const response = await fetch(url, options);
   let body = {};
   try { body = await response.json(); } catch { body = {}; }
+  if (response.status === 401) {
+    window.location.replace("/login/?next=/spielleiter/");
+    throw new Error("Bitte erneut anmelden.");
+  }
   if (!response.ok) throw new Error(body.error?.message || body.error || `Fehler ${response.status}`);
   return body;
 }
 
 async function refresh(preferredId = state.selectedId) {
+  const identity = await request("/api/v1/auth/me");
+  state.user = identity.user;
+  dom.signedInUser.textContent = state.user.displayName;
+  dom.logoutButton.hidden = identity.authentication !== "required";
   const qualityRequest = request("/api/v1/admin/data-quality").catch((error) => ({ status: "NICHT_AKTIV", errors: 0, warnings: 0, issues: [], message: error.message }));
   const [payload, extractions, athletes, dataQuality] = await Promise.all([request("/api/v1/weekends"), request("/api/v1/extraction-jobs"), request("/api/v1/athletes"), qualityRequest]);
   state.weekends = payload.weekends;
@@ -257,6 +270,7 @@ async function mergeAthletes() {
 document.querySelector("#new-weekend-button").addEventListener("click", () => dom.newDialog.showModal());
 document.querySelector("#refresh-button").addEventListener("click", () => refresh().catch((error) => showNotice(error.message, true)));
 document.querySelector("#quality-refresh-button").addEventListener("click", () => refresh().catch((error) => showNotice(error.message, true)));
+dom.logoutButton.addEventListener("click", async () => { await request("/api/v1/auth/logout", { method: "POST" }); window.location.replace("/login/"); });
 document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => button.closest("dialog").close()));
 dom.confirmButton.addEventListener("click", () => { const action = state.pendingConfirmation; dom.confirmDialog.close(); if (action) runAction(action); });
 dom.newForm.addEventListener("submit", async (event) => {

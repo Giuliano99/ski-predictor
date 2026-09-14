@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import http.cookiejar
+import os
 import sys
 import tempfile
 import threading
 import unittest
 import urllib.request
+import urllib.error
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -16,6 +19,8 @@ sys.path.insert(0, str(SOURCE_DIRECTORY))
 from document_catalog import DocumentCatalog, classify_path  # noqa: E402
 import server as server_module  # noqa: E402
 from server import ApiServer  # noqa: E402
+from auth_service import hash_password  # noqa: E402
+from database import SQLiteDatabase  # noqa: E402
 
 
 class DocumentCatalogTests(unittest.TestCase):
@@ -120,6 +125,106 @@ class DocumentApiTests(unittest.TestCase):
 
         self.assertEqual(payload, expected)
         self.assertEqual(len(audit.call_args.args[1]), 1)
+
+    def test_authentication_enforces_player_and_game_master_roles(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "SKI_AUTH_REQUIRED": "1", "SKI_REGISTRATION_CODE": "invite-test",
+        }, clear=False), patch("server.all_weekends", return_value=[]):
+            root = Path(directory)
+            database = SQLiteDatabase(root / "auth.sqlite3")
+            database.migrate()
+            for user_id, username, role in (("user-player", "spieler", "PLAYER"), ("user-admin", "admin", "GAME_MASTER")):
+                database.create_user({
+                    "id": user_id, "username": username, "displayName": username.title(),
+                    "passwordHash": hash_password("sicheres Passwort 123"), "role": role, "active": True,
+                })
+            server = ApiServer(("127.0.0.1", 0), DocumentCatalog(root), database)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            base_url = f"http://127.0.0.1:{server.server_port}"
+
+            def login(username: str):
+                opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+                request = urllib.request.Request(
+                    f"{base_url}/api/v1/auth/login",
+                    data=json.dumps({"username": username, "password": "sicheres Passwort 123"}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}, method="POST",
+                )
+                with opener.open(request) as response:
+                    return opener, json.load(response)["user"]
+
+            try:
+                with self.assertRaises(urllib.error.HTTPError) as unauthorized:
+                    urllib.request.urlopen(f"{base_url}/api/v1/weekends")
+                registration_opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+                registration = urllib.request.Request(
+                    f"{base_url}/api/v1/auth/register",
+                    data=json.dumps({
+                        "username": "neu.spieler", "displayName": "Neu Spieler",
+                        "password": "sicheres Passwort 456", "inviteCode": "invite-test",
+                    }).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST",
+                )
+                with registration_opener.open(registration) as response:
+                    registered = json.load(response)["user"]
+                    registration_status = response.status
+                with registration_opener.open(f"{base_url}/api/v1/auth/me") as response:
+                    registered_session = json.load(response)["user"]
+                player_opener, player = login("spieler")
+                with player_opener.open(f"{base_url}/api/v1/auth/me") as response:
+                    current = json.load(response)["user"]
+                with self.assertRaises(urllib.error.HTTPError) as forbidden:
+                    player_opener.open(f"{base_url}/api/v1/weekends")
+                with player_opener.open(f"{base_url}/tippspiel/") as response:
+                    predictor_status = response.status
+                accepted_submission = {
+                    "id": "submission-authenticated", "tipRoundId": "tip-round-2030-01-05",
+                    "player": {"id": player["id"], "displayName": player["displayName"]},
+                    "answers": {},
+                }
+                with patch("server.save_submission", return_value={"submission": accepted_submission}) as save_submission, \
+                        patch.object(database, "save_submission"):
+                    submission_request = urllib.request.Request(
+                        f"{base_url}/api/v1/predictor/rounds/tip-round-2030-01-05/submissions",
+                        data=json.dumps({
+                            "player": {"id": "fremdes-konto", "displayName": "Fremder Name"},
+                            "answers": {},
+                        }).encode("utf-8"),
+                        headers={"Content-Type": "application/json", "X-CSRF-Token": player["csrfToken"]},
+                        method="POST",
+                    )
+                    with player_opener.open(submission_request) as response:
+                        submission_status = response.status
+                    protected_payload = save_submission.call_args.args[1]
+                logout_without_csrf = urllib.request.Request(f"{base_url}/api/v1/auth/logout", data=b"{}", method="POST")
+                with self.assertRaises(urllib.error.HTTPError) as csrf_forbidden:
+                    player_opener.open(logout_without_csrf)
+                logout = urllib.request.Request(
+                    f"{base_url}/api/v1/auth/logout", data=b"{}", method="POST",
+                    headers={"X-CSRF-Token": player["csrfToken"]},
+                )
+                with player_opener.open(logout) as response:
+                    logout_status = response.status
+                admin_opener, admin = login("admin")
+                with admin_opener.open(f"{base_url}/api/v1/weekends") as response:
+                    weekends_status = response.status
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+        self.assertEqual(unauthorized.exception.code, 401)
+        self.assertEqual(registration_status, 201)
+        self.assertEqual(registered_session["id"], registered["id"])
+        self.assertEqual(forbidden.exception.code, 403)
+        self.assertEqual(csrf_forbidden.exception.code, 403)
+        self.assertEqual(current["id"], player["id"])
+        self.assertEqual(admin["role"], "GAME_MASTER")
+        self.assertEqual(predictor_status, 200)
+        self.assertEqual(submission_status, 201)
+        self.assertEqual(protected_payload["player"], {"id": player["id"], "displayName": player["displayName"]})
+        self.assertEqual(protected_payload["authenticatedUserId"], player["id"])
+        self.assertEqual(logout_status, 200)
+        self.assertEqual(weekends_status, 200)
 
     def test_approves_ready_weekend_extractions_in_one_request(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch("server.weekend_config_path"):

@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
 
 from database import Database, DatabaseError
 from data_quality import audit_database, write_report
 from document_catalog import DocumentCatalog
+from auth_service import hash_password, normalize_username, validate_display_name
 from server import WORKSPACE, load_storage_root
 
 
@@ -68,8 +71,11 @@ def import_existing(database: Database, catalog: DocumentCatalog) -> dict[str, i
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("migrate", "import-existing", "audit", "status"), nargs="?", default="status")
+    parser.add_argument("command", choices=("migrate", "import-existing", "audit", "create-user", "status"), nargs="?", default="status")
     parser.add_argument("--output", type=Path, default=WORKSPACE / "output" / "reports" / "data-quality.md")
+    parser.add_argument("--username")
+    parser.add_argument("--display-name")
+    parser.add_argument("--role", choices=("PLAYER", "GAME_MASTER"), default="PLAYER")
     arguments = parser.parse_args()
     try:
         database = Database.configured()
@@ -87,6 +93,19 @@ def main() -> int:
                 "status": report["status"], "errors": report["errors"],
                 "warnings": report["warnings"], "output": str(arguments.output.resolve()),
             }
+        if arguments.command == "create-user":
+            username = normalize_username(arguments.username or "")
+            display_name = validate_display_name(arguments.display_name or "")
+            password = getpass.getpass("Passwort: ")
+            confirmation = getpass.getpass("Passwort wiederholen: ")
+            if password != confirmation:
+                raise ValueError("Die Passwoerter stimmen nicht ueberein.")
+            database.create_user({
+                "id": f"user-{uuid.uuid4().hex}", "username": username,
+                "displayName": display_name, "passwordHash": hash_password(password),
+                "role": arguments.role, "active": True,
+            })
+            result["user"] = {"username": username, "displayName": display_name, "role": arguments.role}
         result["counts"] = database.counts()
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 2 if arguments.command == "audit" and result["audit"]["errors"] else 0

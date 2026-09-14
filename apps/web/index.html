@@ -15,6 +15,7 @@
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
       <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#wochenende">Wochenende</a><a href="#tipp">Mein Tipp</a><a href="#auswertung">Auswertung</a><a href="#rangliste">Rangliste</a><a href="punkte.html">Punkte</a></nav>
+      <div class="account"><span id="account-name">Angemeldet</span><button id="logout-button" type="button">Abmelden</button></div>
       <a class="header-cta" href="#tipp">Tippen</a>
     </header>
 
@@ -51,7 +52,7 @@
         <div class="prediction-panel">
           <div class="section-heading"><div><span class="kicker">Deine Tipprunde</span><h2 id="tip-round-title">Tipps werden geladen</h2><p id="tip-round-subtitle">Lokale Demo-Daten ohne Anmeldung</p></div><span class="points-pill" id="question-progress">0 / 0 beantwortet</span></div>
           <form id="prediction-form" novalidate>
-              <label class="player-input"><span>Dein Name für die Rangliste</span><input id="player-name" name="player-name" type="text" minlength="2" maxlength="40" autocomplete="name" placeholder="z. B. Giuliano G." required /><small>Wird zusammen mit deinem Tipp beim lokalen Spielleiter gespeichert.</small></label>
+              <label class="player-input"><span>Du tippst als</span><input id="player-name" name="player-name" type="text" readonly /><small>Dein Konto wird eindeutig mit der Tippabgabe verknüpft.</small></label>
             <div class="question-list" id="question-list"></div>
               <div class="prediction-footer"><p id="form-message" role="status">Deine Eingaben werden über die lokale API beim Spielleiter gespeichert.</p><div class="form-actions"><button class="text-button reset-button" id="reset-prediction" type="button">Lokale Eingaben zurücksetzen</button><button class="text-button export-button" id="export-prediction" type="button" disabled>Sicherung exportieren ↓</button><button class="button button-dark" id="save-prediction" type="submit">Tipp verbindlich speichern <span>→</span></button></div></div>
           </form>

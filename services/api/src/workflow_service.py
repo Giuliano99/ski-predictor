@@ -293,6 +293,8 @@ def save_submission(
         "submittedAt": submitted_at.isoformat().replace("+00:00", "Z"),
         "answers": validate_submission_answers(tip_round, payload.get("answers")),
     }
+    if payload.get("authenticatedUserId") == player_id:
+        submission["authenticatedUserId"] = player_id
     destination_directory = resolve_path(config["submissionsDir"])
     timestamp = submitted_at.strftime("%Y%m%d%H%M%S%f")
     destination = destination_directory / f"tipp-{tip_round_id}-{player_id}-{timestamp}-{submission_id[-8:]}.json"

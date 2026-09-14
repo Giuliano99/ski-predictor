@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -72,7 +73,14 @@ class ExtractionService:
         path = self._job_path(job_id)
         if not path.is_file():
             raise ExtractionError("Der Extraktionsauftrag wurde nicht gefunden.")
-        return json.loads(path.read_text(encoding="utf-8"))
+        for attempt in range(4):
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (PermissionError, json.JSONDecodeError):
+                if attempt == 3:
+                    raise
+                time.sleep(0.01)
+        raise ExtractionError("Der Extraktionsauftrag konnte nicht gelesen werden.")
 
     def _write_job(self, job: dict[str, Any]) -> None:
         job["updatedAt"] = utc_now()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
 import mimetypes
 import re
@@ -14,6 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from auth_service import AuthError, AuthService
 from document_catalog import DOCUMENT_KINDS, DocumentCatalog
 from database import Database, DatabaseError
 from data_quality import audit_database
@@ -35,11 +37,12 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.7.0"
+API_VERSION = "1.8.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
 WEB_DIRECTORY = WORKSPACE / "apps" / "web"
+AUTH_DIRECTORY = WORKSPACE / "apps" / "auth"
 
 
 def load_storage_root(workspace: Path = WORKSPACE) -> Path:
@@ -83,6 +86,10 @@ def openapi_document(port: int) -> dict[str, Any]:
         "info": {"title": "Ski Predictor API", "version": API_VERSION, "description": "Gemeinsames lokales Backend für Dokumente, Spielleiter und Tippspiel."},
         "servers": [{"url": f"http://127.0.0.1:{port}/api/v1"}],
         "paths": {
+            "/auth/register": {"post": {"summary": "Mit Einladungscode registrieren", "responses": {"201": {"description": "Registriert und angemeldet"}}}},
+            "/auth/login": {"post": {"summary": "Anmelden", "responses": {"200": {"description": "Angemeldet"}, "401": {"description": "Anmeldung fehlgeschlagen"}}}},
+            "/auth/logout": {"post": {"summary": "Sitzung beenden", "responses": {"200": {"description": "Abgemeldet"}}}},
+            "/auth/me": {"get": {"summary": "Aktuelle Sitzung", "responses": {"200": {"description": "Angemeldeter Benutzer"}, "401": {"description": "Nicht angemeldet"}}}},
             "/admin/data-quality": {"get": {"summary": "Datenqualitaet pruefen", "responses": {"200": {"description": "Aktueller Pruefbericht"}, "400": {"description": "Datenbank nicht aktiviert"}}}},
             "/weekends/{weekendId}/extractions/approve-ready": {"post": {"summary": "Gepruefte Extraktionen gemeinsam freigeben", "responses": {"200": {"description": "Freigegebene Extraktionen"}}}},
             "/documents": {"get": {"summary": "Dokumente suchen", "parameters": [
@@ -171,17 +178,50 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(length))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+        if self.server.auth.secure_cookie:  # type: ignore[attr-defined]
+            self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         origin = self.cors_origin()
         if origin:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
 
-    def send_json(self, value: Any, status: HTTPStatus = HTTPStatus.OK) -> None:
+    def send_json(self, value: Any, status: HTTPStatus = HTTPStatus.OK, headers: dict[str, str] | None = None) -> None:
         body = json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8")
         self.send_response(status)
         self.common_headers("application/json; charset=utf-8", len(body))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
+
+    def redirect(self, location: str) -> None:
+        self.send_response(HTTPStatus.SEE_OTHER)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def authenticated_user(self, role: str | None = None) -> dict[str, Any] | None:
+        user = self.server.auth.authenticate(self.headers.get("Cookie"))  # type: ignore[attr-defined]
+        if not user:
+            self.send_api_error(HTTPStatus.UNAUTHORIZED, "AUTH_REQUIRED", "Bitte zuerst anmelden.")
+            return None
+        if role and user.get("role") != role:
+            self.send_api_error(HTTPStatus.FORBIDDEN, "ACCESS_DENIED", "Fuer diesen Bereich fehlen die Berechtigungen.")
+            return None
+        return user
+
+    def valid_csrf(self, user: dict[str, Any]) -> bool:
+        if not self.server.auth.enabled:  # type: ignore[attr-defined]
+            return True
+        if hmac.compare_digest(str(self.headers.get("X-CSRF-Token", "")), str(user.get("csrfToken", ""))):
+            return True
+        self.send_api_error(HTTPStatus.FORBIDDEN, "CSRF_INVALID", "Die Sitzung konnte nicht sicher bestaetigt werden. Bitte neu anmelden.")
+        return False
 
     def send_api_error(self, status: HTTPStatus, code: str, message: str) -> None:
         self.send_json({"error": {"code": code, "message": message}}, status)
@@ -219,7 +259,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         if origin:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Accept, Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Accept, Content-Type, X-CSRF-Token")
             self.send_header("Vary", "Origin")
         self.end_headers()
 
@@ -235,13 +275,37 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
+            if parts[0] == "login":
+                relative = Path(*parts[1:]) if len(parts) > 1 else Path("index.html")
+                candidate = (AUTH_DIRECTORY / relative).resolve()
+                try:
+                    candidate.relative_to(AUTH_DIRECTORY.resolve())
+                except ValueError:
+                    self.send_api_error(HTTPStatus.NOT_FOUND, "FILE_NOT_FOUND", "Die Datei wurde nicht gefunden.")
+                    return
+                self.send_file(candidate)
+                return
             if parts == ["spielleiter"]:
+                user = self.server.auth.authenticate(self.headers.get("Cookie"))  # type: ignore[attr-defined]
+                if not user or user.get("role") != "GAME_MASTER":
+                    self.redirect("/login/?next=/spielleiter/")
+                    return
                 self.send_file(DASHBOARD_DIRECTORY / "index.html")
                 return
             if parts[:2] == ["spielleiter", "assets"] and len(parts) == 3:
+                user = self.server.auth.authenticate(self.headers.get("Cookie"))  # type: ignore[attr-defined]
+                if not user or user.get("role") != "GAME_MASTER":
+                    self.send_api_error(HTTPStatus.UNAUTHORIZED, "AUTH_REQUIRED", "Bitte zuerst anmelden.")
+                    return
                 self.send_file(DASHBOARD_DIRECTORY / "assets" / Path(parts[2]).name)
                 return
+            if parts == ["tippspiel", "public", "images", "skiteam-logo.png"]:
+                self.send_file(WEB_DIRECTORY / "public" / "images" / "skiteam-logo.png")
+                return
             if parts[0] == "tippspiel":
+                if not self.server.auth.authenticate(self.headers.get("Cookie")):  # type: ignore[attr-defined]
+                    self.redirect("/login/?next=/tippspiel/")
+                    return
                 relative = Path(*parts[1:]) if len(parts) > 1 else Path("index.html")
                 candidate = (WEB_DIRECTORY / relative).resolve()
                 try:
@@ -255,11 +319,20 @@ class ApiHandler(BaseHTTPRequestHandler):
                 database_status = "disabled"
                 if self.server.database:  # type: ignore[attr-defined]
                     database_status = "available" if self.server.database.ping() else "unavailable"  # type: ignore[attr-defined]
-                self.send_json({"status": "ok", "version": API_VERSION, "storage": "available", "database": database_status, "documents": len(self.catalog.documents())})
+                self.send_json({"status": "ok", "version": API_VERSION, "storage": "available", "database": database_status, "authentication": "required" if self.server.auth.enabled else "disabled", "documents": len(self.catalog.documents())})
                 return
             if parts == ["api", "v1", "openapi.json"]:
                 self.send_json(openapi_document(self.server.server_port))
                 return
+            if parts == ["api", "v1", "auth", "me"]:
+                user = self.authenticated_user()
+                if user:
+                    self.send_json({"user": user, "authentication": "required" if self.server.auth.enabled else "disabled"})
+                return
+            if parts[:2] == ["api", "v1"]:
+                role = None if len(parts) > 2 and parts[2] == "predictor" else "GAME_MASTER"
+                if not self.authenticated_user(role):
+                    return
             if parts == ["api", "v1", "admin", "data-quality"]:
                 if not self.server.database:  # type: ignore[attr-defined]
                     raise DatabaseError("Die Datenbank ist nicht aktiviert.")
@@ -392,6 +465,35 @@ class ApiHandler(BaseHTTPRequestHandler):
         parts = [part for part in parsed.path.split("/") if part]
         query = urllib.parse.parse_qs(parsed.query)
         try:
+            if parts == ["api", "v1", "auth", "register"]:
+                try:
+                    payload = self.read_json_body()
+                    self.server.auth.register(payload, self.client_address[0])  # type: ignore[attr-defined]
+                    user, token = self.server.auth.login(payload, self.client_address[0])  # type: ignore[attr-defined]
+                except AuthError as error:
+                    self.send_api_error(HTTPStatus.BAD_REQUEST, "REGISTRATION_FAILED", str(error))
+                    return
+                self.send_json({"user": user}, HTTPStatus.CREATED, {"Set-Cookie": self.server.auth.cookie_header(token)})  # type: ignore[attr-defined]
+                return
+            if parts == ["api", "v1", "auth", "login"]:
+                try:
+                    user, token = self.server.auth.login(self.read_json_body(), self.client_address[0])  # type: ignore[attr-defined]
+                except AuthError as error:
+                    self.send_api_error(HTTPStatus.UNAUTHORIZED, "LOGIN_FAILED", str(error))
+                    return
+                self.send_json({"user": user}, headers={"Set-Cookie": self.server.auth.cookie_header(token)})  # type: ignore[attr-defined]
+                return
+            if parts == ["api", "v1", "auth", "logout"]:
+                user = self.authenticated_user()
+                if not user or not self.valid_csrf(user):
+                    return
+                self.server.auth.logout(self.headers.get("Cookie"))  # type: ignore[attr-defined]
+                self.send_json({"message": "Abgemeldet."}, headers={"Set-Cookie": self.server.auth.cookie_header("", clear=True)})  # type: ignore[attr-defined]
+                return
+            role = None if len(parts) > 2 and parts[:3] == ["api", "v1", "predictor"] else "GAME_MASTER"
+            user = self.authenticated_user(role)
+            if not user or not self.valid_csrf(user):
+                return
             if parts == ["api", "v1", "weekends"]:
                 self.send_json(create_weekend(self.read_json_body()), HTTPStatus.CREATED)
                 return
@@ -417,7 +519,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
                 stored_round = self.server.database.tip_round(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
-                result = save_submission(parts[4], self.read_json_body(), stored_round)
+                submission = self.read_json_body()
+                if self.server.auth.enabled:  # type: ignore[attr-defined]
+                    submission["player"] = {"id": user["id"], "displayName": user["displayName"]}
+                    submission["authenticatedUserId"] = user["id"]
+                result = save_submission(parts[4], submission, stored_round)
                 if self.server.database:  # type: ignore[attr-defined]
                     self.server.database.save_submission(result["submission"])  # type: ignore[attr-defined]
                 self.send_json(result, HTTPStatus.CREATED)
@@ -441,6 +547,9 @@ class ApiHandler(BaseHTTPRequestHandler):
     def do_PUT(self) -> None:
         parts = [part for part in urllib.parse.urlsplit(self.path).path.split("/") if part]
         try:
+            user = self.authenticated_user("GAME_MASTER")
+            if not user or not self.valid_csrf(user):
+                return
             if len(parts) == 5 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "questions":
                 self.send_json(save_questions(parts[3], str(self.read_json_body().get("content", ""))))
                 return
@@ -454,6 +563,7 @@ class ApiServer(ThreadingHTTPServer):
         super().__init__(address, ApiHandler)
         self.catalog = catalog
         self.database = database
+        self.auth = AuthService(database)
         self.extractions = ExtractionService(catalog, database=database)
 
     def sync_predictor(self) -> dict[str, int]:

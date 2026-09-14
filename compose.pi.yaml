@@ -27,6 +27,9 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+      SKI_AUTH_REQUIRED: ${SKI_AUTH_REQUIRED:-0}
+      SKI_REGISTRATION_CODE: ${SKI_REGISTRATION_CODE:-}
+      SKI_SECURE_COOKIES: ${SKI_SECURE_COOKIES:-0}
     ports:
       - "${SKI_BIND_ADDRESS:-0.0.0.0}:${SKI_PORT:-4175}:4175"
     volumes:

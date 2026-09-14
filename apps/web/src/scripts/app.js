@@ -3,6 +3,8 @@ const EVALUATION_URL = "src/data/evaluation.local.json";
 const STORAGE_PREFIX = "ski-predictor:submission:";
 
 let leaders = [];
+let authUser;
+let authRequired = false;
 
 const dom = {
   form: document.querySelector("#prediction-form"),
@@ -35,6 +37,8 @@ const dom = {
   heroTitle: document.querySelector("#hero-title"),
   heroDate: document.querySelector("#hero-date"),
   seasonLabel: document.querySelector("#season-label"),
+  accountName: document.querySelector("#account-name"),
+  logoutButton: document.querySelector("#logout-button"),
 };
 
 let tipRound;
@@ -316,7 +320,7 @@ function updateProgress() {
 }
 
 function storageKey() {
-  return `${STORAGE_PREFIX}${tipRound.id}`;
+  return `${STORAGE_PREFIX}${authUser?.id ?? "local"}:${tipRound.id}`;
 }
 
 function storedSubmission() {
@@ -374,7 +378,7 @@ function collectSubmission() {
 async function saveSubmissionToApi(submission) {
   const response = await fetch(`/api/v1/predictor/rounds/${encodeURIComponent(tipRound.id)}/submissions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": authUser.csrfToken },
     body: JSON.stringify(submission),
   });
   const payload = await response.json().catch(() => ({}));
@@ -386,7 +390,7 @@ function restoreSubmission() {
   const submission = storedSubmission();
   if (!submission) return;
   try {
-    dom.playerName.value = submission.player?.displayName ?? "";
+    dom.playerName.value = authRequired ? authUser.displayName : (submission.player?.displayName ?? "");
     Object.entries(submission.answers ?? {}).forEach(([questionId, value]) => {
       if (Array.isArray(value)) {
         value.forEach((item, position) => {
@@ -456,6 +460,11 @@ function showToast() {
 }
 
 function bindEvents() {
+  dom.logoutButton.addEventListener("click", async () => {
+    await fetch("/api/v1/auth/logout", { method: "POST", headers: { "X-CSRF-Token": authUser.csrfToken } });
+    window.location.replace("/login/");
+  });
+
   dom.form.addEventListener("input", () => {
     dom.message.textContent = "Ungespeicherte Änderungen vorhanden.";
     dom.message.classList.remove("error");
@@ -468,8 +477,8 @@ function bindEvents() {
     if (!tipRound.testMode && Date.now() >= new Date(tipRound.closesAt).getTime()) return;
 
     const playerName = dom.playerName.value.trim();
-    if (playerName.length < 2) {
-      dom.message.textContent = "Bitte gib deinen Namen für die Rangliste ein.";
+    if (!authRequired && playerName.length < 2) {
+      dom.message.textContent = "Bitte gib deinen Namen fuer die Rangliste ein.";
       dom.message.classList.add("error");
       dom.playerName.focus();
       return;
@@ -484,7 +493,8 @@ function bindEvents() {
     }
 
     const submittedAt = new Date().toISOString();
-    const submission = { schemaVersion: 1, id: `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`, tipRoundId: tipRound.id, tipRoundVersion: tipRound.contentVersion, player: { id: playerIdForName(playerName), displayName: playerName }, submittedAt, answers };
+    const player = authRequired ? { id: authUser.id, displayName: authUser.displayName } : { id: playerIdForName(playerName), displayName: playerName };
+    const submission = { schemaVersion: 1, id: `local-${tipRound.id}-${submittedAt.replaceAll(/[^0-9]/g, "").slice(0, 14)}`, tipRoundId: tipRound.id, tipRoundVersion: tipRound.contentVersion, player, submittedAt, answers };
     localStorage.setItem(storageKey(), JSON.stringify(submission));
     updateExportState();
     dom.saveButton.disabled = true;
@@ -514,6 +524,7 @@ function bindEvents() {
     if (!window.confirm("Möchtest du alle Antworten dieser Tipprunde zurücksetzen?")) return;
     localStorage.removeItem(storageKey());
     dom.form.reset();
+    if (authRequired) dom.playerName.value = authUser.displayName;
     tipRound.questions.forEach((question) => validateQuestion(question));
     dom.message.textContent = "Der lokale Tipp wurde zurückgesetzt.";
     dom.message.classList.remove("error");
@@ -553,6 +564,18 @@ function renderLeaderboard() {
 
 async function initialize() {
   try {
+    const authResponse = await fetch("/api/v1/auth/me");
+    if (!authResponse.ok) {
+      window.location.replace("/login/?next=/tippspiel/");
+      return;
+    }
+    const authPayload = await authResponse.json();
+    authUser = authPayload.user;
+    authRequired = authPayload.authentication === "required";
+    dom.playerName.readOnly = authRequired;
+    if (authRequired) dom.playerName.value = authUser.displayName;
+    dom.accountName.textContent = authUser.displayName;
+    dom.logoutButton.hidden = !authRequired;
     let response;
     let loadedUrl = "";
     for (const url of DATA_URLS) {

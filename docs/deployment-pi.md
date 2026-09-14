@@ -66,3 +66,23 @@ cd /home/pi/ski-predictor
 ```
 
 Die produktive Datenbank wird bei dieser Pruefung nicht veraendert.
+
+## Authentifizierung fuer den geschlossenen Test
+
+Nach dem Deployment wird die Anmeldung einmalig interaktiv aktiviert. Das
+Passwort wird verdeckt im Terminal abgefragt und nicht in der Shell-Historie
+oder in Git gespeichert:
+
+```bash
+cd /home/pi/ski-predictor
+sudo bash scripts/deploy/Enable-Auth-Pi.sh
+```
+
+Das Skript erstellt den Spielleiter, erzeugt einen zufaelligen Einladungscode
+fuer die Testgruppe und startet nur den App-Container neu. Teilnehmer
+registrieren sich anschliessend unter `/login/`. Der Spielleiterbereich ist nur
+fuer die Rolle `GAME_MASTER` erreichbar.
+
+Solange der Pi nur per HTTP im lokalen Netz laeuft, bleibt
+`SKI_SECURE_COOKIES=0`. Vor einer Freigabe im Internet muessen HTTPS und
+`SKI_SECURE_COOKIES=1` aktiviert werden.

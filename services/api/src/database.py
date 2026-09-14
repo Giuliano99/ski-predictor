@@ -236,17 +236,79 @@ class PostgreSQLDatabase:
             player = submission["player"]
             connection.execute(
                 """INSERT INTO predictor_submissions
-                (id,tip_round_id,tip_round_version,player_id,player_display_name,submitted_at,answers,raw_payload)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO NOTHING""",
+                (id,tip_round_id,tip_round_version,player_id,player_display_name,submitted_at,answers,raw_payload,authenticated_user_id)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO NOTHING""",
                 (submission["id"], submission["tipRoundId"], submission["tipRoundVersion"],
                  player["id"], player["displayName"], submission["submittedAt"],
-                 Jsonb(submission["answers"]), Jsonb(submission)),
+                 Jsonb(submission["answers"]), Jsonb(submission), submission.get("authenticatedUserId")),
             )
+
+    def create_user(self, user: dict[str, Any]) -> None:
+        try:
+            with self.connect() as connection:
+                connection.execute(
+                    "INSERT INTO app_users (id,username,display_name,password_hash,role,active) "
+                    "VALUES (%s,%s,%s,%s,%s,%s)",
+                    (user["id"], user["username"], user["displayName"], user["passwordHash"],
+                     user["role"], user.get("active", True)),
+                )
+        except Exception as error:
+            raise DatabaseError("Der Benutzername ist bereits vergeben.") from error
+
+    def user_by_username(self, username: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT id,username,display_name,password_hash,role,active FROM app_users "
+                "WHERE lower(username)=lower(%s)", (username,),
+            ).fetchone()
+        return self._user_row(row)
+
+    def user_by_id(self, user_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT id,username,display_name,password_hash,role,active FROM app_users WHERE id=%s",
+                (user_id,),
+            ).fetchone()
+        return self._user_row(row)
+
+    @staticmethod
+    def _user_row(row: Any) -> dict[str, Any] | None:
+        if not row:
+            return None
+        return {
+            "id": row[0], "username": row[1], "displayName": row[2], "passwordHash": row[3],
+            "role": row[4], "active": bool(row[5]),
+        }
+
+    def create_session(self, session: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                "INSERT INTO auth_sessions (token_hash,user_id,csrf_token,expires_at) VALUES (%s,%s,%s,%s)",
+                (session["tokenHash"], session["userId"], session["csrfToken"], session["expiresAt"]),
+            )
+
+    def session_by_token_hash(self, token_hash: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT s.token_hash,s.csrf_token,s.expires_at,u.id,u.username,u.display_name,u.role,u.active "
+                "FROM auth_sessions s JOIN app_users u ON u.id=s.user_id WHERE s.token_hash=%s",
+                (token_hash,),
+            ).fetchone()
+        if not row or not bool(row[7]):
+            return None
+        return {
+            "tokenHash": row[0], "csrfToken": row[1], "expiresAt": self._timestamp_result(row[2]),
+            "id": row[3], "username": row[4], "displayName": row[5], "role": row[6], "active": bool(row[7]),
+        }
+
+    def delete_session(self, token_hash: str) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM auth_sessions WHERE token_hash=%s", (token_hash,))
 
     def counts(self) -> dict[str, int]:
         tables = ("source_documents", "extraction_imports", "events", "races", "athletes",
                   "race_participants", "run_results", "predictor_rounds", "predictor_questions",
-                  "weekend_evaluations", "season_leaderboards", "predictor_submissions")
+                  "weekend_evaluations", "season_leaderboards", "predictor_submissions", "app_users", "auth_sessions")
         with self.connect() as connection:
             return {table: connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0] for table in tables}
 
