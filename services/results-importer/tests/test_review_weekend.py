@@ -6,10 +6,19 @@ from pathlib import Path
 MODULE_ROOT = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(MODULE_ROOT))
 
-from review_weekend import question_scope_is_clear  # noqa: E402
+from review_weekend import local_deadline, question_scope_is_clear  # noqa: E402
 
 
 class ReviewWeekendTests(unittest.TestCase):
+    def test_deadline_is_checked_in_configured_local_timezone(self):
+        deadline = local_deadline({
+            "closesAt": "2027-01-15T23:00:00+00:00",
+            "timeZone": "Europe/Berlin",
+        })
+
+        self.assertEqual(deadline.isoformat(), "2027-01-16T00:00:00+01:00")
+        self.assertEqual(deadline.weekday(), 5)
+
     def setUp(self):
         self.races = {
             "race-saturday": {"id": "race-saturday", "name": "Sechzger-Pokal", "day": "Samstag", "discipline": "Riesenslalom"},

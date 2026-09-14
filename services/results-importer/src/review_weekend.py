@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
 from storage_paths import resolve_path
 
@@ -56,6 +57,14 @@ def question_scope_is_clear(question: dict[str, Any], races_by_id: dict[str, dic
         if not day or day not in combined or not discipline or discipline not in combined or race_reference not in combined:
             return False
     return True
+
+
+def local_deadline(tip_round: dict[str, Any]) -> datetime:
+    deadline = datetime.fromisoformat(tip_round["closesAt"])
+    zone = ZoneInfo(str(tip_round.get("timeZone") or "Europe/Berlin"))
+    if deadline.tzinfo is None:
+        return deadline.replace(tzinfo=zone)
+    return deadline.astimezone(zone)
 
 
 def review_weekend(workspace: Path, config_path: Path) -> tuple[Review, dict[str, Any] | None]:
@@ -136,7 +145,7 @@ def review_weekend(workspace: Path, config_path: Path) -> tuple[Review, dict[str
         dates = sorted(datetime.fromisoformat(race["date"]).date() for race in races)
         if (dates[-1] - dates[0]).days > 3:
             review.errors.append("Die Rennen liegen mehr als drei Tage auseinander.")
-        closes_at = datetime.fromisoformat(tip_round["closesAt"])
+        closes_at = local_deadline(tip_round)
         if closes_at.weekday() != 5 or closes_at.hour != 0 or closes_at.minute != 0:
             review.errors.append("Der Abgabeschluss ist nicht Samstag um 00:00 Uhr.")
         if closes_at.date() > dates[0]:
