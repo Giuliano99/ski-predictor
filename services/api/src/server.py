@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hmac
+import ipaddress
 import json
 import mimetypes
 import re
@@ -222,6 +223,13 @@ class ApiHandler(BaseHTTPRequestHandler):
             return True
         self.send_api_error(HTTPStatus.FORBIDDEN, "CSRF_INVALID", "Die Sitzung konnte nicht sicher bestaetigt werden. Bitte neu anmelden.")
         return False
+
+    def client_key(self) -> str:
+        forwarded = str(self.headers.get("CF-Connecting-IP", "")).strip()
+        try:
+            return str(ipaddress.ip_address(forwarded)) if forwarded else self.client_address[0]
+        except ValueError:
+            return self.client_address[0]
 
     def send_api_error(self, status: HTTPStatus, code: str, message: str) -> None:
         self.send_json({"error": {"code": code, "message": message}}, status)
@@ -468,8 +476,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             if parts == ["api", "v1", "auth", "register"]:
                 try:
                     payload = self.read_json_body()
-                    self.server.auth.register(payload, self.client_address[0])  # type: ignore[attr-defined]
-                    user, token = self.server.auth.login(payload, self.client_address[0])  # type: ignore[attr-defined]
+                    self.server.auth.register(payload, self.client_key())  # type: ignore[attr-defined]
+                    user, token = self.server.auth.login(payload, self.client_key())  # type: ignore[attr-defined]
                 except AuthError as error:
                     self.send_api_error(HTTPStatus.BAD_REQUEST, "REGISTRATION_FAILED", str(error))
                     return
@@ -477,7 +485,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return
             if parts == ["api", "v1", "auth", "login"]:
                 try:
-                    user, token = self.server.auth.login(self.read_json_body(), self.client_address[0])  # type: ignore[attr-defined]
+                    user, token = self.server.auth.login(self.read_json_body(), self.client_key())  # type: ignore[attr-defined]
                 except AuthError as error:
                     self.send_api_error(HTTPStatus.UNAUTHORIZED, "LOGIN_FAILED", str(error))
                     return

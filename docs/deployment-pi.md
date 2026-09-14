@@ -86,3 +86,29 @@ fuer die Rolle `GAME_MASTER` erreichbar.
 Solange der Pi nur per HTTP im lokalen Netz laeuft, bleibt
 `SKI_SECURE_COOKIES=0`. Vor einer Freigabe im Internet muessen HTTPS und
 `SKI_SECURE_COOKIES=1` aktiviert werden.
+
+## Oeffentlicher HTTPS-Test ohne Routerfreigabe
+
+Der temporaere Testzugang nutzt einen Cloudflare Quick Tunnel. Er ist fuer
+Entwicklung und begrenzte Tests gedacht und benoetigt weder eine eigene Domain
+noch eine Portfreigabe am Router:
+
+```bash
+cd /home/pi/ski-predictor
+sudo bash scripts/deploy/Enable-Https-Test-Pi.sh
+```
+
+Das Skript aktiviert sichere Cookies, bindet den direkten Host-Port nur noch an
+`127.0.0.1` und gibt die oeffentliche HTTPS-Adresse aus. Die zufaellige
+`trycloudflare.com`-Adresse kann sich bei einer Neuerstellung des
+Tunnel-Containers aendern. Der Einladungscode bleibt weiterhin erforderlich.
+
+Der Testzugang wird so wieder abgeschaltet:
+
+```bash
+cd /home/pi/ski-predictor
+sudo bash scripts/deploy/Disable-Https-Test-Pi.sh
+```
+
+Fuer den dauerhaften Betrieb folgt spaeter ein benannter Tunnel mit eigener
+Domain und stabiler Adresse.

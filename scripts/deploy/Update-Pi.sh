@@ -43,8 +43,12 @@ echo "Aktualisiert: $local_commit -> $remote_commit"
 runtime_root="${SKI_PREDICTOR_RUNTIME:-/srv/ski-predictor}"
 if [[ -f "$runtime_root/config/auto-deploy-enabled" ]]; then
   echo "Container werden aktualisiert ..."
+  compose_files=(-f compose.pi.yaml)
+  if [[ -f "$runtime_root/config/public-https-enabled" ]]; then
+    compose_files+=(-f compose.https-test.yaml)
+  fi
   docker compose \
     --env-file "$runtime_root/config/runtime.env" \
-    -f compose.pi.yaml \
+    "${compose_files[@]}" \
     up -d --build --remove-orphans
 fi
