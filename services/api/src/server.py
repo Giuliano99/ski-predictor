@@ -27,18 +27,21 @@ from workflow_service import (
     all_weekends,
     close_expired_weekends,
     create_weekend,
+    latest_public_submissions,
     perform_action,
     read_json,
+    result_list_overview,
     resolve_path,
     save_questions,
     save_submission,
+    start_list_overview,
     upload_file,
     weekend_config_path,
 )
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.8.0"
+API_VERSION = "1.10.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -122,7 +125,12 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/athletes/{athleteId}/results": {"get": {"summary": "Ergebnisse eines Athleten", "responses": {"200": {"description": "Ergebnisse"}}}},
             "/athlete-identities/merge": {"post": {"summary": "Doppelte Athletenidentitäten zusammenführen", "responses": {"200": {"description": "Zusammengeführt"}}}},
             "/predictor/rounds/current": {"get": {"summary": "Aktuelle öffentliche Tipprunde", "responses": {"200": {"description": "Tipprunde"}}}},
-            "/predictor/rounds/{tipRoundId}/submissions": {"post": {"summary": "Tippabgabe speichern", "responses": {"201": {"description": "Abgabe gespeichert"}, "400": {"description": "Abgabe ungültig"}}}},
+            "/predictor/rounds/{tipRoundId}/submissions": {
+                "get": {"summary": "Letzte Tippabgabe je Mitspieler", "responses": {"200": {"description": "Öffentliche Tipps"}}},
+                "post": {"summary": "Tippabgabe speichern", "responses": {"201": {"description": "Abgabe gespeichert"}, "400": {"description": "Abgabe ungültig"}}},
+            },
+            "/predictor/rounds/{tipRoundId}/start-list": {"get": {"summary": "Startlistenübersicht", "responses": {"200": {"description": "Starter nach Altersklasse"}}}},
+            "/predictor/rounds/{tipRoundId}/result-list": {"get": {"summary": "Ergebnislistenübersicht", "responses": {"200": {"description": "Ergebnisse nach Altersklasse"}}}},
             "/predictor/rounds/{tipRoundId}/evaluation": {"get": {"summary": "Öffentliche Wochenendauswertung", "responses": {"200": {"description": "Auswertung"}}}},
             "/predictor/seasons/{seasonId}/leaderboard": {"get": {"summary": "Öffentliche Saisonrangliste", "responses": {"200": {"description": "Rangliste"}}}},
         },
@@ -423,6 +431,17 @@ class ApiHandler(BaseHTTPRequestHandler):
                 else:
                     config = current_config()
                     self.send_json(optional_artifact(config["tipRound"]["websiteOutput"]) or optional_artifact(config["tipRound"]["output"]))
+                return
+            if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
+                stored = self.server.database.submissions(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
+                evaluation = self.server.database.weekend_evaluation(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
+                self.send_json(latest_public_submissions(parts[4], stored, evaluation))
+                return
+            if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "start-list":
+                self.send_json(start_list_overview(parts[4]))
+                return
+            if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "result-list":
+                self.send_json(result_list_overview(parts[4]))
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "evaluation":
                 stored = self.server.database.weekend_evaluation(parts[4]) if self.server.database else None  # type: ignore[attr-defined]

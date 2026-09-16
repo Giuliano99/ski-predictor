@@ -25,6 +25,7 @@ const dom = {
   overviewAthleteCount: document.querySelector("#overview-athlete-count"),
   overviewRaces: document.querySelector("#overview-races"),
   overviewStartLists: document.querySelector("#overview-start-lists"),
+  overviewResultLists: document.querySelector("#overview-result-lists"),
   overviewAthletes: document.querySelector("#overview-athletes"),
   evaluationSection: document.querySelector("#auswertung"),
   evaluationStatus: document.querySelector("#evaluation-status"),
@@ -129,7 +130,7 @@ function renderWeekendOverview() {
     return `<div class="overview-entry"><strong>${escapeHtml(race.name)}</strong><span>${escapeHtml(race.day)} · ${escapeHtml(race.discipline)}</span><small>${escapeHtml(groupSummary)}</small></div>`;
   }).join("");
 
-  dom.overviewStartLists.innerHTML = Array.from(startLists.entries()).map(([source, races]) => `<div class="overview-entry"><strong>${escapeHtml(source)}</strong><span>${races.length} ${races.length === 1 ? "Bewerb" : "Bewerbe"}</span><small>${races.map((race) => escapeHtml(race.name)).join(" · ")}</small></div>`).join("");
+  dom.overviewStartLists.innerHTML = Array.from(startLists.entries()).map(([source, races]) => `<a class="overview-entry overview-link" href="startlisten.html?liste=${encodeURIComponent(source)}"><strong>${escapeHtml(source)}</strong><span>${races.length} ${races.length === 1 ? "Bewerb" : "Bewerbe"} · Starter ansehen →</span><small>${races.map((race) => escapeHtml(race.name)).join(" · ")}</small></a>`).join("");
 
   const athletesByAgeClass = new Map();
   tipRound.athletes.forEach((athlete) => {
@@ -146,6 +147,18 @@ function renderWeekendOverview() {
     });
     return `<li><strong>${escapeHtml(athlete.displayName)}</strong><small>${escapeHtml(starts.join(" | ") || "Für dieses Wochenende gemeldet")}</small></li>`;
   }).join("")}</ul></div>`).join("");
+}
+
+async function renderResultListOverview() {
+  try {
+    const response = await fetch(`/api/v1/predictor/rounds/${encodeURIComponent(tipRound.id)}/result-list`);
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (!payload.items.length) return;
+    dom.overviewResultLists.innerHTML = payload.items.map((item) => `<a class="overview-entry overview-link" href="ergebnisse.html?liste=${encodeURIComponent(item.sourceFile)}"><strong>${escapeHtml(item.sourceFile)}</strong><span>${item.total} Ergebnisse · ${item.targetClubTotal} OHA · ansehen →</span><small>${escapeHtml(item.event.name ?? "Offizielle Ergebnisliste")}</small></a>`).join("");
+  } catch (_error) {
+    // Die Tipprunde bleibt auch vor Veröffentlichung der Ergebnisse vollständig nutzbar.
+  }
 }
 
 function renderTipRound() {
@@ -291,6 +304,27 @@ function valuesForQuestion(question) {
   return dom.form.querySelector(`[data-question-id="${question.id}"]`)?.value ?? "";
 }
 
+function updateUniqueRankingOptions(questionId) {
+  const selects = Array.from(dom.form.querySelectorAll(`[data-question-id="${questionId}"][data-position]`));
+  const selected = selects.map((select) => select.value).filter(Boolean);
+  selects.forEach((select) => {
+    Array.from(select.options).forEach((option) => {
+      option.disabled = Boolean(option.value) && option.value !== select.value && selected.includes(option.value);
+    });
+  });
+}
+
+function normalizeUniqueRankingSelections() {
+  tipRound.questions.filter((question) => ["INTERNAL_RANKING", "PODIUM"].includes(question.type)).forEach((question) => {
+    const used = new Set();
+    dom.form.querySelectorAll(`[data-question-id="${question.id}"][data-position]`).forEach((select) => {
+      if (select.value && used.has(select.value)) select.value = "";
+      if (select.value) used.add(select.value);
+    });
+    updateUniqueRankingOptions(question.id);
+  });
+}
+
 function validateQuestion(question, showErrors = false) {
   const value = valuesForQuestion(question);
   let error = "";
@@ -404,6 +438,7 @@ function restoreSubmission() {
         else if (field) field.value = value;
       }
     });
+    normalizeUniqueRankingSelections();
     const savedAt = new Date(submission.submittedAt ?? submission.savedAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
     dom.message.textContent = `Gespeicherter Tipp geladen · zuletzt gespeichert am ${savedAt}`;
   } catch {
@@ -463,6 +498,11 @@ function bindEvents() {
   dom.logoutButton.addEventListener("click", async () => {
     await fetch("/api/v1/auth/logout", { method: "POST", headers: { "X-CSRF-Token": authUser.csrfToken } });
     window.location.replace("/login/");
+  });
+
+  dom.form.addEventListener("change", (event) => {
+    const questionId = event.target.dataset?.questionId;
+    if (questionId && event.target.matches("select[data-position]")) updateUniqueRankingOptions(questionId);
   });
 
   dom.form.addEventListener("input", () => {
@@ -590,6 +630,7 @@ async function initialize() {
     tipRoundLoadedFromApi = loadedUrl.startsWith("/api/");
     athletesById = new Map(tipRound.athletes.map((athlete) => [athlete.id, athlete]));
     renderWeekendOverview();
+    await renderResultListOverview();
     renderTipRound();
     await loadResults();
     renderLeaderboard();

@@ -238,8 +238,12 @@ def validate_submission_answers(tip_round: dict[str, Any], answers: Any) -> dict
         elif question_type in {"INTERNAL_RANKING", "PODIUM"}:
             positions = question.get("positions")
             eligible = set(question.get("athleteIds", []))
-            if not isinstance(answer, list) or len(answer) != positions or len(set(answer)) != len(answer) or any(item not in eligible for item in answer):
+            if not isinstance(answer, list) or len(answer) != positions:
                 raise WorkflowError(f"Die Reihenfolge für {question_id} ist ungültig.")
+            if len(set(answer)) != len(answer):
+                raise WorkflowError(f"In {question_id} darf jede Person nur einmal gewählt werden.")
+            if any(item not in eligible for item in answer):
+                raise WorkflowError(f"Die Reihenfolge für {question_id} enthält eine nicht zugelassene Person.")
             validated[question_id] = answer
         else:
             raise WorkflowError(f"Der Fragentyp von {question_id} wird nicht unterstützt.")
@@ -304,6 +308,224 @@ def save_submission(
         temporary.write_text(json.dumps(submission, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         os.replace(temporary, destination)
     return {"message": "Dein Tipp wurde verbindlich gespeichert.", "submission": submission}
+
+
+def latest_public_submissions(
+    tip_round_id: str,
+    submissions: list[dict[str, Any]] | None = None,
+    evaluation: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return the latest compatible submission per player without internal metadata."""
+    config = read_json(weekend_config_path(tip_round_id))
+    tip_round_reference = config.get("tipRound", {}).get("output")
+    if not tip_round_reference:
+        raise WorkflowError("Die Tipprunde wurde noch nicht vorbereitet.")
+    tip_round = read_json(resolve_path(tip_round_reference))
+
+    if submissions is None:
+        directory = resolve_path(config["submissionsDir"])
+        submissions = []
+        if directory.is_dir():
+            for path in sorted(directory.glob("*.json")):
+                try:
+                    submissions.append(read_json(path))
+                except (OSError, json.JSONDecodeError):
+                    continue
+
+    latest: dict[str, dict[str, Any]] = {}
+    current_version = tip_round.get("contentVersion")
+    for submission in submissions:
+        player = submission.get("player")
+        if (
+            submission.get("tipRoundId") != tip_round_id
+            or submission.get("tipRoundVersion") != current_version
+            or not isinstance(player, dict)
+            or not isinstance(submission.get("answers"), dict)
+        ):
+            continue
+        player_id = str(player.get("id", "")).strip()
+        display_name = " ".join(str(player.get("displayName", "")).split())
+        if not player_id or not display_name:
+            continue
+        previous = latest.get(player_id)
+        if previous is None or str(submission.get("submittedAt", "")) > str(previous.get("submittedAt", "")):
+            latest[player_id] = submission
+
+    if evaluation is None:
+        evaluation_reference = config.get("weekendEvaluation", {}).get("output")
+        evaluation_path = resolve_path(evaluation_reference) if evaluation_reference else None
+        evaluation = read_json(evaluation_path) if evaluation_path and evaluation_path.is_file() else {}
+    evaluations_by_submission = {
+        item.get("submissionId"): item
+        for item in evaluation.get("evaluations", [])
+        if item.get("tipRoundVersion") == current_version
+    }
+
+    items = []
+    for submission in latest.values():
+        scored = evaluations_by_submission.get(submission.get("id"))
+        public_item = {
+            "player": {
+                "id": str(submission["player"]["id"]),
+                "displayName": " ".join(str(submission["player"]["displayName"]).split()),
+            },
+            "submittedAt": submission.get("submittedAt"),
+            "answers": submission["answers"],
+            "evaluation": None,
+        }
+        if scored:
+            public_item["evaluation"] = {
+                "weekendPoints": scored.get("weekendPoints"),
+                "maximumWeekendPoints": scored.get("maximumWeekendPoints"),
+                "questions": {
+                    item.get("questionId"): {
+                        "status": item.get("status"),
+                        "points": item.get("points"),
+                        "maximumPoints": item.get("maximumPoints"),
+                        "scoreExplanation": item.get("scoreExplanation"),
+                    }
+                    for item in scored.get("questionEvaluations", [])
+                    if item.get("questionId")
+                },
+            }
+        items.append(public_item)
+    items.sort(key=lambda item: (str(item["player"]["displayName"]).casefold(), str(item["player"]["id"])))
+    return {
+        "tipRoundId": tip_round_id,
+        "tipRoundVersion": current_version,
+        "items": items,
+        "total": len(items),
+    }
+
+
+def start_list_overview(tip_round_id: str) -> dict[str, Any]:
+    """Build a privacy-conscious overview from the normalized start lists."""
+    config = read_json(weekend_config_path(tip_round_id))
+    lists: list[dict[str, Any]] = []
+    total_starters = 0
+    target_club_starters = 0
+
+    for configured in config.get("startLists", []):
+        reference = configured.get("output")
+        if not reference:
+            continue
+        path = resolve_path(reference)
+        if not path.is_file():
+            continue
+        document = read_json(path)
+        event = document.get("event", {})
+        groups = []
+        for group in document.get("groups", []):
+            starters = []
+            for starter in group.get("starters", []):
+                public_starter = {
+                    "startNumber": starter.get("startNumber"),
+                    "displayName": starter.get("displayName"),
+                    "birthYear": starter.get("birthYear"),
+                    "club": starter.get("club"),
+                    "targetClub": bool(starter.get("targetClub")),
+                }
+                starters.append(public_starter)
+                total_starters += 1
+                target_club_starters += int(public_starter["targetClub"])
+            groups.append({
+                "id": group.get("id"),
+                "label": group.get("label"),
+                "ageClass": group.get("ageClass"),
+                "competitionCategory": group.get("competitionCategory"),
+                "birthYears": group.get("birthYears", []),
+                "starters": starters,
+            })
+        lists.append({
+            "sourceFile": document.get("source", {}).get("fileName") or path.name,
+            "event": {
+                "name": event.get("name"),
+                "date": event.get("date"),
+                "location": event.get("location"),
+                "discipline": event.get("discipline"),
+            },
+            "groups": groups,
+            "total": sum(len(group["starters"]) for group in groups),
+            "targetClubTotal": sum(sum(1 for starter in group["starters"] if starter["targetClub"]) for group in groups),
+        })
+
+    return {
+        "tipRoundId": tip_round_id,
+        "items": lists,
+        "total": len(lists),
+        "totalStarters": total_starters,
+        "targetClubStarters": target_club_starters,
+    }
+
+
+def result_list_overview(tip_round_id: str) -> dict[str, Any]:
+    """Build a complete public overview from normalized result lists."""
+    config = read_json(weekend_config_path(tip_round_id))
+    lists: list[dict[str, Any]] = []
+    total_entries = 0
+    target_club_entries = 0
+
+    for configured in config.get("results", []):
+        reference = configured.get("output")
+        if not reference:
+            continue
+        path = resolve_path(reference)
+        if not path.is_file():
+            continue
+        document = read_json(path)
+        event = document.get("event", {})
+        groups = []
+        for group in document.get("groups", []):
+            entries = []
+            for entry in group.get("entries", []):
+                public_entry = {
+                    "startNumber": entry.get("startNumber"),
+                    "displayName": entry.get("displayName"),
+                    "birthYear": entry.get("birthYear"),
+                    "club": entry.get("club"),
+                    "targetClub": bool(entry.get("targetClub")),
+                    "status": entry.get("status"),
+                    "rank": entry.get("rank"),
+                    "officialTimeSeconds": entry.get("officialTimeSeconds"),
+                    "gapSeconds": entry.get("gapSeconds"),
+                    "percentageGap": entry.get("percentageGap"),
+                    "runResults": entry.get("runResults", []),
+                    "federation": entry.get("federation"),
+                    "federationPoints": entry.get("federationPoints"),
+                }
+                entries.append(public_entry)
+                total_entries += 1
+                target_club_entries += int(public_entry["targetClub"])
+            groups.append({
+                "id": group.get("id"),
+                "label": group.get("label"),
+                "ageClass": group.get("ageClass"),
+                "competitionCategory": group.get("competitionCategory"),
+                "birthYears": group.get("birthYears", []),
+                "classificationMethod": group.get("classificationMethod"),
+                "entries": entries,
+            })
+        lists.append({
+            "sourceFile": document.get("source", {}).get("fileName") or path.name,
+            "event": {
+                "name": event.get("name"),
+                "date": event.get("date"),
+                "location": event.get("location"),
+                "discipline": event.get("discipline"),
+            },
+            "official": bool(document.get("official")),
+            "groups": groups,
+            "total": sum(len(group["entries"]) for group in groups),
+            "targetClubTotal": sum(sum(1 for entry in group["entries"] if entry["targetClub"]) for group in groups),
+        })
+
+    return {
+        "tipRoundId": tip_round_id,
+        "items": lists,
+        "total": len(lists),
+        "totalEntries": total_entries,
+        "targetClubEntries": target_club_entries,
+    }
 
 
 def safe_filename(name: str, suffix: str) -> str:

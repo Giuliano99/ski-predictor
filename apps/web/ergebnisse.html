@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ergebnislisten der aktuellen Tipprunde des Skiteams Oberhaching." />
+    <title>Ergebnislisten | Race Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/main.css?v=20260916b" />
+  </head>
+  <body>
+    <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="index.html">Zur Tipprunde →</a></div>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
+      <nav class="main-nav" aria-label="Hauptnavigation"><a href="index.html">Rennen</a><a href="startlisten.html">Startlisten</a><a class="active" href="ergebnisse.html">Ergebnisse</a><a href="index.html#tipp">Mein Tipp</a><a href="tipps.html">Mitspieler</a><a href="punkte.html">Punkte</a></nav>
+      <div class="account"><span id="account-name">Angemeldet</span><button id="logout-button" type="button">Abmelden</button></div>
+    </header>
+
+    <main class="detail-page">
+      <div class="detail-page-heading"><div><span class="kicker">Rennwochenende</span><h1>Ergebnislisten</h1><p id="page-intro">Alle offiziellen Ergebnisse nach Bewerb und Altersklasse.</p></div><div class="detail-counts"><span class="detail-count" id="result-count">0 Ergebnisse</span><span class="detail-count detail-count-club" id="club-count">0 OHA</span></div></div>
+      <div class="start-list-legend"><span class="club-marker">OHA</span><p>Ergebnisse des Skiteams Oberhaching sind farbig markiert. DNF, DNS und DSQ werden unverändert aus der offiziellen Liste angezeigt.</p></div>
+      <nav class="list-jump-nav" id="list-navigation" aria-label="Ergebnislisten"></nav>
+      <div class="start-list-container" id="result-list-container" aria-live="polite"><p class="empty-state">Ergebnislisten werden geladen …</p></div>
+    </main>
+
+    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Ergebnisse</span></div><div><a href="index.html">Zur Tipprunde</a><a href="startlisten.html">Startlisten</a><a href="tipps.html">Mitspieler</a><a href="punkte.html">Punkte</a></div></footer>
+    <script src="src/scripts/results.js?v=20260916b"></script>
+  </body>
+</html>

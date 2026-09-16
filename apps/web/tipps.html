@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Tipps der Mitspieler im Race Predictor des Skiteams Oberhaching." />
+    <title>Tipps der Mitspieler | Race Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/main.css?v=20260916b" />
+  </head>
+  <body>
+    <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="index.html">Zur Tipprunde →</a></div>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
+      <nav class="main-nav" aria-label="Hauptnavigation"><a href="index.html">Rennen</a><a href="startlisten.html">Startlisten</a><a href="ergebnisse.html">Ergebnisse</a><a href="index.html#tipp">Mein Tipp</a><a class="active" href="tipps.html">Mitspieler</a><a href="punkte.html">Punkte</a></nav>
+      <div class="account"><span id="account-name">Angemeldet</span><button id="logout-button" type="button">Abmelden</button></div>
+    </header>
+
+    <main class="detail-page">
+      <div class="detail-page-heading"><div><span class="kicker">Gemeinsam tippen</span><h1>Tipps der Mitspieler</h1><p id="page-intro">Die aktuellen Abgaben werden geladen.</p></div><span class="detail-count" id="submission-count">0 Tipps</span></div>
+      <aside class="visibility-note"><strong>Für alle Mitspieler sichtbar</strong><p>Gezeigt wird pro Person nur die zuletzt gespeicherte Abgabe der aktuellen Tipprunde.</p></aside>
+      <div class="community-grid" id="submission-list" aria-live="polite"><p class="empty-state">Tipps werden geladen …</p></div>
+    </main>
+
+    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Mitspieler</span></div><div><a href="index.html">Zur Tipprunde</a><a href="startlisten.html">Startlisten</a><a href="ergebnisse.html">Ergebnisse</a><a href="punkte.html">Punkte</a></div></footer>
+    <script src="src/scripts/tipps.js?v=20260916b"></script>
+  </body>
+</html>

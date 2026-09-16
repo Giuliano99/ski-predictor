@@ -87,6 +87,106 @@ class SubmissionServiceTests(unittest.TestCase):
                     workflow_service.save_submission(round_id, payload)
             self.assertFalse(submissions_directory.exists())
 
+    def test_rejects_duplicate_athletes_in_podium_and_ranking_answers(self) -> None:
+        tip_round = {"questions": [{
+            "id": "podium", "type": "PODIUM", "positions": 3,
+            "athleteIds": ["athlete-one", "athlete-two", "athlete-three"],
+        }]}
+        with self.assertRaisesRegex(workflow_service.WorkflowError, "nur einmal"):
+            workflow_service.validate_submission_answers(
+                tip_round,
+                {"podium": ["athlete-one", "athlete-one", "athlete-two"]},
+            )
+
+    def test_public_submissions_return_only_latest_current_version_per_player(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            round_id, payload, submissions_directory = self.fixture(root)
+            submissions_directory.mkdir(parents=True)
+            current_version = payload["tipRoundVersion"]
+            values = [
+                {"id": "submission-alice-old", "tipRoundId": round_id, "tipRoundVersion": current_version, "player": {"id": "alice", "displayName": "Alice A."}, "submittedAt": "2030-01-01T10:00:00Z", "answers": {"podiums": 2}},
+                {"id": "submission-alice-new", "tipRoundId": round_id, "tipRoundVersion": current_version, "player": {"id": "alice", "displayName": "Alice A."}, "submittedAt": "2030-01-01T11:00:00Z", "answers": {"podiums": 4}},
+                {"id": "submission-bob", "tipRoundId": round_id, "tipRoundVersion": current_version, "player": {"id": "bob", "displayName": "Bob B."}, "submittedAt": "2030-01-01T09:00:00Z", "answers": {"podiums": 3}},
+                {"id": "submission-carol", "tipRoundId": round_id, "tipRoundVersion": "old", "player": {"id": "carol", "displayName": "Carol C."}, "submittedAt": "2030-01-01T12:00:00Z", "answers": {"podiums": 9}},
+            ]
+            for index, value in enumerate(values):
+                (submissions_directory / f"submission-{index}.json").write_text(json.dumps(value), encoding="utf-8")
+
+            with patch.object(workflow_service, "WORKSPACE", root), patch.object(workflow_service, "CONFIG_DIRECTORY", root / "config" / "weekends"):
+                evaluation = {"evaluations": [{
+                    "submissionId": "submission-alice-new", "tipRoundVersion": current_version,
+                    "weekendPoints": 80, "maximumWeekendPoints": 100,
+                    "questionEvaluations": [{"questionId": "podiums", "status": "SCORED", "points": 80, "maximumPoints": 100, "scoreExplanation": "Abweichung 1"}],
+                }]}
+                response = workflow_service.latest_public_submissions(round_id, evaluation=evaluation)
+
+        self.assertEqual(response["total"], 2)
+        self.assertEqual([item["player"]["displayName"] for item in response["items"]], ["Alice A.", "Bob B."])
+        self.assertEqual(response["items"][0]["answers"]["podiums"], 4)
+        self.assertEqual(response["items"][0]["evaluation"]["questions"]["podiums"]["points"], 80)
+        self.assertIsNone(response["items"][1]["evaluation"])
+        self.assertNotIn("id", response["items"][0])
+
+    def test_start_list_overview_groups_all_starters_and_marks_target_club(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            round_id, _, _ = self.fixture(root)
+            start_path = root / "data" / "processed" / "start-list.json"
+            start_list = {
+                "source": {"fileName": "samstag.pdf"},
+                "event": {"name": "Kids Cup", "date": "2030-01-05", "location": "Jochberg", "discipline": "GS"},
+                "groups": [{
+                    "id": "u10-female", "label": "U10 weiblich", "ageClass": "U10", "competitionCategory": "FEMALE", "birthYears": [2020],
+                    "starters": [
+                        {"startNumber": 1, "displayName": "Anna A.", "birthYear": 2020, "club": "Skiteam Oberhaching", "targetClub": True},
+                        {"startNumber": 2, "displayName": "Bea B.", "birthYear": 2020, "club": "WSV Test", "targetClub": False},
+                    ],
+                }],
+            }
+            start_path.write_text(json.dumps(start_list), encoding="utf-8")
+            config_path = root / "config" / "weekends" / f"{round_id}.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            config["startLists"] = [{"output": "data/processed/start-list.json"}]
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            with patch.object(workflow_service, "WORKSPACE", root), patch.object(workflow_service, "CONFIG_DIRECTORY", root / "config" / "weekends"):
+                response = workflow_service.start_list_overview(round_id)
+
+        self.assertEqual(response["totalStarters"], 2)
+        self.assertEqual(response["targetClubStarters"], 1)
+        self.assertEqual(response["items"][0]["groups"][0]["starters"][0]["displayName"], "Anna A.")
+        self.assertTrue(response["items"][0]["groups"][0]["starters"][0]["targetClub"])
+
+    def test_result_list_overview_keeps_times_statuses_and_federation_points(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            round_id, _, _ = self.fixture(root)
+            result_path = root / "data" / "processed" / "result-list.json"
+            result_list = {
+                "source": {"fileName": "sonntag-ergebnis.pdf"}, "official": True,
+                "event": {"name": "Kids Cup", "date": "2030-01-06", "location": "Jochberg", "discipline": "SL"},
+                "groups": [{"id": "u14-female", "label": "U14 weiblich", "ageClass": "U14", "competitionCategory": "FEMALE", "classificationMethod": "SUM_VALID_RUNS", "entries": [
+                    {"startNumber": 7, "displayName": "Anna A.", "birthYear": 2016, "club": "Skiteam Oberhaching", "targetClub": True, "status": "CLASSIFIED", "rank": 1, "officialTimeSeconds": 93.76, "gapSeconds": 0.0, "percentageGap": 0.0, "federation": "BSV-MU", "federationPoints": 90.51, "runResults": [{"runNumber": 1, "status": "CLASSIFIED", "timeSeconds": 46.69}]},
+                    {"startNumber": 8, "displayName": "Bea B.", "birthYear": 2016, "club": "WSV Test", "targetClub": False, "status": "DNF", "runResults": [{"runNumber": 1, "status": "DNF"}]},
+                ]}],
+            }
+            result_path.write_text(json.dumps(result_list), encoding="utf-8")
+            config_path = root / "config" / "weekends" / f"{round_id}.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            config["results"] = [{"output": "data/processed/result-list.json"}]
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            with patch.object(workflow_service, "WORKSPACE", root), patch.object(workflow_service, "CONFIG_DIRECTORY", root / "config" / "weekends"):
+                response = workflow_service.result_list_overview(round_id)
+
+        entry = response["items"][0]["groups"][0]["entries"][0]
+        self.assertEqual(response["totalEntries"], 2)
+        self.assertEqual(response["targetClubEntries"], 1)
+        self.assertEqual(entry["officialTimeSeconds"], 93.76)
+        self.assertEqual(entry["federationPoints"], 90.51)
+        self.assertEqual(response["items"][0]["groups"][0]["classificationMethod"], "SUM_VALID_RUNS")
+
     def test_reset_test_weekend_keeps_inputs_and_removes_old_evaluation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

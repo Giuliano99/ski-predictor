@@ -8,13 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="src/styles/main.css?v=20260908a" />
+    <link rel="stylesheet" href="src/styles/main.css?v=20260916b" />
   </head>
   <body>
     <div class="topline"><span>Das Tippspiel für das Skiteam im Münchner Süden</span><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Zur Vereinswebsite ↗</a></div>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Race Predictor Startseite"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span class="product-name">Race <strong>Predictor</strong></span></a>
-      <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="#wochenende">Wochenende</a><a href="#tipp">Mein Tipp</a><a href="#auswertung">Auswertung</a><a href="#rangliste">Rangliste</a><a href="punkte.html">Punkte</a></nav>
+      <nav class="main-nav" aria-label="Hauptnavigation"><a class="active" href="#rennen">Rennen</a><a href="startlisten.html">Startlisten</a><a href="ergebnisse.html">Ergebnisse</a><a href="#tipp">Mein Tipp</a><a href="tipps.html">Mitspieler</a><a href="punkte.html">Punkte</a></nav>
       <div class="account"><span id="account-name">Angemeldet</span><button id="logout-button" type="button">Abmelden</button></div>
       <a class="header-cta" href="#tipp">Tippen</a>
     </header>
@@ -40,11 +40,12 @@
       </section>
 
       <section class="weekend-overview section" id="wochenende">
-        <div class="section-title-row"><div><span class="kicker">Alles auf einen Blick</span><h2>Das Rennwochenende</h2><p>Bewerbe, veröffentlichte Startlisten und alle gemeldeten Oberhachinger Starter.</p></div><div class="overview-counts"><span><strong id="overview-race-count">0</strong>Bewerbe</span><span><strong id="overview-list-count">0</strong>Startlisten</span><span><strong id="overview-athlete-count">0</strong>OHA Starter</span></div></div>
+        <div class="section-title-row"><div><span class="kicker">Alles auf einen Blick</span><h2>Das Rennwochenende</h2><p>Bewerbe, veröffentlichte Start- und Ergebnislisten sowie alle gemeldeten Oberhachinger Starter.</p></div><div class="overview-counts"><span><strong id="overview-race-count">0</strong>Bewerbe</span><span><strong id="overview-list-count">0</strong>Startlisten</span><span><strong id="overview-athlete-count">0</strong>OHA Starter</span></div></div>
         <div class="overview-grid">
           <article class="overview-card"><div class="overview-card-head"><span>01</span><h3>Bewerbe</h3></div><div id="overview-races"></div></article>
           <article class="overview-card"><div class="overview-card-head"><span>02</span><h3>Startlisten</h3></div><div id="overview-start-lists"></div></article>
-          <article class="overview-card overview-athletes-card"><div class="overview-card-head"><span>03</span><h3>Oberhachinger Starter</h3></div><div class="overview-athletes" id="overview-athletes"></div></article>
+          <article class="overview-card"><div class="overview-card-head"><span>03</span><h3>Ergebnislisten</h3></div><div id="overview-result-lists"><div class="overview-entry"><small>Noch keine Ergebnisse veröffentlicht.</small></div></div></article>
+          <article class="overview-card overview-athletes-card"><div class="overview-card-head"><span>04</span><h3>Oberhachinger Starter</h3></div><div class="overview-athletes" id="overview-athletes"></div></article>
         </div>
       </section>
 
@@ -61,13 +62,13 @@
         <aside class="leaderboard-card" id="rangliste">
           <div class="leaderboard-head"><div><span class="kicker kicker-light">Saisonwertung</span><h2>Rangliste</h2></div><span class="season" id="season-label">Saison</span></div>
           <ol class="leaderboard" id="leaderboard-list"></ol>
-          <button class="text-button" type="button">Gesamte Rangliste <span>→</span></button>
+          <a class="text-button" href="tipps.html">Tipps der Mitspieler <span>→</span></a>
         </aside>
       </section>
 
       <section class="evaluation-section section" id="auswertung" hidden>
         <div class="evaluation-summary">
-          <div><span class="kicker kicker-light">Ergebnisse</span><h2>Deine Auswertung</h2><p id="evaluation-status">Die offiziellen Gesamtergebnisse wurden ausgewertet.</p><span class="fixture-badge" id="evaluation-badge" hidden>Technische Testauswertung</span></div>
+          <div><span class="kicker kicker-light">Ergebnisse</span><h2>Deine Auswertung</h2><p id="evaluation-status">Die offiziellen Gesamtergebnisse wurden ausgewertet.</p><a class="evaluation-list-link" href="ergebnisse.html">Ergebnislisten ansehen →</a><span class="fixture-badge" id="evaluation-badge" hidden>Technische Testauswertung</span></div>
           <div class="weekend-score"><strong id="evaluation-weekend-points">0</strong><span>von <b id="evaluation-weekend-maximum">0</b><br />Fragepunkten</span></div>
           <div class="raw-score"><strong id="evaluation-raw-points">0 / 0</strong><span>Fragepunkte</span></div>
         </div>
@@ -87,8 +88,8 @@
       </section>
     </main>
 
-    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Demo MVP</span></div><div><a href="punkte.html">Punkte</a><a href="https://www.skiteam-oberhaching.de/impressum/" target="_blank" rel="noreferrer">Impressum ↗</a><a href="https://www.skiteam-oberhaching.de/" target="_blank" rel="noreferrer">Vereinswebsite ↗</a></div></footer>
+    <footer><div class="footer-brand"><img src="public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Race Predictor · Demo MVP</span></div><div><a href="startlisten.html">Startlisten</a><a href="ergebnisse.html">Ergebnisse</a><a href="tipps.html">Mitspieler</a><a href="punkte.html">Punkte</a><a href="https://www.skiteam-oberhaching.de/impressum/" target="_blank" rel="noreferrer">Impressum ↗</a></div></footer>
     <div class="toast" id="toast" role="status" aria-live="polite">✓ Dein Tipp wurde gespeichert</div>
-    <script src="src/scripts/app.js?v=20260907b"></script>
+    <script src="src/scripts/app.js?v=20260916c"></script>
   </body>
 </html>
