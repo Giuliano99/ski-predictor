@@ -2,6 +2,9 @@ services:
   tunnel:
     image: cloudflare/cloudflared:2026.9.1
     restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     depends_on:
       app:
         condition: service_healthy
