@@ -22,8 +22,8 @@ input,textarea { font:inherit; }
 .hero { min-height:430px; padding:64px max(24px,calc((100vw - 1160px)/2)); background:var(--ink); position:relative; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(270px,.55fr); align-items:center; gap:64px; overflow:hidden; }
 .hero::after { content:""; position:absolute; width:18px; height:100%; right:0; top:0; background:var(--club); }
 .hero-content { z-index:2; min-width:0; max-width:680px; color:white; }
-.hero-logo-panel { z-index:2; width:min(100%,340px); min-height:270px; padding:36px; justify-self:end; display:grid; place-items:center; background:white; border-bottom:8px solid var(--club); }
-.hero-logo-panel img { display:block; width:240px; height:auto; }
+.hero-logo-panel { z-index:2; width:min(100%,220px); min-height:170px; padding:28px; justify-self:end; display:grid; place-items:center; background:white; border-bottom:6px solid var(--club); }
+.hero-logo-panel img { display:block; width:113px; height:auto; }
 .kicker { color:var(--club); text-transform:uppercase; letter-spacing:.17em; font-size:10px; font-weight:800; }
 .kicker-light { color:white; }
 .hero-series { margin:18px 0 8px; color:#d3ced1; text-transform:uppercase; letter-spacing:.11em; font-size:12px; font-weight:700; }
@@ -335,8 +335,8 @@ footer>div:last-child { display:flex; flex-wrap:wrap; gap:25px; }
   .header-cta { display:inline-flex; }
   .hero { min-height:390px; padding:48px 24px; grid-template-columns:minmax(0,1fr) 230px; gap:34px; }
   .hero::after { display:none; }
-  .hero-logo-panel { width:230px; min-height:210px; padding:24px; }
-  .hero-logo-panel img { width:175px; }
+  .hero-logo-panel { width:190px; min-height:145px; padding:22px; }
+  .hero-logo-panel img { width:113px; }
 }
 
 @media (max-width:650px) {
@@ -352,8 +352,8 @@ footer>div:last-child { display:flex; flex-wrap:wrap; gap:25px; }
   .header-cta { display:none; }
 
   .hero { min-height:0; padding:32px 16px 38px; grid-template-columns:minmax(0,1fr); gap:26px; }
-  .hero-logo-panel { order:-1; justify-self:start; width:150px; min-height:96px; padding:14px 18px; border-bottom-width:5px; }
-  .hero-logo-panel img { width:112px; }
+  .hero-logo-panel { order:-1; justify-self:start; width:130px; min-height:88px; padding:10px 14px; border-bottom-width:4px; }
+  .hero-logo-panel img { width:100px; }
   .hero-content { width:100%; padding-right:0; }
   h1 { font-size:clamp(31px,10vw,42px); overflow-wrap:anywhere; }
   .hero-series { margin-top:14px; font-size:10px; line-height:1.5; }
