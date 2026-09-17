@@ -4,6 +4,9 @@ const dom = {
   intro: document.querySelector("#page-intro"),
   count: document.querySelector("#submission-count"),
   list: document.querySelector("#submission-list"),
+  visibilityNote: document.querySelector("#visibility-note"),
+  visibilityTitle: document.querySelector("#visibility-title"),
+  visibilityCopy: document.querySelector("#visibility-copy"),
 };
 
 let authUser;
@@ -15,6 +18,11 @@ function escapeHtml(value) {
 function formatDate(value) {
   if (!value) return "Zeitpunkt unbekannt";
   return new Date(value).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+}
+
+function formatDeadline(value) {
+  if (!value) return "dem Abgabeschluss";
+  return new Date(value).toLocaleString("de-DE", { dateStyle: "long", timeStyle: "short" });
 }
 
 function answerLabel(answer, question, athletes) {
@@ -46,6 +54,17 @@ async function initialize() {
     const questions = new Map((round.questions ?? []).map((question) => [question.id, question]));
 
     dom.intro.textContent = `${round.title} · ${round.questions.length} Fragen`;
+    if (payload.visible === false) {
+      dom.count.textContent = "Noch gesperrt";
+      dom.visibilityNote.classList.add("is-locked");
+      dom.visibilityTitle.textContent = "Tipps bleiben bis zum Abgabeschluss geheim";
+      dom.visibilityCopy.textContent = `Freigabe nach Schließung der Tippabgabe am ${formatDeadline(payload.closesAt)}.`;
+      dom.list.innerHTML = '<section class="community-locked"><span aria-hidden="true">🔒</span><h2>Noch nicht sichtbar</h2><p>Damit niemand durch fremde Tipps beeinflusst wird, werden alle Abgaben erst nach dem Abgabeschluss gemeinsam freigeschaltet.</p><a class="button button-dark" href="index.html#tipp">Meinen Tipp abgeben</a></section>';
+      return;
+    }
+    dom.visibilityNote.classList.remove("is-locked");
+    dom.visibilityTitle.textContent = "Für alle Mitspieler sichtbar";
+    dom.visibilityCopy.textContent = "Gezeigt wird pro Person nur die zuletzt gespeicherte Abgabe der aktuellen Tipprunde.";
     dom.count.textContent = `${payload.total} ${payload.total === 1 ? "Tipp" : "Tipps"}`;
     if (!payload.items.length) {
       dom.list.innerHTML = '<p class="empty-state">Noch niemand hat für diese Tipprunde einen Tipp gespeichert.</p>';

@@ -241,8 +241,14 @@ footer>div:last-child { display:flex; flex-wrap:wrap; gap:25px; }
 .visibility-note,.start-list-legend { display:flex; align-items:center; gap:16px; margin-bottom:25px; padding:17px 20px; background:#fae8ed; border-left:4px solid var(--club); }
 .visibility-note strong { font-size:12px; text-transform:uppercase; }
 .visibility-note p,.start-list-legend p { margin:0; color:var(--muted); font-size:11px; line-height:1.55; }
+.visibility-note.is-locked { background:#f1eff0; border-left-color:var(--ink); }
 .empty-state { grid-column:1/-1; padding:28px; margin:0; color:var(--muted); background:white; border:1px solid var(--line); font-size:13px; line-height:1.6; }
 .error-state { color:var(--club); border-color:var(--club); }
+
+.community-locked { grid-column:1/-1; display:grid; justify-items:center; gap:12px; padding:52px 24px; background:white; border-top:5px solid var(--ink); box-shadow:0 10px 32px rgba(26,23,27,.07); text-align:center; }
+.community-locked>span { display:grid; width:54px; height:54px; place-items:center; background:#f1eff0; border-radius:50%; font-size:24px; }
+.community-locked h2 { margin-top:4px; font-size:24px; }
+.community-locked p { max-width:600px; margin:0 0 8px; color:var(--muted); font-size:13px; line-height:1.65; }
 
 .community-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
 .community-card { min-width:0; background:white; border-top:5px solid var(--ink); box-shadow:0 10px 32px rgba(26,23,27,.07); }
@@ -392,6 +398,9 @@ footer>div:last-child { display:flex; flex-wrap:wrap; gap:25px; }
   .visibility-note,.start-list-legend { align-items:flex-start; flex-direction:column; gap:7px; padding:16px; }
   .visibility-note strong { font-size:13px; }
   .visibility-note p,.start-list-legend p { font-size:13px; }
+  .community-locked { padding:38px 18px; }
+  .community-locked h2 { font-size:22px; }
+  .community-locked p { font-size:14px; }
   .community-grid { grid-template-columns:1fr; }
   .community-card>header { padding:18px 16px; }
   .community-card h2 { font-size:18px; }

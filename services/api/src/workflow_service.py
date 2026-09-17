@@ -322,6 +322,20 @@ def latest_public_submissions(
         raise WorkflowError("Die Tipprunde wurde noch nicht vorbereitet.")
     tip_round = read_json(resolve_path(tip_round_reference))
 
+    round_status = str(config.get("status", "DRAFT"))
+    submissions_visible = round_status in {"CLOSED", "EVALUATED", "ARCHIVED"}
+    if not submissions_visible:
+        return {
+            "tipRoundId": tip_round_id,
+            "tipRoundVersion": tip_round.get("contentVersion"),
+            "visible": False,
+            "roundStatus": round_status,
+            "closesAt": tip_round.get("closesAt"),
+            "items": [],
+            "total": 0,
+            "message": "Die Tipps der Mitspieler werden nach dem Abgabeschluss sichtbar.",
+        }
+
     if submissions is None:
         directory = resolve_path(config["submissionsDir"])
         submissions = []
@@ -393,6 +407,9 @@ def latest_public_submissions(
     return {
         "tipRoundId": tip_round_id,
         "tipRoundVersion": current_version,
+        "visible": True,
+        "roundStatus": round_status,
+        "closesAt": tip_round.get("closesAt"),
         "items": items,
         "total": len(items),
     }

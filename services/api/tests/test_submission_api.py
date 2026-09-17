@@ -101,7 +101,7 @@ class SubmissionServiceTests(unittest.TestCase):
     def test_public_submissions_return_only_latest_current_version_per_player(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            round_id, payload, submissions_directory = self.fixture(root)
+            round_id, payload, submissions_directory = self.fixture(root, status="CLOSED")
             submissions_directory.mkdir(parents=True)
             current_version = payload["tipRoundVersion"]
             values = [
@@ -122,11 +122,35 @@ class SubmissionServiceTests(unittest.TestCase):
                 response = workflow_service.latest_public_submissions(round_id, evaluation=evaluation)
 
         self.assertEqual(response["total"], 2)
+        self.assertTrue(response["visible"])
         self.assertEqual([item["player"]["displayName"] for item in response["items"]], ["Alice A.", "Bob B."])
         self.assertEqual(response["items"][0]["answers"]["podiums"], 4)
         self.assertEqual(response["items"][0]["evaluation"]["questions"]["podiums"]["points"], 80)
         self.assertIsNone(response["items"][1]["evaluation"])
         self.assertNotIn("id", response["items"][0])
+
+    def test_public_submissions_are_hidden_while_round_is_open(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            round_id, payload, submissions_directory = self.fixture(root)
+            submissions_directory.mkdir(parents=True)
+            (submissions_directory / "submission.json").write_text(json.dumps({
+                "id": "submission-alice",
+                "tipRoundId": round_id,
+                "tipRoundVersion": payload["tipRoundVersion"],
+                "player": {"id": "alice", "displayName": "Alice A."},
+                "submittedAt": "2030-01-01T10:00:00Z",
+                "answers": {"podiums": 2},
+            }), encoding="utf-8")
+
+            with patch.object(workflow_service, "WORKSPACE", root), patch.object(workflow_service, "CONFIG_DIRECTORY", root / "config" / "weekends"):
+                response = workflow_service.latest_public_submissions(round_id)
+
+        self.assertFalse(response["visible"])
+        self.assertEqual(response["items"], [])
+        self.assertEqual(response["total"], 0)
+        self.assertEqual(response["roundStatus"], "OPEN")
+        self.assertIn("Abgabeschluss", response["message"])
 
     def test_start_list_overview_groups_all_starters_and_marks_target_club(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

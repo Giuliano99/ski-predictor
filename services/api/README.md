@@ -109,6 +109,8 @@ Die API gibt keine absoluten Windows-Pfade aus. Sie liefert ausschließlich port
 
 Tippabgaben werden mit `POST /api/v1/predictor/rounds/{tipRoundId}/submissions` validiert und automatisch im für das Wochenende konfigurierten `submissionsDir` sowie in der konfigurierten Datenbank gespeichert. Die API vergibt Abgabe-ID und Zeitstempel selbst. Nur eine geöffnete, nicht abgelaufene Runde mit passender Inhaltsversion wird angenommen. Eine spätere gültige Abgabe desselben Spielernamens zählt bei der Auswertung automatisch als neueste Abgabe.
 
+`GET /api/v1/predictor/rounds/{tipRoundId}/submissions` gibt Namen, Antworten und Tippanzahl erst zurück, wenn die Runde geschlossen, ausgewertet oder archiviert ist. Während der Tippabgabe enthält die Antwort nur den Sichtbarkeitsstatus und den Abgabeschluss. Damit lassen sich fremde Tipps nicht durch einen direkten API-Aufruf vorzeitig einsehen.
+
 Die API ist im MVP ausschließlich lokal erreichbar. Vor einer Veröffentlichung im Netzwerk oder Internet müssen Authentifizierung und Zugriffsschutz ergänzt werden.
 SQLite öffnet keinen Netzwerk-Port. Auf dem Raspberry Pi wird später ausschließlich die Backend API nach außen freigegeben, niemals der PostgreSQL-Port.
 

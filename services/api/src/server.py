@@ -41,7 +41,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.10.0"
+API_VERSION = "1.11.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -126,7 +126,7 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/athlete-identities/merge": {"post": {"summary": "Doppelte Athletenidentitäten zusammenführen", "responses": {"200": {"description": "Zusammengeführt"}}}},
             "/predictor/rounds/current": {"get": {"summary": "Aktuelle öffentliche Tipprunde", "responses": {"200": {"description": "Tipprunde"}}}},
             "/predictor/rounds/{tipRoundId}/submissions": {
-                "get": {"summary": "Letzte Tippabgabe je Mitspieler", "responses": {"200": {"description": "Öffentliche Tipps"}}},
+                "get": {"summary": "Mitspieler-Tipps nach Abgabeschluss", "responses": {"200": {"description": "Sichtbarkeitsstatus und freigegebene Tipps"}}},
                 "post": {"summary": "Tippabgabe speichern", "responses": {"201": {"description": "Abgabe gespeichert"}, "400": {"description": "Abgabe ungültig"}}},
             },
             "/predictor/rounds/{tipRoundId}/start-list": {"get": {"summary": "Startlistenübersicht", "responses": {"200": {"description": "Starter nach Altersklasse"}}}},
