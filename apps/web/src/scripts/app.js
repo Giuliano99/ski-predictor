@@ -36,6 +36,7 @@ const dom = {
   evaluationQuestionList: document.querySelector("#evaluation-question-list"),
   heroSeries: document.querySelector("#hero-series"),
   heroTitle: document.querySelector("#hero-title"),
+  heroRaceSchedule: document.querySelector("#hero-race-schedule"),
   heroDate: document.querySelector("#hero-date"),
   seasonLabel: document.querySelector("#season-label"),
   accountName: document.querySelector("#account-name"),
@@ -72,6 +73,22 @@ function questionTypeLabel(type) {
     PLACEMENT: "Platzierung",
     PODIUM: "Podium",
   }[type] ?? type;
+}
+
+function raceAgeClasses(race) {
+  const ageClasses = (tipRound.groups ?? [])
+    .filter((group) => group.raceId === race.id && group.ageClass)
+    .map((group) => group.ageClass);
+  return [...new Set(ageClasses)]
+    .sort((left, right) => Number(left.match(/\d+/)?.[0] ?? 99) - Number(right.match(/\d+/)?.[0] ?? 99))
+    .join("/") || "Alle Altersklassen";
+}
+
+function formatRaceDate(value, includeYear = true) {
+  if (!value) return "Datum folgt";
+  return new Date(`${value}T12:00:00`).toLocaleDateString("de-DE", includeYear
+    ? { day: "2-digit", month: "2-digit", year: "numeric" }
+    : { day: "2-digit", month: "2-digit" });
 }
 
 function renderQuestion(question, index) {
@@ -127,7 +144,7 @@ function renderWeekendOverview() {
     const groupSummary = raceGroups.length
       ? raceGroups.map((group) => `${group.label} (${group.athleteIds.length} OHA)`).join(" · ")
       : "Wertungsgruppen werden aus der Startliste übernommen";
-    return `<div class="overview-entry"><strong>${escapeHtml(race.name)}</strong><span>${escapeHtml(race.day)} · ${escapeHtml(race.discipline)}</span><small>${escapeHtml(groupSummary)}</small></div>`;
+    return `<div class="overview-entry"><strong>${escapeHtml(race.day)} · ${escapeHtml(formatRaceDate(race.date))} · ${escapeHtml(raceAgeClasses(race))} · ${escapeHtml(race.discipline)}</strong><span>${escapeHtml(race.name)}</span><small>${escapeHtml(groupSummary)}</small></div>`;
   }).join("");
 
   dom.overviewStartLists.innerHTML = Array.from(startLists.entries()).map(([source, races]) => `<a class="overview-entry overview-link" href="startlisten.html?liste=${encodeURIComponent(source)}"><strong>${escapeHtml(source)}</strong><span>${races.length} ${races.length === 1 ? "Bewerb" : "Bewerbe"} · Starter ansehen →</span><small>${races.map((race) => escapeHtml(race.name)).join(" · ")}</small></a>`).join("");
@@ -163,10 +180,18 @@ async function renderResultListOverview() {
 
 function renderTipRound() {
   const firstRace = tipRound.races[0];
-  const raceDate = new Date(`${firstRace.date}T12:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-  dom.heroSeries.textContent = `${firstRace.discipline}${firstRace.location ? ` · ${firstRace.location}` : ""}`;
-  dom.heroTitle.textContent = firstRace.name;
-  dom.heroDate.innerHTML = `<strong>${escapeHtml(firstRace.day)}, ${escapeHtml(raceDate)}</strong>${tipRound.races.length} Rennen an diesem Wochenende`;
+  const lastRace = tipRound.races.at(-1);
+  const locations = [...new Set(tipRound.races.map((race) => race.location).filter(Boolean))];
+  dom.heroSeries.textContent = tipRound.title;
+  dom.heroTitle.textContent = "Rennprogramm";
+  dom.heroRaceSchedule.innerHTML = tipRound.races.map((race) => `<article class="hero-race-row">
+    <time datetime="${escapeHtml(race.date ?? "")}"><strong>${escapeHtml(race.day)}</strong><span>${escapeHtml(formatRaceDate(race.date, false))}</span></time>
+    <div><span class="hero-age-class">${escapeHtml(raceAgeClasses(race))}</span><h2>${escapeHtml(race.discipline)}</h2><p>${escapeHtml(race.name)}${race.location ? ` · ${escapeHtml(race.location)}` : ""}</p></div>
+  </article>`).join("");
+  const weekendDates = firstRace?.date === lastRace?.date
+    ? formatRaceDate(firstRace?.date)
+    : `${formatRaceDate(firstRace?.date, false)}–${formatRaceDate(lastRace?.date)}`;
+  dom.heroDate.innerHTML = `<strong>${tipRound.races.length} Rennen${locations.length ? ` · ${escapeHtml(locations.join(" / "))}` : ""}</strong>${escapeHtml(weekendDates)}`;
   dom.seasonLabel.textContent = tipRound.seasonId ? `Saison ${tipRound.seasonId.replace("-", "/")}` : "Saisonwertung";
   dom.title.textContent = tipRound.title;
   dom.subtitle.textContent = `${tipRound.subtitle} · ${tipRound.questions.length} Fragen · jede Frage zählt maximal 100 Punkte`;
