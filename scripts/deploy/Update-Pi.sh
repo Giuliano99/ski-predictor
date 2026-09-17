@@ -44,7 +44,9 @@ runtime_root="${SKI_PREDICTOR_RUNTIME:-/srv/ski-predictor}"
 if [[ -f "$runtime_root/config/auto-deploy-enabled" ]]; then
   echo "Container werden aktualisiert ..."
   compose_files=(-f compose.pi.yaml)
-  if [[ -f "$runtime_root/config/public-https-enabled" ]]; then
+  if [[ -f "$runtime_root/config/public-production-enabled" ]]; then
+    compose_files+=(-f compose.production.yaml)
+  elif [[ -f "$runtime_root/config/public-https-enabled" ]]; then
     compose_files+=(-f compose.https-test.yaml)
   fi
   docker compose \
