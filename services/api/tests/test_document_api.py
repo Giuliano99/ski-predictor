@@ -102,6 +102,51 @@ class DocumentApiTests(unittest.TestCase):
         self.assertEqual(downloaded, content)
         self.assertTrue(etag.startswith('"sha256-'))
 
+    def test_serves_responsive_athlete_dashboard(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = root / "athletes"
+            (app / "assets").mkdir(parents=True)
+            (app / "index.html").write_text('<meta name="viewport" content="width=device-width"><main>AthletenAnalyse</main>', encoding="utf-8")
+            (app / "assets" / "athletes.css").write_text("@media (max-width:800px){main{display:block}}", encoding="utf-8")
+            with patch.object(server_module, "ATHLETE_DIRECTORY", app):
+                server, thread, base_url = self.running_server(root)
+                try:
+                    with urllib.request.urlopen(f"{base_url}/athleten/") as response:
+                        html = response.read().decode("utf-8")
+                    with urllib.request.urlopen(f"{base_url}/athleten/assets/athletes.css") as response:
+                        css = response.read().decode("utf-8")
+                finally:
+                    server.shutdown()
+                    server.server_close()
+                    thread.join(timeout=2)
+
+        self.assertIn("width=device-width", html)
+        self.assertIn("max-width:800px", css)
+
+    def test_uploads_athlete_data_and_starts_extraction(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            server, thread, base_url = self.running_server(root)
+            server.extractions.start = Mock(return_value=({"jobId": "extract-test", "status": "PENDING"}, True))
+            request = urllib.request.Request(
+                f"{base_url}/api/v1/athlete-data/files/rankings?seasonId=2030-2031&filename=ranking.pdf",
+                data=b"%PDF ranking", headers={"Content-Type": "application/pdf"}, method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request) as response:
+                    payload = json.load(response)
+                    status = response.status
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+            stored = root / "saisons" / "2030-2031" / "ranglisten" / "ranking.pdf"
+            self.assertEqual(stored.read_bytes(), b"%PDF ranking")
+        self.assertEqual(status, 201)
+        self.assertEqual(payload["job"]["jobId"], "extract-test")
+
     def test_exposes_game_master_workflow_through_versioned_api(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch("server.all_weekends", return_value=[{"id": "tip-round-2030-01-05", "status": "DRAFT"}]):
             server, thread, base_url = self.running_server(Path(directory))

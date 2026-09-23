@@ -36,17 +36,19 @@ from workflow_service import (
     save_submission,
     start_list_overview,
     upload_file,
+    upload_athlete_data_file,
     weekend_config_path,
 )
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.12.0"
+API_VERSION = "1.13.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
 WEB_DIRECTORY = WORKSPACE / "apps" / "web"
 AUTH_DIRECTORY = WORKSPACE / "apps" / "auth"
+ATHLETE_DIRECTORY = WORKSPACE / "apps" / "athletes"
 
 
 def load_storage_root(workspace: Path = WORKSPACE) -> Path:
@@ -96,6 +98,8 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/auth/me": {"get": {"summary": "Aktuelle Sitzung", "responses": {"200": {"description": "Angemeldeter Benutzer"}, "401": {"description": "Nicht angemeldet"}}}},
             "/admin/data-quality": {"get": {"summary": "Datenqualitaet pruefen", "responses": {"200": {"description": "Aktueller Pruefbericht"}, "400": {"description": "Datenbank nicht aktiviert"}}}},
             "/weekends/{weekendId}/extractions/approve-ready": {"post": {"summary": "Gepruefte Extraktionen gemeinsam freigeben", "responses": {"200": {"description": "Freigegebene Extraktionen"}}}},
+            "/athlete-data/files/{category}": {"post": {"summary": "DSV-Rangliste oder Rennanzahl-Liste hochladen", "responses": {"201": {"description": "Datei gespeichert und Extraktion gestartet"}}}},
+            "/athlete-data/extractions/approve-ready": {"post": {"summary": "Geprüfte DSV-Snapshots freigeben", "responses": {"200": {"description": "Freigegebene Snapshots"}}}},
             "/documents": {"get": {"summary": "Dokumente suchen", "parameters": [
                 {"name": "kind", "in": "query", "schema": {"enum": sorted(DOCUMENT_KINDS)}},
                 {"name": "seasonId", "in": "query", "schema": {"type": "string"}},
@@ -150,7 +154,7 @@ body{{max-width:900px;margin:60px auto;padding:0 24px;color:#211d20;background:#
 <li><a href=\"/api/v1/collections\"><code>GET /api/v1/collections</code></a> Sammlungen</li>
 <li><a href=\"/api/v1/openapi.json\"><code>GET /api/v1/openapi.json</code></a> API-Vertrag</li>
 <li><code>POST /api/v1/predictor/rounds/{{tipRoundId}}/submissions</code> Tippabgabe speichern</li>
-</ul><p>Die API ist nur lokal unter <code>127.0.0.1:{port}</code> erreichbar. Dokumentzugriffe sind lesend; Änderungen am Spielbetrieb erfolgen kontrolliert über die Spielleiter-Oberfläche. Geöffnete Tipprunden nehmen validierte Abgaben über die API entgegen.</p><p><a href="/spielleiter/">Spielleiter öffnen</a> · <a href="/tippspiel/">Tippspiel öffnen</a></p></div></body></html>""".encode("utf-8")
+</ul><p>Die API ist nur lokal unter <code>127.0.0.1:{port}</code> erreichbar. Dokumentzugriffe sind lesend; Änderungen am Spielbetrieb erfolgen kontrolliert über die Spielleiter-Oberfläche. Geöffnete Tipprunden nehmen validierte Abgaben über die API entgegen.</p><p><a href="/spielleiter/">Spielleiter öffnen</a> · <a href="/athleten/">Athletenübersicht öffnen</a> · <a href="/tippspiel/">Tippspiel öffnen</a></p></div></body></html>""".encode("utf-8")
 
 
 def current_config() -> dict[str, Any]:
@@ -317,6 +321,20 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.send_api_error(HTTPStatus.UNAUTHORIZED, "AUTH_REQUIRED", "Bitte zuerst anmelden.")
                     return
                 self.send_file(DASHBOARD_DIRECTORY / "assets" / Path(parts[2]).name)
+                return
+            if parts[0] == "athleten":
+                user = self.server.auth.authenticate(self.headers.get("Cookie"))  # type: ignore[attr-defined]
+                if not user or user.get("role") != "GAME_MASTER":
+                    self.redirect("/login/?next=/athleten/")
+                    return
+                relative = Path(*parts[1:]) if len(parts) > 1 else Path("index.html")
+                candidate = (ATHLETE_DIRECTORY / relative).resolve()
+                try:
+                    candidate.relative_to(ATHLETE_DIRECTORY.resolve())
+                except ValueError:
+                    self.send_api_error(HTTPStatus.NOT_FOUND, "FILE_NOT_FOUND", "Die Datei wurde nicht gefunden.")
+                    return
+                self.send_file(candidate)
                 return
             if parts == ["tippspiel", "public", "images", "skiteam-logo.png"]:
                 self.send_file(WEB_DIRECTORY / "public" / "images" / "skiteam-logo.png")
@@ -539,6 +557,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             if len(parts) == 6 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "files":
                 self.send_json(upload_file(parts[3], parts[5], first(query, "filename") or "", self.read_body()), HTTPStatus.CREATED)
                 return
+            if len(parts) == 5 and parts[:3] == ["api", "v1", "athlete-data"] and parts[3] == "files":
+                uploaded = upload_athlete_data_file(
+                    self.catalog.storage_root, parts[4], first(query, "seasonId") or "",
+                    first(query, "filename") or "", self.read_body(),
+                )
+                document = next((item for item in self.catalog.documents() if item.storage_reference == uploaded["storageReference"]), None)
+                if not document:
+                    raise WorkflowError("Die gespeicherte PDF-Datei wurde im Dokumentenkatalog nicht gefunden.")
+                job, created = self.extractions.start(document.document_id)
+                self.send_json({**uploaded, "document": document.public_value(), "job": job, "created": created}, HTTPStatus.CREATED)
+                return
             if len(parts) == 5 and parts[:3] == ["api", "v1", "weekends"] and parts[4] == "actions":
                 result = perform_action(parts[3], str(self.read_json_body().get("action", "")))
                 self.server.sync_predictor()  # type: ignore[attr-defined]
@@ -555,6 +584,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 weekend_config_path(weekend_id)
                 approved = self.extractions.approve_ready(weekend_id.removeprefix("tip-round-"))
                 self.send_json({"message": f"{len(approved)} gepruefte Extraktionen wurden freigegeben.", "items": approved})
+                return
+            if parts == ["api", "v1", "athlete-data", "extractions", "approve-ready"]:
+                approved = self.extractions.approve_ready_snapshots()
+                self.send_json({"message": f"{len(approved)} geprüfte DSV-Snapshots wurden freigegeben.", "items": approved})
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
                 stored_round = self.server.database.tip_round(parts[4]) if self.server.database else None  # type: ignore[attr-defined]
@@ -614,7 +647,7 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4175)
     parser.add_argument("--no-browser", action="store_true")
-    parser.add_argument("--start-page", choices=["api", "spielleiter", "tippspiel"], default="api")
+    parser.add_argument("--start-page", choices=["api", "spielleiter", "athleten", "tippspiel"], default="api")
     arguments = parser.parse_args()
     catalog = DocumentCatalog(load_storage_root())
     database = Database.configured()
@@ -644,7 +677,7 @@ def main() -> None:
     print(f"Ski Document API: {url}")
     print("Zum Beenden Strg+C drücken.")
     if not arguments.no_browser:
-        suffix = {"api": "/", "spielleiter": "/spielleiter/", "tippspiel": "/tippspiel/"}[arguments.start_page]
+        suffix = {"api": "/", "spielleiter": "/spielleiter/", "athleten": "/athleten/", "tippspiel": "/tippspiel/"}[arguments.start_page]
         threading.Timer(0.6, lambda: webbrowser.open(url + suffix)).start()
     try:
         server.serve_forever()

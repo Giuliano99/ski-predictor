@@ -52,6 +52,24 @@ class SubmissionServiceTests(unittest.TestCase):
         }
         return round_id, payload, submissions_directory
 
+    def test_uploads_dsv_snapshot_to_versioned_storage_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            response = workflow_service.upload_athlete_data_file(
+                root, "rankings", "2026-2027", "DSVSA2638_ Ranglisten.pdf", b"%PDF snapshot"
+            )
+            stored = root / "saisons" / "2026-2027" / "ranglisten" / "DSVSA2638_ Ranglisten.pdf"
+            self.assertEqual(stored.read_bytes(), b"%PDF snapshot")
+
+        self.assertEqual(response["storageReference"], "storage://saisons/2026-2027/ranglisten/DSVSA2638_ Ranglisten.pdf")
+
+    def test_rejects_invalid_snapshot_season(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(workflow_service.WorkflowError, "aufeinanderfolgenden"):
+                workflow_service.upload_athlete_data_file(
+                    Path(directory), "rankings", "2026-2028", "rangliste.pdf", b"%PDF snapshot"
+                )
+
     def test_saves_validated_submission_with_server_identity_and_timestamp(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

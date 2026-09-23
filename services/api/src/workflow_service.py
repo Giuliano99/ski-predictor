@@ -574,6 +574,28 @@ def upload_file(weekend_id: str, category: str, filename: str, content: bytes) -
     return {"message": f"{destination.name} wurde abgelegt.", "weekend": weekend_state(path)}
 
 
+def upload_athlete_data_file(storage_root: Path, category: str, season_id: str, filename: str, content: bytes) -> dict[str, Any]:
+    if not re.fullmatch(r"\d{4}-\d{4}", season_id):
+        raise WorkflowError("Die Saison muss im Format JJJJ-JJJJ angegeben werden.")
+    first_year, second_year = map(int, season_id.split("-"))
+    if second_year != first_year + 1:
+        raise WorkflowError("Die Saison muss aus zwei aufeinanderfolgenden Jahren bestehen.")
+    directories = {"rankings": "ranglisten", "race-counts": "rennanzahl"}
+    if category not in directories:
+        raise WorkflowError("Unbekannte DSV-Dokumentart.")
+    if not content or len(content) > MAX_UPLOAD_BYTES:
+        raise WorkflowError("Die PDF-Datei ist leer oder zu groß.")
+    destination = storage_root.resolve() / "saisons" / season_id / directories[category] / safe_filename(filename, ".pdf")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        raise WorkflowError(f"Die Datei {destination.name} ist bereits vorhanden.")
+    destination.write_bytes(content)
+    return {
+        "message": f"{destination.name} wurde abgelegt und wird jetzt geprüft.",
+        "storageReference": f"storage://{destination.relative_to(storage_root.resolve()).as_posix()}",
+    }
+
+
 def reset_test_weekend(path: Path) -> CommandResult:
     config = read_json(path)
     if not config.get("tipRound", {}).get("testMode"):

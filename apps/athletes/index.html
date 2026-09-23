@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Interne Athletenübersicht des Skiteams Oberhaching" />
+    <title>Athleten | Skiteam Oberhaching</title>
+    <link rel="stylesheet" href="/athleten/assets/athletes.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
+      <nav><a href="/spielleiter/">Spielleiter</a><a href="/tippspiel/">Tippspiel</a><button id="logout-button" type="button">Abmelden</button></nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div><span class="eyebrow">U14 und U16</span><h1>Entwicklung auf einen Blick</h1><p>Rennergebnisse, Rennanzahl, DSV-Punkte und veröffentlichte Ranglistenstände aus einer gemeinsamen Datenbasis.</p></div>
+        <div class="source-note"><strong>Nachvollziehbare Daten</strong><span>Jeder Wert bleibt mit Saison und Stichtag verbunden.</span></div>
+      </section>
+
+      <div class="notice" id="notice" hidden></div>
+      <section class="workspace">
+        <aside class="athlete-browser">
+          <label class="search"><span>Athlet suchen</span><input id="athlete-search" type="search" placeholder="Name oder Jahrgang" autocomplete="off" /></label>
+          <label class="mobile-athlete-select"><span>Athlet auswählen</span><select id="athlete-select"></select></label>
+          <div class="athlete-list" id="athlete-list" aria-label="Athleten"></div>
+        </aside>
+
+        <section class="profile" id="profile" hidden>
+          <header class="profile-head">
+            <div><span class="eyebrow" id="profile-meta">Skiteam Oberhaching</span><h2 id="profile-name">Athlet</h2><p id="profile-id"></p></div>
+            <label class="season-select"><span>Saison</span><select id="season-select"></select></label>
+          </header>
+
+          <div class="metric-grid">
+            <article><span>Listenpunkte</span><strong id="metric-points">–</strong><small id="metric-points-date">Kein Stand</small></article>
+            <article><span>Deutschland</span><strong id="metric-rank">–</strong><small>Gesamtrang</small></article>
+            <article><span>Offizielle Rennanzahl</span><strong id="metric-races">–</strong><small id="metric-races-date">Kein Stand</small></article>
+            <article><span>Vorhandene Ergebnisse</span><strong id="metric-results">0</strong><small id="metric-starts">0 Starts erfasst</small></article>
+          </div>
+
+          <section class="panel chart-panel">
+            <div class="panel-head"><div><span class="eyebrow">Verlauf</span><h3>DSV-Listenpunkte</h3></div><span class="change" id="points-change">Noch kein Vergleich</span></div>
+            <div class="chart" id="points-chart"></div>
+            <p class="panel-note">Niedrigere Punkte sind besser. Eine Veränderung wird erst mit mindestens zwei veröffentlichten Listenständen derselben Saison berechnet.</p>
+          </section>
+
+          <section class="split-grid">
+            <article class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Rangliste</span><h3>Aktueller Stand</h3></div></div>
+              <dl class="ranking-details" id="ranking-details"></dl>
+            </article>
+            <article class="panel">
+              <div class="panel-head"><div><span class="eyebrow">Umfang</span><h3>Rennteilnahmen</h3></div></div>
+              <div id="race-count-details"></div>
+            </article>
+          </section>
+
+          <section class="panel results-panel">
+            <div class="panel-head"><div><span class="eyebrow">Rennen</span><h3>Ergebnisse der Saison</h3></div><span id="result-count-label"></span></div>
+            <div class="results" id="results"></div>
+          </section>
+        </section>
+
+        <section class="empty-profile" id="empty-profile"><strong>Athlet auswählen</strong><p>Wähle links eine Person aus, um Ergebnisse und Entwicklung zu sehen.</p></section>
+      </section>
+    </main>
+    <script src="/athleten/assets/athletes.js"></script>
+  </body>
+</html>

@@ -50,9 +50,15 @@ Die Analytics-Antwort unterscheidet die in der eigenen Datenbasis vorhandenen Re
 
 ## Nächste Ausbaustufen
 
-1. Eine einfache lokale U14/U16-Athletenseite auf Basis des Analytics-Endpunkts bauen.
-2. Weitere Ranglistenstände derselben Saison importieren, damit eine echte Punkteentwicklung dargestellt werden kann.
-3. Danach Diagramme, Filter und Athletenvergleiche ergänzen.
+Die lokale U14/U16-Athletenseite ist unter `/athleten/` erreichbar. Sie bietet eine mobile Athletenauswahl, Saisonfilter, Kennzahlen, Rennergebnisse und einen vorbereiteten Punkteverlauf. Der Zugriff verwendet dieselbe Spielleiter-Anmeldung.
+
+Im Spielleiterportal können DSV-Ranglisten und Rennanzahl-Listen mit Saisonangabe hochgeladen werden. Die Datei wird automatisch im externen Datenspeicher abgelegt und ausgelesen. Erst die Kontrolle und Freigabe des Prüfberichts bleibt manuell.
+
+Als nächste Ausbaustufen bleiben:
+
+1. Weitere Ranglistenstände derselben Saison importieren, damit die Entwicklung aus echten Stützpunkten besteht.
+2. Athletenvergleich und Filter nach Altersklasse ergänzen.
+3. Nach fachlicher Abnahme entscheiden, ob ausgewählte Profile öffentlich oder weiterhin nur intern sichtbar sein sollen.
 
 ## Geplantes Athletenprofil
 

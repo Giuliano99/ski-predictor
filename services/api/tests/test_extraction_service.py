@@ -176,6 +176,27 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(len(approved), 2)
         self.assertTrue(all(item["status"] == "APPROVED" for item in approved))
 
+    def test_analytics_calculates_points_change_between_snapshots(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            service = ExtractionService(FakeCatalog([]), Path(directory) / "extractions")
+            athlete = {"id": "athlete-test", "displayName": "Anna B.", "externalIds": ["12345"]}
+            rankings = []
+            for snapshot_id, published_at, points in (
+                ("snapshot-one", "2030-08-01T10:00:00", 100.0),
+                ("snapshot-two", "2030-09-01T10:00:00", 92.5),
+            ):
+                rankings.append({
+                    "snapshot": {"id": snapshot_id, "documentId": snapshot_id, "seasonId": "2030-2031", "publishedAt": published_at},
+                    "section": {"scope": "OVERALL", "label": "TOP 250 Gesamt", "gender": "FEMALE"},
+                    "ranking": {"basePoints": points, "listPoints": points, "overallRank": 50},
+                })
+            with patch.object(service, "athlete", return_value={**athlete, "starts": [], "results": [], "rankings": rankings, "raceCounts": []}):
+                analytics = service.athlete_analytics(athlete["id"])
+
+        season = analytics["seasons"][0]
+        self.assertEqual(season["listPointsChange"], -7.5)
+        self.assertEqual(season["latestRanking"]["listPoints"], 92.5)
+
     def test_approval_reconciles_parallel_documents_by_external_id(self) -> None:
         def raw(name: str, filename: str) -> dict:
             return {
