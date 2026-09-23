@@ -29,7 +29,7 @@ from extract_start_list import extract_pdf_text, extract_start_list, slugify  # 
 from extract_dsv_snapshot import extract as extract_dsv_snapshot  # noqa: E402
 
 
-EXTRACTION_VERSION = "ski-predictor-extractor-v3-dsv-snapshots"
+EXTRACTION_VERSION = "ski-predictor-extractor-v4-season-results"
 JOB_STATUSES = {"PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "SUPERSEDED", "FAILED"}
 
 
@@ -163,6 +163,20 @@ class ExtractionService:
         for document in sorted(documents, key=lambda item: item.kind != "START_LIST"):
             if document.kind not in {"START_LIST", "RESULT_LIST"}:
                 continue
+            job, _ = self.start(document.document_id)
+            jobs.append(job)
+        return jobs
+
+    def start_season_results(self, season_id: str) -> list[dict[str, Any]]:
+        documents = [
+            document for document in self.catalog.query(kind="RESULT_LIST", season_id=season_id, archived=False)
+            if document.weekend_date is None
+        ]
+        selected: dict[str, Document] = {}
+        for document in documents:
+            selected.setdefault(document.content_hash, document)
+        jobs = []
+        for document in sorted(selected.values(), key=lambda item: item.original_name.casefold()):
             job, _ = self.start(document.document_id)
             jobs.append(job)
         return jobs
@@ -502,12 +516,31 @@ class ExtractionService:
                 approved.append(self.approve(job["jobId"]))
         return approved
 
+    def approve_ready_season_results(self, season_id: str) -> list[dict[str, Any]]:
+        selected: dict[str, dict[str, Any]] = {}
+        for job in self._all_jobs():
+            if job.get("documentKind") != "RESULT_LIST" or job.get("seasonId") != season_id or job.get("status") != "REVIEW_REQUIRED":
+                continue
+            selected.setdefault(str(job.get("sourceContentHash")), job)
+        approved = []
+        for job in selected.values():
+            review = job.get("review") or {}
+            if review.get("status") == "BEREIT" and not review.get("warnings"):
+                approved.append(self.approve(job["jobId"]))
+        return approved
+
     def _approved_artifacts(self) -> list[dict[str, Any]]:
         artifacts = []
         redirects = self.identities.redirects()
+        content_hashes: set[str] = set()
         for job in self._all_jobs():
             if job.get("status") != "APPROVED":
                 continue
+            content_hash = str(job.get("sourceContentHash") or "")
+            if content_hash and content_hash in content_hashes:
+                continue
+            if content_hash:
+                content_hashes.add(content_hash)
             try:
                 artifact = json.loads((self._job_directory(job["jobId"]) / "normalized.json").read_text(encoding="utf-8"))
                 participant_key = "starters" if artifact.get("documentType") == "START_LIST" else "entries"
@@ -664,6 +697,20 @@ class ExtractionService:
                 value["listPointsChange"] = round(last["listPoints"] - first["listPoints"], 2)
             else:
                 value["listPointsChange"] = None
+            statuses = {status: 0 for status in ("CLASSIFIED", "DNS", "DNF", "DSQ")}
+            for result in value["recordedResults"]:
+                status = result.get("status")
+                if status in statuses:
+                    statuses[status] += 1
+            classified_ranks = [result["rank"] for result in value["recordedResults"] if result.get("status") == "CLASSIFIED" and isinstance(result.get("rank"), int)]
+            value["resultSummary"] = {
+                "documents": len(value["recordedResults"]),
+                "starts": value["recordedRaceStarts"],
+                "classified": statuses["CLASSIFIED"],
+                "dns": statuses["DNS"], "dnf": statuses["DNF"], "dsq": statuses["DSQ"],
+                "podiums": sum(rank <= 3 for rank in classified_ranks),
+                "bestRank": min(classified_ranks) if classified_ranks else None,
+            }
 
         athlete = {key: value for key, value in profile.items() if key not in {"starts", "results", "rankings", "raceCounts"}}
         return {"athlete": athlete, "seasons": sorted(seasons.values(), key=lambda item: item["seasonId"], reverse=True)}

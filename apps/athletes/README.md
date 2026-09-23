@@ -21,3 +21,11 @@ Für einen vollständigen Saison-Test können alle Ergebnislisten gemeinsam abge
 ```
 
 Startlisten sind für diese Ablage nicht erforderlich. Der Dokumentkatalog ordnet die PDFs der Saison zu. Datum, Disziplin und Altersklasse werden beim Import soweit möglich aus der jeweiligen Ergebnisliste gelesen. Dateien, deren Format zusätzliche Informationen benötigt, werden nicht stillschweigend verworfen, sondern im Prüfbericht markiert.
+
+Der Import kann über die Schaltfläche `Saison-Ergebnislisten aus Ordner auslesen` gestartet werden. Für einen reproduzierbaren Terminal-Lauf inklusive Freigabe aller warnungsfreien Listen gilt:
+
+```powershell
+python services/api/src/import_season_results.py 2025-2026 --approve-clean
+```
+
+Der Prüfbericht wird lokal unter `output/reports/season-results-2025-2026.md` erzeugt. Die Athletenübersicht zeigt anschließend pro Saison Starts, gewertete Läufe, Podestplätze, bestes Ergebnis sowie DNS, DNF und DSQ.

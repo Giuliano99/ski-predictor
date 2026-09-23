@@ -6,5 +6,9 @@ config/local-storage.json
 config/database.local.json
 data/extractions/
 data/database/
+output/season-import-preview/
+output/reports/season-results-*.json
+output/reports/season-results-*.md
+output/reports/data-quality-after-season-import.md
 .env
 .env.*

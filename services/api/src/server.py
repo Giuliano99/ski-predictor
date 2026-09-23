@@ -42,7 +42,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.13.0"
+API_VERSION = "1.14.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -100,6 +100,8 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/weekends/{weekendId}/extractions/approve-ready": {"post": {"summary": "Gepruefte Extraktionen gemeinsam freigeben", "responses": {"200": {"description": "Freigegebene Extraktionen"}}}},
             "/athlete-data/files/{category}": {"post": {"summary": "DSV-Rangliste oder Rennanzahl-Liste hochladen", "responses": {"201": {"description": "Datei gespeichert und Extraktion gestartet"}}}},
             "/athlete-data/extractions/approve-ready": {"post": {"summary": "Geprüfte DSV-Snapshots freigeben", "responses": {"200": {"description": "Freigegebene Snapshots"}}}},
+            "/athlete-data/seasons/{seasonId}/result-extractions": {"post": {"summary": "Alle Ergebnislisten eines Saisonordners auslesen", "responses": {"202": {"description": "Extraktionen gestartet"}}}},
+            "/athlete-data/seasons/{seasonId}/result-extractions/approve-ready": {"post": {"summary": "Fehlerfreie Saisonergebnisse freigeben", "responses": {"200": {"description": "Ergebnisse freigegeben"}}}},
             "/documents": {"get": {"summary": "Dokumente suchen", "parameters": [
                 {"name": "kind", "in": "query", "schema": {"enum": sorted(DOCUMENT_KINDS)}},
                 {"name": "seasonId", "in": "query", "schema": {"type": "string"}},
@@ -588,6 +590,18 @@ class ApiHandler(BaseHTTPRequestHandler):
             if parts == ["api", "v1", "athlete-data", "extractions", "approve-ready"]:
                 approved = self.extractions.approve_ready_snapshots()
                 self.send_json({"message": f"{len(approved)} geprüfte DSV-Snapshots wurden freigegeben.", "items": approved})
+                return
+            if len(parts) == 6 and parts[:4] == ["api", "v1", "athlete-data", "seasons"] and parts[5] == "result-extractions":
+                if not re.fullmatch(r"\d{4}-\d{4}", parts[4]):
+                    raise WorkflowError("Die Saison muss das Format JJJJ-JJJJ haben.")
+                jobs = self.extractions.start_season_results(parts[4])
+                self.send_json({"message": f"{len(jobs)} Saison-Ergebnislisten wurden berücksichtigt.", "items": jobs, "seasonId": parts[4]}, HTTPStatus.ACCEPTED)
+                return
+            if len(parts) == 7 and parts[:4] == ["api", "v1", "athlete-data", "seasons"] and parts[5:] == ["result-extractions", "approve-ready"]:
+                if not re.fullmatch(r"\d{4}-\d{4}", parts[4]):
+                    raise WorkflowError("Die Saison muss das Format JJJJ-JJJJ haben.")
+                approved = self.extractions.approve_ready_season_results(parts[4])
+                self.send_json({"message": f"{len(approved)} fehlerfreie Saisonergebnisse wurden freigegeben.", "items": approved, "seasonId": parts[4]})
                 return
             if len(parts) == 6 and parts[:4] == ["api", "v1", "predictor", "rounds"] and parts[5] == "submissions":
                 stored_round = self.server.database.tip_round(parts[4]) if self.server.database else None  # type: ignore[attr-defined]

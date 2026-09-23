@@ -1,5 +1,5 @@
 const state = { user: null, jobs: [], documents: [], pollToken: 0 };
-const kinds = { DSV_RANKING: "DSV-Rangliste", DSV_RACE_COUNT: "Rennanzahl-Liste" };
+const kinds = { DSV_RANKING: "DSV-Rangliste", DSV_RACE_COUNT: "Rennanzahl-Liste", RESULT_LIST: "Saison-Ergebnisliste" };
 const statuses = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQUIRED: "Prüfung nötig", APPROVED: "Freigegeben", SUPERSEDED: "Durch neuere Version ersetzt", FAILED: "Fehlgeschlagen" };
 const dom = {
   form: document.querySelector("#import-form"), season: document.querySelector("#import-season"), category: document.querySelector("#import-category"),
@@ -23,30 +23,33 @@ async function request(url, options = {}) {
 }
 
 function relevantJobs() {
-  return state.jobs.filter((job) => Object.hasOwn(kinds, job.documentKind)).filter((job, index, all) => all.findIndex((candidate) => candidate.documentId === job.documentId) === index);
+  return state.jobs.filter((job) => Object.hasOwn(kinds, job.documentKind) && (job.documentKind !== "RESULT_LIST" || !job.weekendDate)).filter((job, index, all) => all.findIndex((candidate) => candidate.documentId === job.documentId) === index);
 }
 
 function render() {
   const jobs = relevantJobs();
-  const documents = state.documents.filter((document) => Object.hasOwn(kinds, document.kind));
+  const documents = state.documents.filter((document) => Object.hasOwn(kinds, document.kind) && (document.kind !== "RESULT_LIST" || !document.weekendDate));
   const documentById = Object.fromEntries(documents.map((document) => [document.documentId, document]));
   const pendingDocuments = documents.filter((document) => !jobs.some((job) => job.documentId === document.documentId));
   const jobHtml = jobs.map((job) => {
     const document = documentById[job.documentId]; const statistics = job.review?.statistics || {}; const warnings = job.review?.warnings || [];
-    const details = job.review ? `<details><summary>Prüfbericht ansehen</summary><div class="import-stats"><span>${statistics.sections || 0} Abschnitte</span><span>${statistics.entries || 0} Einträge</span><span>${statistics.uniqueAthletes || 0} Athleten</span><span>${statistics.targetClubUniqueAthletes || 0} Oberhachinger</span></div>${warnings.length ? `<ul>${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : `<p>Keine Warnungen. Saison und Stichtag wurden erkannt.</p>`}</details>` : "";
+    const details = job.review ? `<details><summary>Prüfbericht ansehen</summary><div class="import-stats"><span>${statistics.sections || statistics.groups || 0} Abschnitte</span><span>${statistics.entries || statistics.participants || 0} Einträge</span><span>${statistics.uniqueAthletes || 0} Athleten</span><span>${statistics.targetClubUniqueAthletes || statistics.targetClubParticipants || 0} Oberhachinger</span></div>${warnings.length ? `<ul>${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : `<p>Keine Warnungen. Die Datei kann freigegeben werden.</p>`}</details>` : "";
     const action = job.status === "REVIEW_REQUIRED" ? `<button class="secondary-button" data-approve="${job.jobId}" type="button">Geprüft und freigeben</button>` : job.status === "FAILED" ? `<button class="secondary-button" data-extract="${job.documentId}" type="button">Erneut auslesen</button>` : "";
     return `<article class="import-job ${job.status}"><div><strong>${escapeHtml(job.sourceName)}</strong><small>${escapeHtml(kinds[job.documentKind])} · Saison ${escapeHtml(job.seasonId || document?.seasonId || "unbekannt")} · ${escapeHtml(statuses[job.status] || job.status)}</small>${job.error ? `<small class="job-error">${escapeHtml(job.error)}</small>` : ""}</div>${action}${details}</article>`;
   }).join("");
   const pendingHtml = pendingDocuments.map((document) => `<article class="import-job"><div><strong>${escapeHtml(document.originalName)}</strong><small>${escapeHtml(kinds[document.kind])} · Saison ${escapeHtml(document.seasonId || "unbekannt")} · Noch nicht ausgelesen</small></div><button class="secondary-button" data-extract="${document.documentId}" type="button">Jetzt auslesen</button></article>`).join("");
   dom.jobs.innerHTML = jobHtml || pendingHtml ? `${jobHtml}${pendingHtml}` : "<p>Noch keine DSV-Ranglisten oder Rennanzahl-Listen importiert.</p>";
-  const ready = jobs.filter((job) => job.status === "REVIEW_REQUIRED" && job.review?.status === "BEREIT" && !(job.review?.warnings || []).length).length;
+  const readySnapshots = jobs.filter((job) => job.documentKind !== "RESULT_LIST" && job.status === "REVIEW_REQUIRED" && job.review?.status === "BEREIT" && !(job.review?.warnings || []).length).length;
+  const readyResults = jobs.filter((job) => job.documentKind === "RESULT_LIST" && job.status === "REVIEW_REQUIRED" && job.review?.status === "BEREIT" && !(job.review?.warnings || []).length).length;
+  const ready = readySnapshots + readyResults;
   const active = jobs.some((job) => ["PENDING", "PROCESSING"].includes(job.status));
   dom.status.textContent = active ? "LÄUFT" : ready ? "PRÜFEN" : "BEREIT";
   dom.status.className = `status-badge ${active ? "PROCESSING" : ready ? "REVIEW_REQUIRED" : "APPROVED"}`;
-  dom.actions.innerHTML = ready ? `<button class="primary-button" id="approve-ready" type="button">${ready} grüne Prüfung${ready === 1 ? "" : "en"} freigeben</button>` : "";
+  dom.actions.innerHTML = `${readySnapshots ? `<button class="primary-button" id="approve-ready" type="button">${readySnapshots} DSV-Prüfung${readySnapshots === 1 ? "" : "en"} freigeben</button>` : ""}${readyResults ? `<button class="primary-button" id="approve-season-results" type="button">${readyResults} Saisonergebnis${readyResults === 1 ? "" : "se"} freigeben</button>` : ""}`;
   dom.jobs.querySelectorAll("[data-approve]").forEach((button) => button.addEventListener("click", () => approve(button.dataset.approve)));
   dom.jobs.querySelectorAll("[data-extract]").forEach((button) => button.addEventListener("click", () => extract(button.dataset.extract)));
   document.querySelector("#approve-ready")?.addEventListener("click", approveReady);
+  document.querySelector("#approve-season-results")?.addEventListener("click", approveSeasonResults);
 }
 
 async function refresh() {
@@ -91,11 +94,25 @@ async function approveReady() {
   catch (error) { showNotice(error.message, true); } finally { clearBusy(); }
 }
 
+async function importSeasonResults() {
+  setBusy("Saison-Ergebnislisten werden ausgelesen");
+  try { const payload = await request(`/api/v1/athlete-data/seasons/${encodeURIComponent(dom.season.value)}/result-extractions`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" }); showNotice(payload.message); clearBusy(); await poll(++state.pollToken); }
+  catch (error) { showNotice(error.message, true); clearBusy(); await refresh(); }
+}
+
+async function approveSeasonResults() {
+  if (!window.confirm("Alle fehlerfreien Saison-Ergebnislisten freigeben und in die Athletenauswertung übernehmen?")) return;
+  setBusy("Saisonergebnisse werden freigegeben");
+  try { const payload = await request(`/api/v1/athlete-data/seasons/${encodeURIComponent(dom.season.value)}/result-extractions/approve-ready`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" }); showNotice(payload.message); await refresh(); }
+  catch (error) { showNotice(error.message, true); } finally { clearBusy(); }
+}
+
 function setDefaultSeason() { const now = new Date(); const start = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1; dom.season.value = `${start}-${start + 1}`; }
 async function initialize() { try { const identity = await request("/api/v1/auth/me"); state.user = identity.user; setDefaultSeason(); await refresh(); } catch (error) { showNotice(error.message, true); } }
 
 dom.form.addEventListener("submit", upload);
 dom.file.addEventListener("change", () => { dom.selectedFile.textContent = dom.file.files?.[0]?.name || "Noch keine Datei ausgewählt."; });
 document.querySelector("#refresh-button").addEventListener("click", () => refresh().catch((error) => showNotice(error.message, true)));
+document.querySelector("#import-season-results").addEventListener("click", importSeasonResults);
 dom.logout.addEventListener("click", async () => { try { await request("/api/v1/auth/logout", { method:"POST" }); } finally { window.location.replace("/login/"); } });
 initialize();

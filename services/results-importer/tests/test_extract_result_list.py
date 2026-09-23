@@ -10,9 +10,13 @@ from extract_result_list import (  # noqa: E402
     finalize_group,
     group_from_line,
     parse_code_classified,
+    parse_code_single_classified,
+    parse_code_single_unclassified,
     parse_code_unclassified,
     parse_dsvalpin_detail,
     parse_dsvalpin_single_line,
+    parse_dsvalpin_without_start_list,
+    parse_official_dsv_table,
     points_calculations,
     competition_statistics,
     parse_simple_classified,
@@ -138,6 +142,21 @@ Angewandter Zuschlag: 25,00"""
         self.assertEqual(classified["federationPoints"], 115.66)
         self.assertEqual(dnf["status"], "DNF")
 
+    def test_code_entries_support_single_run_results(self):
+        classified = parse_code_single_classified(
+            "1 2 32530 HOURLE, Louisa 2013 BSV-MU TSV 1860 Muenchen 55,30 55,30 73,52",
+            "Skiteam Oberhaching",
+        )
+        dnf = parse_code_single_unclassified(
+            "--- 27 28219 REICHWALD, Lea 2012 BSV-MU Skiteam Oberhaching NIZ ---",
+            "Skiteam Oberhaching",
+        )
+        self.assertEqual(classified["rank"], 1)
+        self.assertEqual(classified["federationPoints"], 73.52)
+        self.assertEqual(len(classified["runResults"]), 1)
+        self.assertEqual(dnf["status"], "DNF")
+        self.assertTrue(dnf["targetClub"])
+
     def test_group_percentages_use_official_total(self):
         group = {
             "entries": [
@@ -189,6 +208,57 @@ Angewandter Zuschlag: 25,00"""
         self.assertAlmostEqual(second["gapSeconds"], 1.45)
         self.assertEqual(dns["status"], "DNS")
         self.assertTrue(dns["targetClub"])
+
+    def test_dsvalpin_result_can_be_read_without_start_list(self):
+        groups, warnings = parse_dsvalpin_without_start_list([
+            "U14 weiblich",
+            "32 ECKEL Marlene 29887 12",
+            "Skiteam Oberhaching",
+            "BSV-MU 99,41 1:43,87 5. 50,75 53,12",
+            "Nicht im Ziel 1. Durchgang",
+            "29 WEYEL Marlene 32303 12",
+            "Skiteam Oberhaching",
+            "BSV-MU",
+        ], {"name": "Skiliga Bayern"}, "Skiteam Oberhaching")
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(groups[0]["ageClass"], "U14")
+        self.assertEqual(groups[0]["entries"][0]["externalAthleteId"], "29887")
+        self.assertEqual(groups[0]["entries"][0]["federationPoints"], 99.41)
+        self.assertEqual(groups[0]["entries"][1]["status"], "DNF")
+
+    def test_dsvalpin_compact_one_run_table_without_start_list(self):
+        groups, warnings = parse_dsvalpin_without_start_list([
+            "U14 weiblich Jg 2012",
+            "26 FELL Mara 32025 12 SC GARMISCH BSV-WF 0,00 46,97 1.",
+            "25 ECKEL Marlene 29887 12 Skiteam Oberhaching BSV-MU 79,78 50,68 8.",
+            "Nicht am Start",
+            "33 HAIDER Julia 31967 12 BSV-OL SC LENGGRIES",
+        ], {"name": "Skiliga Bayern"}, "Skiteam Oberhaching")
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(groups[0]["entries"]), 3)
+        self.assertEqual(groups[0]["entries"][1]["federationPoints"], 79.78)
+        self.assertTrue(groups[0]["entries"][1]["targetClub"])
+        self.assertEqual(groups[0]["entries"][2]["status"], "DNS")
+
+    def test_official_dsv_table_can_be_read_without_start_list(self):
+        groups, warnings = parse_official_dsv_table([
+            "Mädchen",
+            "1. 24 32059 SMEJKAL Lea 2012 BSV-WF 00:48.14 00:51.44 01:39.58 26,26",
+            "SC Garmisch",
+            "33. 5 27983 SCHLAGBÖHMER Clara 2013 BSV-MU 00:54.39 00:56.79 01:51.18 143,91",
+            "Skiteam Oberhaching",
+            "Nicht im Ziel 1. Durchgang",
+            "17 32685 KERL Henny 2013 BSV-MU",
+            "SC Starnberg",
+        ], {"name": "DSV Schülercup U14"}, "Skiteam Oberhaching")
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(groups[0]["ageClass"], "U14")
+        self.assertEqual(groups[0]["entries"][1]["externalAthleteId"], "27983")
+        self.assertEqual(groups[0]["entries"][1]["federationPoints"], 143.91)
+        self.assertEqual(groups[0]["entries"][2]["status"], "DNF")
 
 
 if __name__ == "__main__":

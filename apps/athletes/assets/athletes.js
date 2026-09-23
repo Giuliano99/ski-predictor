@@ -6,7 +6,7 @@ const dom = {
   points: document.querySelector("#metric-points"), pointsDate: document.querySelector("#metric-points-date"), ageRank: document.querySelector("#metric-age-rank"), birthRank: document.querySelector("#metric-birth-rank"),
   races: document.querySelector("#metric-races"), racesDate: document.querySelector("#metric-races-date"), resultsMetric: document.querySelector("#metric-results"), starts: document.querySelector("#metric-starts"),
   chart: document.querySelector("#points-chart"), change: document.querySelector("#points-change"), ranking: document.querySelector("#ranking-details"), raceCount: document.querySelector("#race-count-details"),
-  results: document.querySelector("#results"), resultCount: document.querySelector("#result-count-label"), logout: document.querySelector("#logout-button"),
+  results: document.querySelector("#results"), resultCount: document.querySelector("#result-count-label"), summary: document.querySelector("#season-summary"), logout: document.querySelector("#logout-button"),
 };
 
 function escapeHtml(value) { const node = document.createElement("div"); node.textContent = String(value ?? ""); return node.innerHTML; }
@@ -76,6 +76,9 @@ function renderProfile() {
   const fields = [["Gesamtrang",ranking?.overallRank],["Altersklasse",ranking?.ageClassRank],["Jahrgang",ranking?.birthYearRank],["Basiswert",ranking ? decimal(ranking.basePoints) : null]];
   dom.ranking.innerHTML = fields.map(([label,value]) => `<div><dt>${label}</dt><dd>${value ?? "–"}</dd></div>`).join("");
   dom.raceCount.innerHTML = count ? `<div class="count-card"><span>Veröffentlichter Stand ${date(count.observedAt)}</span><strong>${count.raceCount} Rennen</strong><small>${escapeHtml(count.coverage?.note || "Vollständiger Saisonstand")}</small></div>` : `<div class="chart-empty">Für diese Saison liegt keine veröffentlichte Rennanzahl vor.</div>`;
+  const summary = season.resultSummary || {};
+  const summaryFields = [["Starts",summary.starts ?? 0],["Gewertet",summary.classified ?? 0],["Podestplätze",summary.podiums ?? 0],["Bestes Ergebnis",summary.bestRank ? `Platz ${summary.bestRank}` : "–"],["DNF",summary.dnf ?? 0],["DSQ",summary.dsq ?? 0],["DNS",summary.dns ?? 0]];
+  dom.summary.innerHTML = summaryFields.map(([label,value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
   dom.resultCount.textContent = `${season.recordedResults.length} Ergebnis${season.recordedResults.length === 1 ? "" : "se"}`;
   dom.results.innerHTML = season.recordedResults.length ? season.recordedResults.map((item) => `<article class="result-row"><span class="result-date">${date(item.race.date)}</span><div class="result-race"><strong>${escapeHtml(item.race.name)}</strong><small>${escapeHtml(item.group.label)} · ${escapeHtml(item.race.discipline || "–")}</small></div><div class="result-value"><small>Platz</small><strong>${item.rank ?? "–"}</strong></div><div class="result-value"><small>Rennpunkte</small><strong>${decimal(item.federationPoints)}</strong></div><div class="result-value"><small>Zeit</small><strong>${seconds(item.officialTimeSeconds)}</strong></div><span class="result-status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></article>`).join("") : `<div class="chart-empty">Für diese Saison sind noch keine Rennergebnisse importiert.</div>`;
 }

@@ -141,8 +141,14 @@ def event_metadata(lines: list[str], text: str) -> dict[str, Any]:
         if any(word in lower for word in ("cup", "pokal", "kidscross", "gedächtnisrennen")):
             title_candidates.append(line)
 
+    if not title_candidates and lines:
+        first_line = lines[0]
+        if first_line.casefold() not in {"offizielle ergebnisliste", "startliste", "ergebnisliste"}:
+            title_candidates.append(first_line)
+
     event_name = clean_space(" ".join(dict.fromkeys(title_candidates))) or "Unbekannte Veranstaltung"
-    competition_match = re.search(r"Bewerbsnummer\s*:?[ ]*([A-Za-z0-9-]+)", text, re.IGNORECASE)
+    competition_codes = re.findall(r"Bewerbsnummer\s*:?[ ]*([A-Za-z0-9-]+)", text, re.IGNORECASE)
+    competition_code = next((value for value in competition_codes if any(character.isdigit() for character in value)), None)
     run_match = re.search(r"STARTLISTE\s+(\d+)\.?\s*Durchgang", text, re.IGNORECASE)
 
     date_value: str | None = None
@@ -184,8 +190,8 @@ def event_metadata(lines: list[str], text: str) -> dict[str, Any]:
         metadata["date"] = date_value
     if location:
         metadata["location"] = re.sub(r"\s*\([A-Z]{3}\).*$", "", location).strip()
-    if competition_match:
-        metadata["competitionNumber"] = competition_match.group(1)
+    if competition_code:
+        metadata["competitionNumber"] = competition_code
     if run_match:
         metadata["run"] = int(run_match.group(1))
     return metadata

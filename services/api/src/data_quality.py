@@ -123,13 +123,15 @@ def audit_database(database: Any, available_document_ids: set[str] | None = None
         database,
         """SELECT r.id,r.name,
         sum(CASE WHEN rd.document_type='START_LIST' THEN 1 ELSE 0 END),
-        sum(CASE WHEN rd.document_type='RACE_RESULT' THEN 1 ELSE 0 END)
+        sum(CASE WHEN rd.document_type='RACE_RESULT' THEN 1 ELSE 0 END),
+        max(CASE WHEN rd.document_type='RACE_RESULT' AND d.weekend_date IS NULL THEN 1 ELSE 0 END)
         FROM races r LEFT JOIN race_documents rd ON rd.race_id=r.id
+        LEFT JOIN source_documents d ON d.id=rd.document_id
         GROUP BY r.id,r.name ORDER BY r.name""",
     )
     add("INCOMPLETE_RACE_DOCUMENTS", "WARNING", "Rennen haben nicht mindestens eine Start- und Ergebnisliste.", [
         {"raceId": row[0], "name": row[1], "startLists": row[2], "resultLists": row[3]}
-        for row in race_coverage if not row[2] or not row[3]
+        for row in race_coverage if (not row[2] and not row[4]) or not row[3]
     ])
 
     broken_text: list[dict[str, Any]] = []

@@ -4,6 +4,7 @@ import sys
 import tempfile
 import time
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,8 +23,8 @@ class FakeCatalog:
     def find(self, document_id: str) -> Document | None:
         return next((item for item in self._documents if item.document_id == document_id), None)
 
-    def query(self, *, weekend_date: str | None = None, archived: bool | None = None) -> list[Document]:
-        return [item for item in self._documents if not weekend_date or item.weekend_date == weekend_date]
+    def query(self, *, kind: str | None = None, season_id: str | None = None, weekend_date: str | None = None, archived: bool | None = None) -> list[Document]:
+        return [item for item in self._documents if (not kind or item.kind == kind) and (not season_id or item.season_id == season_id) and (not weekend_date or item.weekend_date == weekend_date)]
 
 
 def wait_for_status(service: ExtractionService, job_id: str, expected: set[str]) -> dict:
@@ -98,6 +99,18 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(previous["supersededBy"], replacement["jobId"])
         self.assertTrue(races[0]["hasStartList"])
         self.assertEqual(race["event"]["name"], "Testpokal")
+
+    def test_season_import_uses_flat_result_lists_and_deduplicates_content(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = replace(self.document(root / "eins.pdf", "RESULT_LIST", "doc-one"), weekend_date=None)
+            second = replace(self.document(root / "zwei.pdf", "RESULT_LIST", "doc-two"), weekend_date=None)
+            service = ExtractionService(FakeCatalog([first, second]), root / "extractions")
+            with patch("extraction_service.extract_result_list", side_effect=ValueError("stop")):
+                jobs = service.start_season_results("2029-2030")
+                wait_for_status(service, jobs[0]["jobId"], {"FAILED"})
+
+        self.assertEqual(len(jobs), 1)
 
     def test_failed_extraction_is_persisted_with_error(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -190,12 +203,22 @@ class ExtractionServiceTests(unittest.TestCase):
                     "section": {"scope": "OVERALL", "label": "TOP 250 Gesamt", "gender": "FEMALE"},
                     "ranking": {"basePoints": points, "listPoints": points, "overallRank": 50},
                 })
-            with patch.object(service, "athlete", return_value={**athlete, "starts": [], "results": [], "rankings": rankings, "raceCounts": []}):
+            results = [
+                {"race": {"date": "2031-01-10", "name": "Rennen 1"}, "event": {}, "group": {}, "result": {"status": "CLASSIFIED", "rank": 2, "officialTimeSeconds": 60.0}},
+                {"race": {"date": "2031-01-11", "name": "Rennen 2"}, "event": {}, "group": {}, "result": {"status": "DNF"}},
+                {"race": {"date": "2031-01-12", "name": "Rennen 3"}, "event": {}, "group": {}, "result": {"status": "DNS"}},
+            ]
+            with patch.object(service, "athlete", return_value={**athlete, "starts": [], "results": results, "rankings": rankings, "raceCounts": []}):
                 analytics = service.athlete_analytics(athlete["id"])
 
         season = analytics["seasons"][0]
         self.assertEqual(season["listPointsChange"], -7.5)
         self.assertEqual(season["latestRanking"]["listPoints"], 92.5)
+        self.assertEqual(season["resultSummary"]["starts"], 2)
+        self.assertEqual(season["resultSummary"]["podiums"], 1)
+        self.assertEqual(season["resultSummary"]["bestRank"], 2)
+        self.assertEqual(season["resultSummary"]["dnf"], 1)
+        self.assertEqual(season["resultSummary"]["dns"], 1)
 
     def test_approval_reconciles_parallel_documents_by_external_id(self) -> None:
         def raw(name: str, filename: str) -> dict:
