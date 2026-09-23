@@ -46,6 +46,10 @@ class DocumentCatalogTests(unittest.TestCase):
             classify_path(Path("saisons/2025-2026/weekends/2026-03-07/ergebnislisten/rennen.pdf")),
             ("RESULT_LIST", "2025-2026", "2026-03-07", False),
         )
+        self.assertEqual(
+            classify_path(Path("saisons/2025-2026/ergebnislisten/DSV-Schuelerrennen.pdf")),
+            ("RESULT_LIST", "2025-2026", None, False),
+        )
         self.assertEqual(classify_path(Path("archiv/alt/startliste1.pdf")), ("START_LIST", None, None, True))
         self.assertEqual(
             classify_path(Path("saisons/2026-2027/ranglisten/DSVSA2638_ Ranglisten.pdf")),

@@ -14,16 +14,10 @@ Der Punkteverlauf verwendet veröffentlichte DSV-Listenstände. Mit einem einzel
 
 ## Ergebnislisten einer Saison
 
-Ergebnislisten werden nach dem echten Rennwochenende abgelegt:
+Für einen vollständigen Saison-Test können alle Ergebnislisten gemeinsam abgelegt werden:
 
 ```text
-<Datenordner>\saisons\2025-2026\weekends\YYYY-MM-DD\ergebnislisten
+<Datenordner>\saisons\2025-2026\ergebnislisten
 ```
 
-Wenn eine passende Startliste vorhanden ist, gehört sie nach:
-
-```text
-<Datenordner>\saisons\2025-2026\weekends\YYYY-MM-DD\startlisten
-```
-
-`YYYY-MM-DD` ist jeweils das Datum des ersten Renntags. Die gemeinsame Ablage verbessert die Zuordnung von Rennen und Athleten.
+Startlisten sind für diese Ablage nicht erforderlich. Der Dokumentkatalog ordnet die PDFs der Saison zu. Datum, Disziplin und Altersklasse werden beim Import soweit möglich aus der jeweiligen Ergebnisliste gelesen. Dateien, deren Format zusätzliche Informationen benötigt, werden nicht stillschweigend verworfen, sondern im Prüfbericht markiert.
