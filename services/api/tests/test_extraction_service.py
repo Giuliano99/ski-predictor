@@ -110,6 +110,46 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(completed["status"], "FAILED")
         self.assertIn("Keine Ergebnisgruppen", completed["error"])
 
+    def test_extracts_and_approves_dsv_ranking_for_athlete_profile(self) -> None:
+        raw = {
+            "schemaVersion": 1,
+            "documentType": "DSV_RANKING",
+            "source": {"fileName": "DSVSA9999_Ranglisten.pdf", "format": "DSV_RANKING_PDF"},
+            "snapshot": {"documentId": "DSVSA9999", "seasonId": "2029-2030",
+                         "publishedAt": "2030-09-13T17:39:14", "timezone": "Europe/Berlin"},
+            "sections": [{
+                "scope": "OVERALL", "label": "TOP 250 Gesamt", "gender": "FEMALE",
+                "entries": [{"externalAthleteId": "12345", "firstName": "Anna", "lastName": "BEISPIEL",
+                             "birthYear": 2015, "club": "Skiteam Oberhaching", "federation": "BSV-MU",
+                             "basePoints": 75.5, "listPoints": 70.25, "overallRank": 42,
+                             "ageClassRank": 12, "birthYearRank": 7}],
+            }],
+            "statistics": {"sections": 1, "entries": 1, "uniqueAthletes": 1,
+                           "targetClubEntries": 1, "targetClubUniqueAthletes": 1},
+            "warnings": [],
+            "rawText": "vollständiger Ranglistentext",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            document = self.document(root / "DSVSA9999_Ranglisten.pdf", "DSV_RANKING", "doc-ranking")
+            service = ExtractionService(FakeCatalog([document]), root / "extractions")
+            with patch("extraction_service.extract_dsv_snapshot", return_value=raw):
+                job, created = service.start(document.document_id)
+                completed = wait_for_status(service, job["jobId"], {"REVIEW_REQUIRED", "FAILED"})
+            approved = service.approve(job["jobId"])
+            athletes = service.athletes(target_club=True)
+            profile = service.athlete(athletes[0]["id"])
+            analytics = service.athlete_analytics(athletes[0]["id"])
+
+        self.assertTrue(created)
+        self.assertEqual(completed["status"], "REVIEW_REQUIRED")
+        self.assertEqual(approved["status"], "APPROVED")
+        self.assertEqual(len(profile["rankings"]), 1)
+        self.assertEqual(profile["rankings"][0]["ranking"]["listPoints"], 70.25)
+        self.assertEqual(profile["rankings"][0]["snapshot"]["seasonId"], "2029-2030")
+        self.assertEqual(analytics["seasons"][0]["latestRanking"]["overallRank"], 42)
+        self.assertIsNone(analytics["seasons"][0]["listPointsChange"])
+
     def test_approves_all_ready_documents_of_a_weekend(self) -> None:
         def raw(filename: str) -> dict:
             return {

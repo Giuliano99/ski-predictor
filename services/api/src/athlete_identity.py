@@ -105,7 +105,8 @@ class AthleteIdentityRegistry:
             registry = self._load()
             by_id = {item["id"]: item for item in registry["athletes"]}
             participant_key = "starters" if artifact.get("documentType") == "START_LIST" else "entries"
-            for group in artifact.get("groups", []):
+            containers = artifact.get("groups", []) or artifact.get("sections", [])
+            for group in containers:
                 for person in group.get(participant_key, []):
                     athlete_id = self.canonical_id(str(person["athleteId"]), registry)
                     athlete = by_id.get(athlete_id)

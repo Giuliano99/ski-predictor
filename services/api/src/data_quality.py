@@ -56,7 +56,8 @@ def audit_database(database: Any, available_document_ids: set[str] | None = None
         """SELECT i.id,d.original_name FROM extraction_imports i
         JOIN source_documents d ON d.id=i.document_id
         LEFT JOIN race_documents rd ON rd.extraction_id=i.id
-        WHERE i.status='APPROVED' AND rd.extraction_id IS NULL ORDER BY d.original_name""",
+        WHERE i.status='APPROVED' AND d.kind IN ('START_LIST','RESULT_LIST')
+          AND rd.extraction_id IS NULL ORDER BY d.original_name""",
     )
     add("APPROVED_IMPORT_WITHOUT_RACE", "ERROR", "Freigegebene Importe sind keinem Rennen zugeordnet.", [
         {"importId": row[0], "name": row[1]} for row in approved_without_race
@@ -72,9 +73,27 @@ def audit_database(database: Any, available_document_ids: set[str] | None = None
         for row in missing_athlete
     ])
 
+    snapshot_without_athlete = _rows(
+        database,
+        """SELECT 'DSV_RANKING',snapshot_id,external_athlete_id FROM dsv_ranking_entries
+        WHERE athlete_id IS NULL
+        UNION ALL
+        SELECT 'DSV_RACE_COUNT',snapshot_id,external_athlete_id FROM dsv_race_count_entries
+        WHERE athlete_id IS NULL
+        ORDER BY 1,2,3""",
+    )
+    add("SNAPSHOT_ENTRY_WITHOUT_ATHLETE", "ERROR", "DSV-Snapshot-Eintraege besitzen keine stabile Athletenidentitaet.", [
+        {"documentType": row[0], "snapshotId": row[1], "externalAthleteId": row[2]}
+        for row in snapshot_without_athlete
+    ])
+
     external_conflicts = _rows(
         database,
-        """SELECT external_athlete_id,count(DISTINCT athlete_id) FROM race_participants
+        """SELECT external_athlete_id,count(DISTINCT athlete_id) FROM (
+          SELECT external_athlete_id,athlete_id FROM race_participants
+          UNION ALL SELECT external_athlete_id,athlete_id FROM dsv_ranking_entries
+          UNION ALL SELECT external_athlete_id,athlete_id FROM dsv_race_count_entries
+        ) athlete_sources
         WHERE external_athlete_id IS NOT NULL AND trim(external_athlete_id)<>'' AND athlete_id IS NOT NULL
         GROUP BY external_athlete_id HAVING count(DISTINCT athlete_id)>1 ORDER BY external_athlete_id""",
     )

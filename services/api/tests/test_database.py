@@ -47,7 +47,7 @@ class DatabaseConfigurationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             database = SQLiteDatabase(Path(directory) / "ski.sqlite3")
-            self.assertEqual(database.migrate(), ["001_initial", "002_predictor_state", "003_extraction_history", "004_authentication"])
+            self.assertEqual(database.migrate(), ["001_initial", "002_predictor_state", "003_extraction_history", "004_authentication", "005_athlete_analytics"])
             document = SimpleNamespace(
                 document_id="doc-test", content_hash="abc", kind="RESULT_LIST",
                 original_name="result.pdf", storage_reference="storage://result.pdf",
@@ -131,6 +131,54 @@ class DatabaseConfigurationTests(unittest.TestCase):
             self.assertEqual(database.weekend_evaluation(tip_round["id"])["tipRoundVersion"], "sha256-round")
             self.assertEqual(database.season_leaderboard("2029-2030")["standings"], [])
             self.assertEqual(database.counts()["predictor_questions"], 1)
+
+    def test_sqlite_stores_approved_dsv_ranking_snapshot(self) -> None:
+        from types import SimpleNamespace
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = SQLiteDatabase(Path(directory) / "ski.sqlite3")
+            database.migrate()
+            document = SimpleNamespace(
+                document_id="doc-ranking", content_hash="ranking-hash", kind="DSV_RANKING",
+                original_name="DSVSA9999_Ranglisten.pdf", storage_reference="storage://ranglisten/ranking.pdf",
+                size_bytes=456, modified_at="2030-09-13T17:39:14Z", media_type="application/pdf",
+                season_id="2030-2031", weekend_date=None, archived=False,
+            )
+            job = {
+                "jobId": "extract-ranking", "sourceContentHash": "sha256-ranking-hash",
+                "extractionVersion": "extractor-test", "updatedAt": "2030-09-13T17:40:00Z",
+                "approvedAt": "2030-09-13T18:00:00Z",
+            }
+            person = {
+                "athleteId": "athlete-ranking", "externalAthleteId": "12345",
+                "firstName": "Anna", "lastName": "BEISPIEL", "fullName": "Anna BEISPIEL",
+                "displayName": "Anna B.", "birthYear": 2015, "club": "Skiteam Oberhaching",
+                "federation": "BSV-MU", "targetClub": True, "basePoints": 75.5,
+                "listPoints": 70.25, "overallRank": 42, "ageClassRank": 12, "birthYearRank": 7,
+            }
+            raw = {"source": {"format": "DSV_RANKING_PDF"}, "rawText": "vollstaendiger Text"}
+            artifact = {
+                "documentId": "doc-ranking", "documentType": "DSV_RANKING",
+                "snapshot": {"id": "snapshot-ranking", "documentId": "DSVSA9999",
+                             "seasonId": "2030-2031", "publishedAt": "2030-09-13T17:39:14",
+                             "timezone": "Europe/Berlin"},
+                "sections": [{"scope": "OVERALL", "label": "TOP 250 Gesamt", "gender": "FEMALE",
+                              "entries": [person]}],
+            }
+            database.save_extraction(job, document, raw, artifact, {"status": "BEREIT"}, raw["rawText"])
+            database.approve_extraction(job, artifact)
+
+            with database.connect() as connection:
+                snapshot = connection.execute(
+                    "SELECT document_code,season_id FROM dsv_ranking_snapshots"
+                ).fetchone()
+                entry = connection.execute(
+                    "SELECT external_athlete_id,list_points,overall_rank FROM dsv_ranking_entries"
+                ).fetchone()
+
+            self.assertEqual(snapshot, ("DSVSA9999", "2030-2031"))
+            self.assertEqual(entry, ("12345", 70.25, 42))
+            self.assertEqual(database.counts()["dsv_ranking_entries"], 1)
 
 
 if __name__ == "__main__":

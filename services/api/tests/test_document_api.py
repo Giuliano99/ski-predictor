@@ -47,6 +47,14 @@ class DocumentCatalogTests(unittest.TestCase):
             ("RESULT_LIST", "2025-2026", "2026-03-07", False),
         )
         self.assertEqual(classify_path(Path("archiv/alt/startliste1.pdf")), ("START_LIST", None, None, True))
+        self.assertEqual(
+            classify_path(Path("saisons/2026-2027/ranglisten/DSVSA2638_ Ranglisten.pdf")),
+            ("DSV_RANKING", "2026-2027", None, False),
+        )
+        self.assertEqual(
+            classify_path(Path("saisons/2025-2026/rennanzahl/Anzahl der gefahrenen Rennen.pdf")),
+            ("DSV_RACE_COUNT", "2025-2026", None, False),
+        )
 
     def test_catalog_exposes_stable_identity_and_filters(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -26,9 +26,10 @@ if str(IMPORTER_SOURCE) not in sys.path:
 
 from extract_result_list import extract_result_list  # noqa: E402
 from extract_start_list import extract_pdf_text, extract_start_list, slugify  # noqa: E402
+from extract_dsv_snapshot import extract as extract_dsv_snapshot  # noqa: E402
 
 
-EXTRACTION_VERSION = "ski-predictor-extractor-v2-athlete-identity"
+EXTRACTION_VERSION = "ski-predictor-extractor-v3-dsv-snapshots"
 JOB_STATUSES = {"PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "SUPERSEDED", "FAILED"}
 
 
@@ -126,7 +127,7 @@ class ExtractionService:
         document = self.catalog.find(document_id)
         if not document:
             raise ExtractionError("Das Dokument wurde nicht gefunden.")
-        if document.kind not in {"START_LIST", "RESULT_LIST"}:
+        if document.kind not in {"START_LIST", "RESULT_LIST", "DSV_RANKING", "DSV_RACE_COUNT"}:
             raise ExtractionError("Der Dokumenttyp kann noch nicht automatisch extrahiert werden.")
         force = options.get("force") is True
         if not force:
@@ -231,7 +232,42 @@ class ExtractionService:
                     identity_warnings.append(identity["warning"])
         return identity_counts, identity_warnings
 
+    @staticmethod
+    def _snapshot_people(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [person for section in sections for person in section.get("entries", [])]
+
+    def _normalize_snapshot(self, document: Document, extracted: dict[str, Any]) -> dict[str, Any]:
+        sections = json.loads(json.dumps(extracted.get("sections", []), ensure_ascii=False))
+        for person in self._snapshot_people(sections):
+            person["fullName"] = f"{person.get('firstName', '')} {person.get('lastName', '')}".strip()
+            last_name = str(person.get("lastName", "")).strip()
+            person["displayName"] = f"{person.get('firstName', '')} {last_name[:1]}.".strip()
+            person["targetClub"] = str(person.get("club", "")).casefold() == "skiteam oberhaching"
+        identity_counts, identity_warnings = self._assign_identities(sections, "entries")
+        snapshot = dict(extracted["snapshot"])
+        timestamp = snapshot.get("publishedAt") or snapshot.get("observedAt")
+        snapshot_id = stable_id("dsv-snapshot", {
+            "type": extracted["documentType"],
+            "documentId": snapshot.get("documentId"),
+            "timestamp": timestamp,
+        })
+        source = {key: value for key, value in extracted.get("source", {}).items() if key != "rawText"}
+        return {
+            "schemaVersion": 1,
+            "extractionVersion": EXTRACTION_VERSION,
+            "documentId": document.document_id,
+            "documentType": extracted["documentType"],
+            "source": source,
+            "snapshot": {"id": snapshot_id, **snapshot},
+            "coverage": extracted.get("coverage"),
+            "sections": sections,
+            "statistics": {**extracted.get("statistics", {}), "identities": identity_counts},
+            "warnings": list(dict.fromkeys([*extracted.get("warnings", []), *identity_warnings])),
+        }
+
     def _normalize(self, document: Document, extracted: dict[str, Any]) -> dict[str, Any]:
+        if extracted["documentType"] in {"DSV_RANKING", "DSV_RACE_COUNT"}:
+            return self._normalize_snapshot(document, extracted)
         event = dict(extracted.get("event", {}))
         event_id = stable_id("event", {key: event.get(key) for key in ("name", "date", "location")})
         if extracted["documentType"] == "START_LIST":
@@ -267,6 +303,16 @@ class ExtractionService:
 
     def _review(self, normalized: dict[str, Any]) -> dict[str, Any]:
         warnings = list(normalized.get("warnings", []))
+        if normalized["documentType"] in {"DSV_RANKING", "DSV_RACE_COUNT"}:
+            if not normalized.get("snapshot", {}).get("seasonId"):
+                warnings.append("Die Saison des DSV-Snapshots wurde nicht erkannt.")
+            if not normalized.get("statistics", {}).get("entries"):
+                raise ExtractionError("Es wurden keine DSV-Snapshot-Einträge erkannt.")
+            return {
+                "status": "WARNUNGEN" if warnings else "BEREIT",
+                "warnings": list(dict.fromkeys(warnings)),
+                "statistics": normalized["statistics"],
+            }
         event = normalized["event"]
         if not event.get("date"):
             warnings.append("Das Veranstaltungsdatum wurde nicht erkannt.")
@@ -282,6 +328,27 @@ class ExtractionService:
 
     def _report_markdown(self, job: dict[str, Any], review: dict[str, Any], normalized: dict[str, Any]) -> str:
         warnings = review["warnings"]
+        if normalized["documentType"] in {"DSV_RANKING", "DSV_RACE_COUNT"}:
+            snapshot = normalized["snapshot"]
+            timestamp = snapshot.get("publishedAt") or snapshot.get("observedAt")
+            return "\n".join([
+                f"# Extraktionsbericht: {job['sourceName']}", "",
+                f"**Status: {review['status']}**", "",
+                f"- Dokument: `{job['documentId']}`",
+                f"- Typ: `{job['documentKind']}`",
+                f"- DSV-Dokumentkennung: `{snapshot.get('documentId')}`",
+                f"- Saison: `{snapshot.get('seasonId')}`",
+                f"- Stichtag: `{timestamp}`",
+                f"- Abschnitte: {review['statistics']['sections']}",
+                f"- Einträge: {review['statistics']['entries']}",
+                f"- Eindeutige Athleten: {review['statistics']['uniqueAthletes']}",
+                f"- Skiteam Oberhaching: {review['statistics']['targetClubUniqueAthletes']}", "",
+                "## Athletenidentität", "",
+                *[f"- {key}: {value}" for key, value in sorted(review["statistics"].get("identities", {}).items())], "",
+                "## Warnungen", "",
+                *([f"- {warning}" for warning in warnings] if warnings else ["- Keine Warnungen."]), "",
+                "Die Daten werden erst nach der Bestätigung in die Athletenauswertung übernommen.", "",
+            ])
         return "\n".join([
             f"# Extraktionsbericht: {job['sourceName']}", "",
             f"**Status: {review['status']}**", "",
@@ -311,8 +378,10 @@ class ExtractionService:
                 raise ExtractionError("Das Quelldokument wurde seit Auftragserstellung verändert oder entfernt.")
             if document.kind == "START_LIST":
                 extracted = extract_start_list(document.path)
-            else:
+            elif document.kind == "RESULT_LIST":
                 extracted = self._extract_result(document, job)
+            else:
+                extracted = extract_dsv_snapshot(document.path, document.kind, "Skiteam Oberhaching")
             normalized = self._normalize(document, extracted)
             review = self._review(normalized)
             directory = self._job_directory(job_id)
@@ -320,11 +389,18 @@ class ExtractionService:
             atomic_json(directory / "normalized.json", normalized)
             (directory / "report.md").write_text(self._report_markdown(job, review, normalized), encoding="utf-8")
             if self.database:
-                _, source_text = extract_pdf_text(document.path)
+                source_text = extracted.get("rawText")
+                if source_text is None:
+                    _, source_text = extract_pdf_text(document.path)
                 self.database.save_extraction(job, document, extracted, normalized, review, source_text)
             with self._lock:
                 job = self._read_job(job_id)
-                job.update({"status": "REVIEW_REQUIRED", "completedAt": utc_now(), "review": review, "raceId": normalized["race"]["id"], "eventId": normalized["event"]["id"]})
+                identifiers = {}
+                if normalized["documentType"] in {"DSV_RANKING", "DSV_RACE_COUNT"}:
+                    identifiers["snapshotId"] = normalized["snapshot"]["id"]
+                else:
+                    identifiers.update(raceId=normalized["race"]["id"], eventId=normalized["event"]["id"])
+                job.update({"status": "REVIEW_REQUIRED", "completedAt": utc_now(), "review": review, **identifiers})
                 self._write_job(job)
         except Exception as error:
             with self._lock:
@@ -355,9 +431,10 @@ class ExtractionService:
             artifact_path = self._job_directory(job_id) / "normalized.json"
             artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
             participant_key = "starters" if artifact.get("documentType") == "START_LIST" else "entries"
-            previous_identity = [[person.get("athleteId"), person.get("identityMatch")] for group in artifact.get("groups", []) for person in group.get(participant_key, [])]
-            identity_counts, identity_warnings = self._assign_identities(artifact["groups"], participant_key)
-            current_identity = [[person.get("athleteId"), person.get("identityMatch")] for group in artifact.get("groups", []) for person in group.get(participant_key, [])]
+            containers = artifact.get("groups", []) or artifact.get("sections", [])
+            previous_identity = [[person.get("athleteId"), person.get("identityMatch")] for group in containers for person in group.get(participant_key, [])]
+            identity_counts, identity_warnings = self._assign_identities(containers, participant_key)
+            current_identity = [[person.get("athleteId"), person.get("identityMatch")] for group in containers for person in group.get(participant_key, [])]
             artifact["statistics"]["identities"] = identity_counts
             artifact["warnings"] = list(dict.fromkeys([*artifact.get("warnings", []), *identity_warnings]))
             review = self._review(artifact)
@@ -421,7 +498,7 @@ class ExtractionService:
             try:
                 artifact = json.loads((self._job_directory(job["jobId"]) / "normalized.json").read_text(encoding="utf-8"))
                 participant_key = "starters" if artifact.get("documentType") == "START_LIST" else "entries"
-                for group in artifact.get("groups", []):
+                for group in artifact.get("groups", []) or artifact.get("sections", []):
                     for person in group.get(participant_key, []):
                         athlete_id = person.get("athleteId")
                         seen = set()
@@ -436,12 +513,14 @@ class ExtractionService:
         return artifacts
 
     def events(self) -> list[dict[str, Any]]:
-        events = {artifact["event"]["id"]: artifact["event"] for artifact in self._approved_artifacts()}
+        events = {artifact["event"]["id"]: artifact["event"] for artifact in self._approved_artifacts() if "event" in artifact}
         return sorted(events.values(), key=lambda item: (item.get("date") or "", item.get("name") or ""), reverse=True)
 
     def races(self) -> list[dict[str, Any]]:
         races: dict[str, dict[str, Any]] = {}
         for artifact in self._approved_artifacts():
+            if "race" not in artifact:
+                continue
             race = races.setdefault(artifact["race"]["id"], {**artifact["race"], "hasStartList": False, "hasResults": False, "sourceDocumentIds": []})
             race["hasStartList"] = race["hasStartList"] or artifact["documentType"] == "START_LIST"
             race["hasResults"] = race["hasResults"] or artifact["documentType"] == "RACE_RESULT"
@@ -470,18 +549,111 @@ class ExtractionService:
             raise ExtractionError(str(error)) from error
         starts = []
         results = []
+        rankings = []
+        race_counts = []
         for artifact in self._approved_artifacts():
             if artifact["documentType"] == "START_LIST":
                 for group in artifact["groups"]:
                     for entry in group.get("starters", []):
                         if entry.get("athleteId") == athlete["id"]:
                             starts.append({"race": artifact["race"], "event": artifact["event"], "group": {key: group.get(key) for key in ("id", "label", "ageClass", "competitionCategory")}, "start": entry})
-            else:
+            elif artifact["documentType"] == "RACE_RESULT":
                 for group in artifact["groups"]:
                     for entry in group.get("entries", []):
                         if entry.get("athleteId") == athlete["id"]:
                             results.append({"race": artifact["race"], "event": artifact["event"], "group": {key: group.get(key) for key in ("id", "label", "ageClass", "competitionCategory", "classificationMethod")}, "result": entry})
-        return athlete | {"starts": starts, "results": results}
+            elif artifact["documentType"] == "DSV_RANKING":
+                for section in artifact["sections"]:
+                    for entry in section.get("entries", []):
+                        if entry.get("athleteId") == athlete["id"]:
+                            rankings.append({"snapshot": artifact["snapshot"], "section": {key: section.get(key) for key in ("scope", "label", "gender", "ageClass", "birthYear")}, "ranking": entry})
+            elif artifact["documentType"] == "DSV_RACE_COUNT":
+                for section in artifact["sections"]:
+                    for entry in section.get("entries", []):
+                        if entry.get("athleteId") == athlete["id"]:
+                            race_counts.append({"snapshot": artifact["snapshot"], "coverage": artifact.get("coverage"), "ageClass": section.get("ageClass"), "raceCount": entry})
+        return athlete | {"starts": starts, "results": results, "rankings": rankings, "raceCounts": race_counts}
+
+    @staticmethod
+    def _season_for_date(value: str | None) -> str | None:
+        if not value or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            return None
+        year, month = int(value[:4]), int(value[5:7])
+        start = year if month >= 7 else year - 1
+        return f"{start}-{start + 1}"
+
+    def athlete_analytics(self, athlete_id: str) -> dict[str, Any]:
+        profile = self.athlete(athlete_id)
+        seasons: dict[str, dict[str, Any]] = {}
+
+        def season(value: str) -> dict[str, Any]:
+            return seasons.setdefault(value, {
+                "seasonId": value, "recordedResults": [], "rankingHistory": [],
+                "raceCountHistory": [], "recordedRaceStarts": 0,
+            })
+
+        for item in profile["results"]:
+            season_id = self._season_for_date(item.get("race", {}).get("date"))
+            if not season_id:
+                continue
+            result = item["result"]
+            runs = result.get("runResults", [])
+            started = bool(runs and runs[0].get("status") != "DNS") or (not runs and result.get("status") != "DNS")
+            compact = {
+                "race": item["race"], "event": item["event"], "group": item["group"],
+                "status": result.get("status"), "rank": result.get("rank"),
+                "federationPoints": result.get("federationPoints"),
+                "officialTimeSeconds": result.get("officialTimeSeconds"), "started": started,
+            }
+            season(season_id)["recordedResults"].append(compact)
+            if started:
+                season(season_id)["recordedRaceStarts"] += 1
+
+        ranking_by_snapshot: dict[str, dict[str, Any]] = {}
+        scope_priority = {"OVERALL": 0, "AGE_CLASS": 1, "BIRTH_YEAR": 2}
+        for item in profile["rankings"]:
+            snapshot = item["snapshot"]
+            snapshot_id = snapshot["id"]
+            candidate = {
+                "snapshotId": snapshot_id, "documentId": snapshot.get("documentId"),
+                "publishedAt": snapshot.get("publishedAt"), "seasonId": snapshot["seasonId"],
+                "scope": item["section"],
+                "basePoints": item["ranking"].get("basePoints"),
+                "listPoints": item["ranking"].get("listPoints"),
+                "overallRank": item["ranking"].get("overallRank"),
+                "ageClassRank": item["ranking"].get("ageClassRank"),
+                "birthYearRank": item["ranking"].get("birthYearRank"),
+            }
+            current = ranking_by_snapshot.get(snapshot_id)
+            if current is None or scope_priority.get(candidate["scope"].get("scope"), 99) < scope_priority.get(current["scope"].get("scope"), 99):
+                ranking_by_snapshot[snapshot_id] = candidate
+        for item in ranking_by_snapshot.values():
+            season(item["seasonId"])["rankingHistory"].append(item)
+
+        for item in profile["raceCounts"]:
+            snapshot = item["snapshot"]
+            season(snapshot["seasonId"])["raceCountHistory"].append({
+                "snapshotId": snapshot["id"], "documentId": snapshot.get("documentId"),
+                "observedAt": snapshot.get("observedAt"), "ageClass": item.get("ageClass"),
+                "raceCount": item["raceCount"].get("raceCount"),
+                "listPoints": item["raceCount"].get("listPoints"),
+                "coverage": item.get("coverage"),
+            })
+
+        for value in seasons.values():
+            value["recordedResults"].sort(key=lambda item: item["race"].get("date") or "")
+            value["rankingHistory"].sort(key=lambda item: item.get("publishedAt") or "")
+            value["raceCountHistory"].sort(key=lambda item: item.get("observedAt") or "")
+            value["latestRanking"] = value["rankingHistory"][-1] if value["rankingHistory"] else None
+            value["latestPublishedRaceCount"] = value["raceCountHistory"][-1] if value["raceCountHistory"] else None
+            if len(value["rankingHistory"]) >= 2:
+                first, last = value["rankingHistory"][0], value["rankingHistory"][-1]
+                value["listPointsChange"] = round(last["listPoints"] - first["listPoints"], 2)
+            else:
+                value["listPointsChange"] = None
+
+        athlete = {key: value for key, value in profile.items() if key not in {"starts", "results", "rankings", "raceCounts"}}
+        return {"athlete": athlete, "seasons": sorted(seasons.values(), key=lambda item: item["seasonId"], reverse=True)}
 
     def merge_athletes(self, source_id: str, target_id: str) -> dict[str, Any]:
         try:

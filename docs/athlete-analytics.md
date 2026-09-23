@@ -35,13 +35,24 @@ python services/results-importer/src/extract_dsv_snapshot.py "C:\Pfad\DSVSA2638_
 
 Der Import ist zunächst bewusst vom normalen Spielleiter-Workflow getrennt.
 
+## Lokale Datenbank und API
+
+Die Migration `005_athlete_analytics` speichert freigegebene Ranglisten- und Rennanzahlstände relational. Der bestehende Importablauf erkennt beide Dokumenttypen, erzeugt einen Prüfbericht und übernimmt sie erst nach der Freigabe. Die DSV-ID wird dabei mit der bestehenden internen Athletenidentität verknüpft.
+
+Das Athletenprofil ist über folgende lokale API-Routen verfügbar:
+
+- `GET /api/v1/athletes/{athleteId}` für alle zugeordneten Rohansichten
+- `GET /api/v1/athletes/{athleteId}/rankings` für Ranglistenstände
+- `GET /api/v1/athletes/{athleteId}/race-counts` für veröffentlichte Rennanzahlstände
+- `GET /api/v1/athletes/{athleteId}/analytics` für die saisonweise aufbereitete Übersicht
+
+Die Analytics-Antwort unterscheidet die in der eigenen Datenbasis vorhandenen Rennstarts von der offiziell veröffentlichten Rennanzahl. Eine Punkteveränderung wird erst berechnet, wenn mindestens zwei Ranglistenstände derselben Saison vorliegen.
+
 ## Nächste Ausbaustufen
 
-1. Neue Datenbanktabellen für versionierte Ranglisten- und Rennanzahl-Snapshots ergänzen.
-2. Freigabeprozess der bestehenden Import-API auf die neuen Dokumenttypen erweitern.
-3. DSV-ID beim Freigeben mit der internen Athletenidentität verknüpfen.
-4. API-Endpunkt für ein Athletenprofil mit Ergebnissen, Punktentwicklung und Ranglistenverlauf ergänzen.
-5. Eine einfache U14/U16-Athletenseite bauen und erst danach Diagramme und Vergleichsfunktionen ergänzen.
+1. Eine einfache lokale U14/U16-Athletenseite auf Basis des Analytics-Endpunkts bauen.
+2. Weitere Ranglistenstände derselben Saison importieren, damit eine echte Punkteentwicklung dargestellt werden kann.
+3. Danach Diagramme, Filter und Athletenvergleiche ergänzen.
 
 ## Geplantes Athletenprofil
 

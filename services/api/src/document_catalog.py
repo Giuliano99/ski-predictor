@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-DOCUMENT_KINDS = {"START_LIST", "RESULT_LIST", "UNKNOWN"}
+DOCUMENT_KINDS = {"START_LIST", "RESULT_LIST", "DSV_RANKING", "DSV_RACE_COUNT", "UNKNOWN"}
 
 
 def iso_timestamp(timestamp: float) -> str:
@@ -21,15 +21,21 @@ def classify_path(relative_path: Path) -> tuple[str, str | None, str | None, boo
     parts = relative_path.parts
     folded = [part.casefold() for part in parts]
     kind = "UNKNOWN"
-    if "startlisten" in folded or relative_path.name.casefold().startswith("startliste"):
+    file_name = relative_path.name.casefold()
+    if "ranglisten" in folded or "rangliste" in file_name:
+        kind = "DSV_RANKING"
+    elif "rennanzahl" in folded or "anzahl der gefahrenen" in file_name or "rennanzahl" in file_name:
+        kind = "DSV_RACE_COUNT"
+    elif "startlisten" in folded or file_name.startswith("startliste"):
         kind = "START_LIST"
-    elif "ergebnislisten" in folded or "ergebnis" in relative_path.name.casefold() or relative_path.name.casefold().startswith("rennen"):
+    elif "ergebnislisten" in folded or "ergebnis" in file_name or file_name.startswith("rennen"):
         kind = "RESULT_LIST"
 
     season_id = None
     weekend_date = None
-    if len(parts) >= 5 and folded[0] == "saisons" and folded[2] == "weekends":
+    if len(parts) >= 2 and folded[0] == "saisons":
         season_id = parts[1]
+    if len(parts) >= 5 and folded[0] == "saisons" and folded[2] == "weekends":
         weekend_date = parts[3]
     return kind, season_id, weekend_date, folded[0] == "archiv"
 
@@ -156,10 +162,15 @@ class DocumentCatalog:
                 "documents": 0,
                 "startLists": 0,
                 "resultLists": 0,
+                "dsvRankings": 0,
+                "dsvRaceCounts": 0,
                 "unknown": 0,
                 "archived": document.archived,
             })
             item["documents"] += 1
-            counter = {"START_LIST": "startLists", "RESULT_LIST": "resultLists", "UNKNOWN": "unknown"}[document.kind]
+            counter = {
+                "START_LIST": "startLists", "RESULT_LIST": "resultLists",
+                "DSV_RANKING": "dsvRankings", "DSV_RACE_COUNT": "dsvRaceCounts", "UNKNOWN": "unknown",
+            }[document.kind]
             item[counter] += 1
         return sorted(grouped.values(), key=lambda item: (item["weekendDate"] or ""), reverse=True)

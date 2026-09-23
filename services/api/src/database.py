@@ -149,6 +149,9 @@ class PostgreSQLDatabase:
                 "WHERE id=%s",
                 (job.get("approvedAt"), Jsonb(artifact), job["jobId"]),
             )
+            if artifact["documentType"] in {"DSV_RANKING", "DSV_RACE_COUNT"}:
+                self._approve_dsv_snapshot(connection, job, artifact)
+                return
             event = artifact["event"]
             race = artifact["race"]
             connection.execute(
@@ -230,6 +233,83 @@ class PostgreSQLDatabase:
                 "(SELECT 1 FROM races WHERE races.event_id=events.id)"
             )
 
+    def _upsert_snapshot_athlete(self, connection: Any, person: dict[str, Any]) -> None:
+        if not person.get("athleteId"):
+            return
+        Jsonb = self.json_value
+        connection.execute(
+            """INSERT INTO athletes (id,full_name,display_name,birth_year,target_club,payload)
+            VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO UPDATE SET
+              full_name=excluded.full_name,display_name=excluded.display_name,
+              birth_year=COALESCE(excluded.birth_year,athletes.birth_year),
+              target_club=athletes.target_club OR excluded.target_club,
+              payload=excluded.payload,updated_at=now()""",
+            (person["athleteId"], person["fullName"], person["displayName"], person.get("birthYear"),
+             person.get("targetClub", False), Jsonb(person)),
+        )
+
+    def _approve_dsv_snapshot(self, connection: Any, job: dict[str, Any], artifact: dict[str, Any]) -> None:
+        Jsonb = self.json_value
+        snapshot = artifact["snapshot"]
+        snapshot_id = snapshot["id"]
+        document_id = artifact["documentId"]
+        if artifact["documentType"] == "DSV_RANKING":
+            connection.execute(
+                """INSERT INTO dsv_ranking_snapshots
+                (id,document_id,extraction_id,document_code,season_id,published_at,timezone,payload)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO UPDATE SET
+                  document_id=excluded.document_id,extraction_id=excluded.extraction_id,
+                  document_code=excluded.document_code,season_id=excluded.season_id,
+                  published_at=excluded.published_at,timezone=excluded.timezone,payload=excluded.payload""",
+                (snapshot_id, document_id, job["jobId"], snapshot["documentId"], snapshot["seasonId"],
+                 snapshot["publishedAt"], snapshot.get("timezone", "Europe/Berlin"), Jsonb(artifact)),
+            )
+            connection.execute("DELETE FROM dsv_ranking_entries WHERE snapshot_id=%s", (snapshot_id,))
+            for section in artifact.get("sections", []):
+                for person in section.get("entries", []):
+                    self._upsert_snapshot_athlete(connection, person)
+                    connection.execute(
+                        """INSERT INTO dsv_ranking_entries
+                        (snapshot_id,scope,scope_label,gender,athlete_id,external_athlete_id,
+                         first_name,last_name,birth_year,club,federation,base_points,list_points,
+                         overall_rank,age_class_rank,birth_year_rank,payload)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                        (snapshot_id, section["scope"], section["label"], section["gender"],
+                         person.get("athleteId"), person["externalAthleteId"], person["firstName"],
+                         person["lastName"], person["birthYear"], person["club"], person.get("federation"),
+                         person["basePoints"], person["listPoints"], person.get("overallRank"),
+                         person.get("ageClassRank"), person.get("birthYearRank"), Jsonb(person)),
+                    )
+            return
+
+        coverage = artifact.get("coverage") or {}
+        connection.execute(
+            """INSERT INTO dsv_race_count_snapshots
+            (id,document_id,extraction_id,document_code,season_id,observed_at,timezone,complete_season_field,payload)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO UPDATE SET
+              document_id=excluded.document_id,extraction_id=excluded.extraction_id,
+              document_code=excluded.document_code,season_id=excluded.season_id,
+              observed_at=excluded.observed_at,timezone=excluded.timezone,
+              complete_season_field=excluded.complete_season_field,payload=excluded.payload""",
+            (snapshot_id, document_id, job["jobId"], snapshot["documentId"], snapshot["seasonId"],
+             snapshot["observedAt"], snapshot.get("timezone", "Europe/Berlin"),
+             coverage.get("isCompleteSeasonField", False), Jsonb(artifact)),
+        )
+        connection.execute("DELETE FROM dsv_race_count_entries WHERE snapshot_id=%s", (snapshot_id,))
+        for section in artifact.get("sections", []):
+            for person in section.get("entries", []):
+                self._upsert_snapshot_athlete(connection, person)
+                connection.execute(
+                    """INSERT INTO dsv_race_count_entries
+                    (snapshot_id,age_class,athlete_id,external_athlete_id,first_name,last_name,birth_year,
+                     club,federation,gender,base_points,list_points,race_count,payload)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (snapshot_id, section["ageClass"], person.get("athleteId"), person["externalAthleteId"],
+                     person["firstName"], person["lastName"], person["birthYear"], person["club"],
+                     person.get("federation"), person["gender"], person["basePoints"], person["listPoints"],
+                     person["raceCount"], Jsonb(person)),
+                )
+
     def save_submission(self, submission: dict[str, Any]) -> None:
         Jsonb = self.json_value
         with self.connect() as connection:
@@ -307,7 +387,8 @@ class PostgreSQLDatabase:
 
     def counts(self) -> dict[str, int]:
         tables = ("source_documents", "extraction_imports", "events", "races", "athletes",
-                  "race_participants", "run_results", "predictor_rounds", "predictor_questions",
+                  "race_participants", "run_results", "dsv_ranking_snapshots", "dsv_ranking_entries",
+                  "dsv_race_count_snapshots", "dsv_race_count_entries", "predictor_rounds", "predictor_questions",
                   "weekend_evaluations", "season_leaderboards", "predictor_submissions", "app_users", "auth_sessions")
         with self.connect() as connection:
             return {table: connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0] for table in tables}

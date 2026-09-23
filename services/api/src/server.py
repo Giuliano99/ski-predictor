@@ -41,7 +41,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.11.0"
+API_VERSION = "1.12.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -123,6 +123,9 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/athletes": {"get": {"summary": "Kanonische Athleten", "responses": {"200": {"description": "Athleten"}}}},
             "/athletes/{athleteId}": {"get": {"summary": "Athlet mit Starts und Ergebnissen", "responses": {"200": {"description": "Athlet"}}}},
             "/athletes/{athleteId}/results": {"get": {"summary": "Ergebnisse eines Athleten", "responses": {"200": {"description": "Ergebnisse"}}}},
+            "/athletes/{athleteId}/rankings": {"get": {"summary": "DSV-Ranglistenstände eines Athleten", "responses": {"200": {"description": "Ranglistenstände"}}}},
+            "/athletes/{athleteId}/race-counts": {"get": {"summary": "Veröffentlichte Rennanzahlstände eines Athleten", "responses": {"200": {"description": "Rennanzahlstände"}}}},
+            "/athletes/{athleteId}/analytics": {"get": {"summary": "Saisonweise Athletenübersicht", "responses": {"200": {"description": "Ergebnisse, Punkteverlauf und Ranglistenstände"}}}},
             "/athlete-identities/merge": {"post": {"summary": "Doppelte Athletenidentitäten zusammenführen", "responses": {"200": {"description": "Zusammengeführt"}}}},
             "/predictor/rounds/current": {"get": {"summary": "Aktuelle öffentliche Tipprunde", "responses": {"200": {"description": "Tipprunde"}}}},
             "/predictor/rounds/{tipRoundId}/submissions": {
@@ -411,7 +414,16 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.send_json(athlete)
                     return
                 if parts[4] == "results":
-                    self.send_json({"athlete": {key: value for key, value in athlete.items() if key not in {"starts", "results"}}, "items": athlete["results"], "total": len(athlete["results"])})
+                    self.send_json({"athlete": {key: value for key, value in athlete.items() if key not in {"starts", "results", "rankings", "raceCounts"}}, "items": athlete["results"], "total": len(athlete["results"])})
+                    return
+                if parts[4] == "rankings":
+                    self.send_json({"athlete": {key: value for key, value in athlete.items() if key not in {"starts", "results", "rankings", "raceCounts"}}, "items": athlete["rankings"], "total": len(athlete["rankings"])})
+                    return
+                if parts[4] == "race-counts":
+                    self.send_json({"athlete": {key: value for key, value in athlete.items() if key not in {"starts", "results", "rankings", "raceCounts"}}, "items": athlete["raceCounts"], "total": len(athlete["raceCounts"])})
+                    return
+                if parts[4] == "analytics":
+                    self.send_json(self.extractions.athlete_analytics(parts[3]))
                     return
             if len(parts) == 4 and parts[:3] == ["api", "v1", "races"]:
                 self.send_json(self.extractions.race(parts[3]))
