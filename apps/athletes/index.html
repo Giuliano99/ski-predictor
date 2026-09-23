@@ -10,7 +10,7 @@
   <body>
     <header class="topbar">
       <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
-      <nav><a href="/spielleiter/">Spielleiter</a><a href="/tippspiel/">Tippspiel</a><button id="logout-button" type="button">Abmelden</button></nav>
+      <nav><a class="active" href="/athleten/">Übersicht</a><a href="/athleten/import.html">Datenimport</a><button id="logout-button" type="button">Abmelden</button></nav>
     </header>
 
     <main>
@@ -35,7 +35,8 @@
 
           <div class="metric-grid">
             <article><span>Listenpunkte</span><strong id="metric-points">–</strong><small id="metric-points-date">Kein Stand</small></article>
-            <article><span>Deutschland</span><strong id="metric-rank">–</strong><small>Gesamtrang</small></article>
+            <article><span>Altersklasse</span><strong id="metric-age-rank">–</strong><small>Rang in Deutschland</small></article>
+            <article><span>Jahrgang</span><strong id="metric-birth-rank">–</strong><small>Rang in Deutschland</small></article>
             <article><span>Offizielle Rennanzahl</span><strong id="metric-races">–</strong><small id="metric-races-date">Kein Stand</small></article>
             <article><span>Vorhandene Ergebnisse</span><strong id="metric-results">0</strong><small id="metric-starts">0 Starts erfasst</small></article>
           </div>

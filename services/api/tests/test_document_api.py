@@ -108,7 +108,9 @@ class DocumentApiTests(unittest.TestCase):
             app = root / "athletes"
             (app / "assets").mkdir(parents=True)
             (app / "index.html").write_text('<meta name="viewport" content="width=device-width"><main>AthletenAnalyse</main>', encoding="utf-8")
+            (app / "import.html").write_text('<meta name="viewport" content="width=device-width"><main>Datenimport</main>', encoding="utf-8")
             (app / "assets" / "athletes.css").write_text("@media (max-width:800px){main{display:block}}", encoding="utf-8")
+            (app / "assets" / "import.js").write_text("const importPage = true;", encoding="utf-8")
             with patch.object(server_module, "ATHLETE_DIRECTORY", app):
                 server, thread, base_url = self.running_server(root)
                 try:
@@ -116,6 +118,10 @@ class DocumentApiTests(unittest.TestCase):
                         html = response.read().decode("utf-8")
                     with urllib.request.urlopen(f"{base_url}/athleten/assets/athletes.css") as response:
                         css = response.read().decode("utf-8")
+                    with urllib.request.urlopen(f"{base_url}/athleten/import.html") as response:
+                        import_html = response.read().decode("utf-8")
+                    with urllib.request.urlopen(f"{base_url}/athleten/assets/import.js") as response:
+                        import_js = response.read().decode("utf-8")
                 finally:
                     server.shutdown()
                     server.server_close()
@@ -123,6 +129,8 @@ class DocumentApiTests(unittest.TestCase):
 
         self.assertIn("width=device-width", html)
         self.assertIn("max-width:800px", css)
+        self.assertIn("Datenimport", import_html)
+        self.assertIn("importPage", import_js)
 
     def test_uploads_athlete_data_and_starts_extraction(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

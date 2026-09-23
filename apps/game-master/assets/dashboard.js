@@ -1,4 +1,4 @@
-const state = { weekends: [], extractionJobs: [], athletes: [], documents: [], dataQuality: null, user: null, selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
+const state = { weekends: [], extractionJobs: [], athletes: [], dataQuality: null, user: null, selectedId: null, pendingConfirmation: null, extractionPoll: 0 };
 const labels = { DRAFT: "Entwurf", OPEN: "Tippen geöffnet", CLOSED: "Tippen geschlossen", EVALUATED: "Ausgewertet", ARCHIVED: "Archiviert", CANCELLED: "Abgesagt", FEHLER: "Fehler" };
 const extractionLabels = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQUIRED: "Prüfung nötig", APPROVED: "Freigegeben", SUPERSEDED: "Durch neuere Version ersetzt", FAILED: "Fehlgeschlagen" };
 const dom = {
@@ -7,8 +7,6 @@ const dom = {
   confirmDialog: document.querySelector("#confirm-dialog"), confirmTitle: document.querySelector("#confirm-title"), confirmText: document.querySelector("#confirm-text"), confirmButton: document.querySelector("#confirm-button"),
   qualitySummary: document.querySelector("#data-quality-summary"), qualityStatus: document.querySelector("#data-quality-status"), qualityDetails: document.querySelector("#data-quality-details"),
   signedInUser: document.querySelector("#signed-in-user"), logoutButton: document.querySelector("#logout-button"),
-  snapshotForm: document.querySelector("#snapshot-upload-form"), snapshotSeason: document.querySelector("#snapshot-season"), snapshotCategory: document.querySelector("#snapshot-category"),
-  snapshotFile: document.querySelector("#snapshot-file"), snapshotSelectedFile: document.querySelector("#snapshot-selected-file"), snapshotJobs: document.querySelector("#snapshot-jobs"), snapshotActions: document.querySelector("#snapshot-actions"),
 };
 
 function escapeHtml(value) { const node = document.createElement("div"); node.textContent = String(value ?? ""); return node.innerHTML; }
@@ -39,38 +37,13 @@ async function refresh(preferredId = state.selectedId) {
   dom.signedInUser.textContent = state.user.displayName;
   dom.logoutButton.hidden = identity.authentication !== "required";
   const qualityRequest = request("/api/v1/admin/data-quality").catch((error) => ({ status: "NICHT_AKTIV", errors: 0, warnings: 0, issues: [], message: error.message }));
-  const [payload, extractions, athletes, documents, dataQuality] = await Promise.all([request("/api/v1/weekends"), request("/api/v1/extraction-jobs"), request("/api/v1/athletes"), request("/api/v1/documents?limit=500"), qualityRequest]);
+  const [payload, extractions, athletes, dataQuality] = await Promise.all([request("/api/v1/weekends"), request("/api/v1/extraction-jobs"), request("/api/v1/athletes"), qualityRequest]);
   state.weekends = payload.weekends;
   state.extractionJobs = extractions.items;
   state.athletes = athletes.items;
-  state.documents = documents.items;
   state.dataQuality = dataQuality;
   state.selectedId = state.weekends.some((weekend) => weekend.id === preferredId) ? preferredId : state.weekends[0]?.id ?? null;
   render();
-}
-
-function renderAthleteData() {
-  const jobs = state.extractionJobs
-    .filter((job) => ["DSV_RANKING", "DSV_RACE_COUNT"].includes(job.documentKind))
-    .filter((job, index, all) => all.findIndex((candidate) => candidate.documentId === job.documentId) === index);
-  const documents = state.documents.filter((document) => ["DSV_RANKING", "DSV_RACE_COUNT"].includes(document.kind));
-  const documentById = Object.fromEntries(documents.map((document) => [document.documentId, document]));
-  const pendingDocuments = documents.filter((document) => !jobs.some((job) => job.documentId === document.documentId));
-  const jobHtml = jobs.map((job) => {
-    const statistics = job.review?.statistics || {};
-    const details = job.review ? `<details><summary>Pr&uuml;fbericht ansehen</summary><div class="snapshot-stats"><span>${statistics.sections || 0} Abschnitte</span><span>${statistics.entries || 0} Eintr&auml;ge</span><span>${statistics.uniqueAthletes || 0} Athleten</span><span>${statistics.targetClubUniqueAthletes || 0} Oberhachinger</span></div>${job.review.warnings?.length ? `<ul>${job.review.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>` : `<p>Keine Warnungen. Saison und Stichtag wurden erkannt.</p>`}</details>` : "";
-    const approve = job.status === "REVIEW_REQUIRED" ? `<button class="button secondary" data-approve-snapshot="${job.jobId}" type="button">Gepr&uuml;ft und freigeben</button>` : job.status === "FAILED" ? `<button class="button secondary" data-extract-snapshot="${job.documentId}" type="button">Erneut auslesen</button>` : "";
-    const document = documentById[job.documentId];
-    return `<article class="snapshot-job ${job.status}"><div><strong>${escapeHtml(job.sourceName)}</strong><small>${escapeHtml(job.documentKind === "DSV_RANKING" ? "DSV-Rangliste" : "Rennanzahl-Liste")} &middot; Saison ${escapeHtml(job.seasonId || document?.seasonId || "unbekannt")} &middot; ${escapeHtml(extractionLabels[job.status] || job.status)}</small>${job.error ? `<small>${escapeHtml(job.error)}</small>` : ""}</div>${approve}${details}</article>`;
-  }).join("");
-  const pendingHtml = pendingDocuments.map((document) => `<article class="snapshot-job"><div><strong>${escapeHtml(document.originalName)}</strong><small>${document.kind === "DSV_RANKING" ? "DSV-Rangliste" : "Rennanzahl-Liste"} &middot; Saison ${escapeHtml(document.seasonId || "unbekannt")} &middot; Noch nicht ausgelesen</small></div><button class="button secondary" data-extract-snapshot="${document.documentId}" type="button">Jetzt auslesen</button></article>`).join("");
-  dom.snapshotJobs.innerHTML = jobHtml || pendingHtml ? `${jobHtml}${pendingHtml}` : `<p>Noch keine DSV-Ranglisten oder Rennanzahl-Listen importiert.</p>`;
-  const ready = jobs.filter((job) => job.status === "REVIEW_REQUIRED" && job.review?.status === "BEREIT" && !job.review?.warnings?.length).length;
-  const active = jobs.some((job) => ["PENDING", "PROCESSING"].includes(job.status));
-  dom.snapshotActions.innerHTML = `${ready ? `<button class="button" id="approve-ready-snapshots" type="button">${ready} gr&uuml;ne Pr&uuml;fung${ready === 1 ? "" : "en"} freigeben</button>` : ""}<a class="button secondary" href="/athleten/">Athleten&uuml;bersicht ansehen</a>${active ? `<span>PDFs werden gerade ausgelesen &hellip;</span>` : ""}`;
-  dom.snapshotJobs.querySelectorAll("[data-approve-snapshot]").forEach((button) => button.addEventListener("click", () => approveSnapshot(button.dataset.approveSnapshot)));
-  dom.snapshotJobs.querySelectorAll("[data-extract-snapshot]").forEach((button) => button.addEventListener("click", () => startSnapshotExtraction(button.dataset.extractSnapshot)));
-  document.querySelector("#approve-ready-snapshots")?.addEventListener("click", approveReadySnapshots);
 }
 
 function renderDataQuality() {
@@ -178,61 +151,12 @@ function renderDetail(weekend) {
 
 function render() {
   renderDataQuality();
-  renderAthleteData();
   const weekend = selectedWeekend();
   dom.empty.hidden = Boolean(weekend);
   dom.dashboard.hidden = !weekend;
   if (!weekend) return;
   renderList();
   renderDetail(weekend);
-}
-
-async function pollSnapshots(token) {
-  for (let attempt = 0; attempt < 160 && token === state.extractionPoll; attempt += 1) {
-    await new Promise((resolve) => window.setTimeout(resolve, 750));
-    await refresh(state.selectedId);
-    if (!state.extractionJobs.some((job) => ["DSV_RANKING", "DSV_RACE_COUNT"].includes(job.documentKind) && ["PENDING", "PROCESSING"].includes(job.status))) break;
-  }
-}
-
-async function uploadSnapshot(event) {
-  event.preventDefault();
-  const file = dom.snapshotFile.files?.[0];
-  if (!file) { showNotice("Bitte eine PDF-Datei auswählen.", true); return; }
-  setBusy("DSV-Dokument wird gespeichert und ausgelesen ...");
-  try {
-    const url = `/api/v1/athlete-data/files/${encodeURIComponent(dom.snapshotCategory.value)}?seasonId=${encodeURIComponent(dom.snapshotSeason.value)}&filename=${encodeURIComponent(file.name)}`;
-    const payload = await request(url, { method:"POST", headers:{ "Content-Type":file.type || "application/pdf" }, body:file });
-    showNotice(payload.message); dom.snapshotForm.reset(); setDefaultSnapshotSeason(); dom.snapshotSelectedFile.textContent = "Noch keine Datei ausgewählt.";
-    const token = ++state.extractionPoll; clearBusy(); await pollSnapshots(token);
-  } catch (error) { showNotice(error.message, true); clearBusy(); await refresh(state.selectedId); }
-}
-
-async function approveSnapshot(jobId) {
-  if (!window.confirm("Hast du Saison, Stichtag, Anzahl der Einträge und Warnungen kontrolliert?")) return;
-  try { const payload = await request(`/api/v1/extraction-jobs/${jobId}/approve`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" }); showNotice(payload.message); await refresh(state.selectedId); }
-  catch (error) { showNotice(error.message, true); await refresh(state.selectedId); }
-}
-
-async function startSnapshotExtraction(documentId) {
-  setBusy("DSV-Dokument wird ausgelesen ...");
-  try {
-    const payload = await request(`/api/v1/documents/${documentId}/extract`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" });
-    showNotice(payload.created ? "Die automatische Prüfung wurde gestartet." : "Für dieses Dokument liegt bereits eine aktuelle Prüfung vor.");
-    const token = ++state.extractionPoll; clearBusy(); await pollSnapshots(token);
-  } catch (error) { showNotice(error.message, true); clearBusy(); await refresh(state.selectedId); }
-}
-
-async function approveReadySnapshots() {
-  if (!window.confirm("Alle grünen DSV-Prüfberichte gemeinsam freigeben?")) return;
-  setBusy("Geprüfte DSV-Daten werden freigegeben ...");
-  try { const payload = await request("/api/v1/athlete-data/extractions/approve-ready", { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" }); showNotice(payload.message); await refresh(state.selectedId); }
-  catch (error) { showNotice(error.message, true); } finally { clearBusy(); }
-}
-
-function setDefaultSnapshotSeason() {
-  const now = new Date(); const year = now.getFullYear(); const start = now.getMonth() >= 6 ? year : year - 1;
-  dom.snapshotSeason.value = `${start}-${start + 1}`;
 }
 
 async function uploadFiles(category, files) {
@@ -354,9 +278,5 @@ dom.newForm.addEventListener("submit", async (event) => {
   try { const payload = await request("/api/v1/weekends", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: form.get("date"), title: form.get("title"), testMode: form.get("testMode") === "on" }) }); dom.newDialog.close(); dom.newForm.reset(); showNotice(payload.message); await refresh(payload.weekend.id); }
   catch (error) { showNotice(error.message, true); } finally { clearBusy(); }
 });
-
-dom.snapshotForm.addEventListener("submit", uploadSnapshot);
-dom.snapshotFile.addEventListener("change", () => { dom.snapshotSelectedFile.textContent = dom.snapshotFile.files?.[0]?.name || "Noch keine Datei ausgewählt."; });
-setDefaultSnapshotSeason();
 
 refresh().catch((error) => showNotice(error.message, true));

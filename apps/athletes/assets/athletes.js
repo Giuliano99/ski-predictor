@@ -3,7 +3,7 @@ const dom = {
   list: document.querySelector("#athlete-list"), search: document.querySelector("#athlete-search"), athleteSelect: document.querySelector("#athlete-select"),
   profile: document.querySelector("#profile"), empty: document.querySelector("#empty-profile"), notice: document.querySelector("#notice"),
   name: document.querySelector("#profile-name"), meta: document.querySelector("#profile-meta"), id: document.querySelector("#profile-id"), season: document.querySelector("#season-select"),
-  points: document.querySelector("#metric-points"), pointsDate: document.querySelector("#metric-points-date"), rank: document.querySelector("#metric-rank"),
+  points: document.querySelector("#metric-points"), pointsDate: document.querySelector("#metric-points-date"), ageRank: document.querySelector("#metric-age-rank"), birthRank: document.querySelector("#metric-birth-rank"),
   races: document.querySelector("#metric-races"), racesDate: document.querySelector("#metric-races-date"), resultsMetric: document.querySelector("#metric-results"), starts: document.querySelector("#metric-starts"),
   chart: document.querySelector("#points-chart"), change: document.querySelector("#points-change"), ranking: document.querySelector("#ranking-details"), raceCount: document.querySelector("#race-count-details"),
   results: document.querySelector("#results"), resultCount: document.querySelector("#result-count-label"), logout: document.querySelector("#logout-button"),
@@ -65,7 +65,8 @@ function renderProfile() {
   dom.season.innerHTML = payload.seasons.map((item) => `<option value="${item.seasonId}">${item.seasonId.replace("-","/")}</option>`).join(""); dom.season.value = state.seasonId;
   const ranking = season.latestRanking, count = season.latestPublishedRaceCount;
   dom.points.textContent = decimal(ranking?.listPoints); dom.pointsDate.textContent = ranking ? `Stand ${date(ranking.publishedAt)}` : "Kein Ranglistenstand";
-  dom.rank.textContent = ranking?.overallRank ? `#${ranking.overallRank}` : "–";
+  dom.ageRank.textContent = ranking?.ageClassRank ? `#${ranking.ageClassRank}` : "–";
+  dom.birthRank.textContent = ranking?.birthYearRank ? `#${ranking.birthYearRank}` : "–";
   dom.races.textContent = count?.raceCount ?? "–"; dom.racesDate.textContent = count ? `Stand ${date(count.observedAt)}` : "Keine offizielle Angabe";
   dom.resultsMetric.textContent = season.recordedResults.length; dom.starts.textContent = `${season.recordedRaceStarts} Starts in der Datenbasis`;
   dom.chart.innerHTML = chart(season.rankingHistory);

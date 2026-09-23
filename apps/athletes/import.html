@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Datenimport für die Athletenanalyse des Skiteams Oberhaching" />
+    <title>Datenimport | Athletenanalyse</title>
+    <link rel="stylesheet" href="/athleten/assets/athletes.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
+      <nav><a href="/athleten/">Übersicht</a><a class="active" href="/athleten/import.html">Datenimport</a><button id="logout-button" type="button">Abmelden</button></nav>
+    </header>
+
+    <main class="import-main">
+      <section class="intro">
+        <div><span class="eyebrow">Eigener Arbeitsbereich</span><h1>Daten für die Athletenanalyse</h1><p>DSV-Ranglisten und Rennanzahl-Listen hochladen, automatisch auslesen und nach einem Prüfbericht freigeben.</p></div>
+        <div class="source-note"><strong>Vom Tippspiel getrennt</strong><span>Diese Daten verändern keine Tipprunde.</span></div>
+      </section>
+
+      <div class="notice" id="notice" hidden></div>
+      <section class="import-panel">
+        <div class="panel-head"><div><span class="eyebrow">Neue Datei</span><h2>PDF hochladen</h2></div><span class="status-badge" id="import-status">BEREIT</span></div>
+        <form class="import-form" id="import-form">
+          <label><span>Saison</span><input id="import-season" name="seasonId" pattern="\d{4}-\d{4}" placeholder="2025-2026" required /></label>
+          <label><span>Dokumentart</span><select id="import-category" name="category"><option value="rankings">DSV-Rangliste</option><option value="race-counts">Rennanzahl-Liste</option></select></label>
+          <label class="file-picker"><span>PDF-Datei</span><input id="import-file" name="file" type="file" accept=".pdf,application/pdf" required /></label>
+          <button class="primary-button" type="submit">Hochladen und prüfen</button>
+        </form>
+        <p class="selected-file" id="selected-file">Noch keine Datei ausgewählt.</p>
+      </section>
+
+      <section class="import-panel">
+        <div class="panel-head"><div><span class="eyebrow">Automatische Prüfung</span><h2>Importierte Dokumente</h2></div><button class="secondary-button" id="refresh-button" type="button">Neu laden</button></div>
+        <div class="import-jobs" id="import-jobs"><p>Daten werden geladen.</p></div>
+        <div class="import-actions" id="import-actions"></div>
+      </section>
+
+      <section class="import-panel storage-guide">
+        <div><span class="eyebrow">Rennergebnisse einer Saison</span><h2>Ablage nach Rennwochenende</h2></div>
+        <p>Ergebnislisten gehören in den Saisonordner des echten Rennwochenendes. Wenn vorhanden, lege die passende Startliste daneben ab. So können Rennen und Athleten eindeutig verbunden werden.</p>
+        <code>...\saisons\2025-2026\weekends\YYYY-MM-DD\ergebnislisten</code>
+        <code>...\saisons\2025-2026\weekends\YYYY-MM-DD\startlisten</code>
+      </section>
+    </main>
+    <div class="busy" id="busy" hidden><div><div class="spinner"></div><strong id="busy-label">Datei wird verarbeitet</strong></div></div>
+    <script src="/athleten/assets/import.js"></script>
+  </body>
+</html>
