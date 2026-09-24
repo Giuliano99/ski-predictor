@@ -34,7 +34,9 @@
           </header>
 
           <div class="metric-grid">
-            <article><span>Listenpunkte</span><strong id="metric-points">–</strong><small id="metric-points-date">Kein Stand</small></article>
+            <article><span>Gesamtpunkte</span><strong id="metric-overall-points">–</strong><small id="metric-points-formula">Noch keine Berechnung</small></article>
+            <article><span>Slalom Punkte</span><strong id="metric-sl-points">–</strong><small>Aktueller bester Wert</small></article>
+            <article><span>Riesenslalom Punkte</span><strong id="metric-gs-points">–</strong><small>Aktueller bester Wert</small></article>
             <article><span>Altersklasse</span><strong id="metric-age-rank">–</strong><small>Rang in Deutschland</small></article>
             <article><span>Jahrgang</span><strong id="metric-birth-rank">–</strong><small>Rang in Deutschland</small></article>
             <article><span>Offizielle Rennanzahl</span><strong id="metric-races">–</strong><small id="metric-races-date">Kein Stand</small></article>
@@ -42,9 +44,9 @@
           </div>
 
           <section class="panel chart-panel">
-            <div class="panel-head"><div><span class="eyebrow">Verlauf</span><h3>DSV-Listenpunkte</h3></div><span class="change" id="points-change">Noch kein Vergleich</span></div>
+            <div class="panel-head"><div><span class="eyebrow">Verlauf</span><h3>Berechnete Gesamtpunkte</h3></div><span class="change" id="points-change">Noch kein Rennen</span></div>
             <div class="chart" id="points-chart"></div>
-            <p class="panel-note">Niedrigere Punkte sind besser. Eine Veränderung wird erst mit mindestens zwei veröffentlichten Listenständen derselben Saison berechnet.</p>
+            <p class="panel-note">Niedrigere Punkte sind besser. Die Verbesserungsliste verwendet jeweils das Minimum aus Basiswert, Basiswert mit SLbest oder RSbest, SLbest mit RSbest sowie einem einzelnen Ergebnis plus 30.</p>
           </section>
 
           <section class="split-grid">

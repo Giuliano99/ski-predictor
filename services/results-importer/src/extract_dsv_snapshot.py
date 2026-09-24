@@ -22,6 +22,7 @@ import pdfplumber
 
 RANKING = "DSV_RANKING"
 RACE_COUNT = "DSV_RACE_COUNT"
+CLUB_END_LIST = "DSV_CLUB_END_LIST"
 
 TEXT_REPLACEMENTS = {
     "M�dchen": "Mädchen",
@@ -209,6 +210,91 @@ def extract_ranking(path: Path, target_club: str) -> dict[str, Any]:
     }
 
 
+def parse_club_end_list_row(words: list[dict[str, Any]], club: str) -> dict[str, Any] | None:
+    athlete_id = column_text(words, 20, 60)
+    if not re.fullmatch(r"\d{5}", athlete_id):
+        return None
+    gender = column_text(words, 280, 315)
+    if gender not in {"F", "M"}:
+        return None
+    return {
+        "externalAthleteId": athlete_id,
+        "lastName": column_text(words, 60, 160),
+        "firstName": column_text(words, 160, 250),
+        "birthYear": int(column_text(words, 250, 280)),
+        "gender": "FEMALE" if gender == "F" else "MALE",
+        "club": club,
+        "federation": None,
+        "basePoints": decimal(column_text(words, 315, 395)),
+        "listPoints": decimal(column_text(words, 395, 455)),
+        "overallRank": int(column_text(words, 455, 505)),
+        "ageClassRank": int(column_text(words, 505, 545)),
+        "birthYearRank": int(column_text(words, 545)),
+    }
+
+
+def extract_club_end_list(path: Path, target_club: str) -> dict[str, Any]:
+    """Extract the DSV end list sorted by clubs as next season's base snapshot."""
+    raw_page_texts: list[str] = []
+    entries_by_gender: dict[str, list[dict[str, Any]]] = {"FEMALE": [], "MALE": []}
+    current_club = ""
+    snapshot_at: datetime | None = None
+    with pdfplumber.open(path) as pdf:
+        for page_number, page in enumerate(pdf.pages, start=1):
+            raw_text = page.extract_text() or ""
+            raw_page_texts.append(raw_text)
+            if snapshot_at is None:
+                try:
+                    snapshot_at, _ = parse_snapshot_heading(raw_text)
+                except ValueError:
+                    pass
+            for row in words_by_line(page.extract_words()):
+                row_text = clean_text(" ".join(str(word["text"]) for word in row))
+                entry = parse_club_end_list_row(row, current_club)
+                if entry:
+                    entries_by_gender[entry["gender"]].append(entry)
+                    continue
+                if (
+                    row_text
+                    and not re.search(r"DSV-ID|Liste nach Vereinen|Christian Scholz|Seite \d+", row_text)
+                    and not re.fullmatch(r"\d{2}\.\d{2}\.\d{4}.*", row_text)
+                    and 55 <= min((float(word["x0"]) for word in row), default=0) <= 90
+                    and not any(re.fullmatch(r"\d{5}", str(word["text"])) for word in row)
+                ):
+                    current_club = row_text
+    if snapshot_at is None or not any(entries_by_gender.values()):
+        raise ValueError(f"Keine DSV-Vereinsendlisteneinträge in {path.name} erkannt")
+    all_entries = entries_by_gender["FEMALE"] + entries_by_gender["MALE"]
+    target = target_club.casefold()
+    target_entries = [entry for entry in all_entries if entry["club"].casefold() == target]
+    return {
+        "schemaVersion": 1,
+        "documentType": RANKING,
+        "source": source_metadata(path, "DSV_CLUB_END_LIST_PDF", len(raw_page_texts)),
+        "rawText": "\n\f\n".join(raw_page_texts),
+        "snapshot": {
+            "documentId": document_id(path, raw_page_texts[0]),
+            "seasonId": season_for(snapshot_at),
+            "publishedAt": snapshot_at.isoformat(timespec="seconds"),
+            "timezone": "Europe/Berlin",
+            "snapshotKind": "SEASON_START_BASE",
+            "sourceSeasonId": season_for(snapshot_at),
+        },
+        "sections": [
+            {"scope": "OVERALL", "label": "Saison-Startwerte", "gender": gender, "entries": entries}
+            for gender, entries in entries_by_gender.items() if entries
+        ],
+        "statistics": {
+            "sections": sum(bool(entries) for entries in entries_by_gender.values()),
+            "entries": len(all_entries),
+            "uniqueAthletes": len({entry["externalAthleteId"] for entry in all_entries}),
+            "targetClubEntries": len(target_entries),
+            "targetClubUniqueAthletes": len({entry["externalAthleteId"] for entry in target_entries}),
+        },
+        "warnings": [],
+    }
+
+
 def parse_count_row(words: list[dict[str, Any]]) -> dict[str, Any] | None:
     athlete_id = column_text(words, 60, 100)
     if not re.fullmatch(r"\d{5}", athlete_id):
@@ -301,17 +387,22 @@ def detect_document_type(path: Path) -> str:
         sample = clean_text("\n".join((page.extract_text() or "") for page in pdf.pages[:2]))
     if "Rennanzahl U14" in sample or "AnzRen" in sample:
         return RACE_COUNT
+    if "Liste nach Gauen/Regionen" in sample or "Liste nach Vereinen" in sample:
+        return CLUB_END_LIST
     if "TOP 250 Gesamt" in sample and "Ranglisten" in sample:
         return RANKING
     raise ValueError(f"DSV-Dokumenttyp für {path.name} nicht erkannt")
 
 
 def extract(path: Path, requested_type: str, target_club: str) -> dict[str, Any]:
-    document_type = detect_document_type(path) if requested_type == "AUTO" else requested_type
+    detected_type = detect_document_type(path) if requested_type in {"AUTO", RANKING} else requested_type
+    document_type = detected_type if requested_type == "AUTO" or detected_type == CLUB_END_LIST else requested_type
     if document_type == RANKING:
         return extract_ranking(path, target_club)
     if document_type == RACE_COUNT:
         return extract_race_count(path, target_club)
+    if document_type == CLUB_END_LIST:
+        return extract_club_end_list(path, target_club)
     raise ValueError(f"Nicht unterstützter DSV-Dokumenttyp: {document_type}")
 
 

@@ -17,6 +17,7 @@ from typing import Any
 from athlete_identity import AthleteIdentityError, AthleteIdentityRegistry
 from database import Database
 from document_catalog import Document, DocumentCatalog
+from dsv_points import MAXIMUM_START_POINTS, season_projection
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
@@ -29,7 +30,7 @@ from extract_start_list import extract_pdf_text, extract_start_list, slugify  # 
 from extract_dsv_snapshot import extract as extract_dsv_snapshot  # noqa: E402
 
 
-EXTRACTION_VERSION = "ski-predictor-extractor-v4-season-results"
+EXTRACTION_VERSION = "ski-predictor-extractor-v5.2-dsv-points-raw"
 JOB_STATUSES = {"PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "SUPERSEDED", "FAILED"}
 
 
@@ -259,6 +260,9 @@ class ExtractionService:
             person["targetClub"] = str(person.get("club", "")).casefold() == "skiteam oberhaching"
         identity_counts, identity_warnings = self._assign_identities(sections, "entries")
         snapshot = dict(extracted["snapshot"])
+        if document.season_id and snapshot.get("seasonId") != document.season_id:
+            snapshot["sourceSeasonId"] = snapshot.get("sourceSeasonId") or snapshot.get("seasonId")
+            snapshot["seasonId"] = document.season_id
         timestamp = snapshot.get("publishedAt") or snapshot.get("observedAt")
         snapshot_id = stable_id("dsv-snapshot", {
             "type": extracted["documentType"],
@@ -266,7 +270,7 @@ class ExtractionService:
             "timestamp": timestamp,
         })
         source = {key: value for key, value in extracted.get("source", {}).items() if key != "rawText"}
-        return {
+        normalized = {
             "schemaVersion": 1,
             "extractionVersion": EXTRACTION_VERSION,
             "documentId": document.document_id,
@@ -278,6 +282,11 @@ class ExtractionService:
             "statistics": {**extracted.get("statistics", {}), "identities": identity_counts},
             "warnings": list(dict.fromkeys([*extracted.get("warnings", []), *identity_warnings])),
         }
+        if extracted.get("pointsCalculations"):
+            normalized["pointsCalculations"] = extracted["pointsCalculations"]
+        if extracted.get("pointsNormalization"):
+            normalized["pointsNormalization"] = extracted["pointsNormalization"]
+        return normalized
 
     def _normalize(self, document: Document, extracted: dict[str, Any]) -> dict[str, Any]:
         if extracted["documentType"] in {"DSV_RANKING", "DSV_RACE_COUNT"}:
@@ -294,7 +303,7 @@ class ExtractionService:
         identity_counts, identity_warnings = self._assign_identities(groups, participants_key)
         participant_count = sum(len(group.get(participants_key, [])) for group in groups)
         target_count = sum(1 for group in groups for item in group.get(participants_key, []) if item.get("targetClub"))
-        return {
+        normalized = {
             "schemaVersion": 1,
             "extractionVersion": EXTRACTION_VERSION,
             "documentId": document.document_id,
@@ -314,6 +323,11 @@ class ExtractionService:
             "statistics": {"groups": len(groups), "participants": participant_count, "targetClubParticipants": target_count, "identities": identity_counts},
             "warnings": list(dict.fromkeys([*extracted.get("warnings", []), *identity_warnings])),
         }
+        if extracted.get("pointsCalculations"):
+            normalized["pointsCalculations"] = extracted["pointsCalculations"]
+        if extracted.get("pointsNormalization"):
+            normalized["pointsNormalization"] = extracted["pointsNormalization"]
+        return normalized
 
     def _review(self, normalized: dict[str, Any]) -> dict[str, Any]:
         warnings = list(normalized.get("warnings", []))
@@ -649,6 +663,10 @@ class ExtractionService:
                 "race": item["race"], "event": item["event"], "group": item["group"],
                 "status": result.get("status"), "rank": result.get("rank"),
                 "federationPoints": result.get("federationPoints"),
+                "printedFederationPoints": result.get("printedFederationPoints"),
+                "rawRacePoints": result.get("rawRacePoints"),
+                "appliedPenaltyPoints": result.get("appliedPenaltyPoints"),
+                "pointsSource": result.get("pointsSource"),
                 "officialTimeSeconds": result.get("officialTimeSeconds"), "started": started,
             }
             season(season_id)["recordedResults"].append(compact)
@@ -663,6 +681,7 @@ class ExtractionService:
             candidate = {
                 "snapshotId": snapshot_id, "documentId": snapshot.get("documentId"),
                 "publishedAt": snapshot.get("publishedAt"), "seasonId": snapshot["seasonId"],
+                "snapshotKind": snapshot.get("snapshotKind"),
                 "scope": item["section"],
                 "basePoints": item["ranking"].get("basePoints"),
                 "listPoints": item["ranking"].get("listPoints"),
@@ -711,6 +730,13 @@ class ExtractionService:
                 "podiums": sum(rank <= 3 for rank in classified_ranks),
                 "bestRank": min(classified_ranks) if classified_ranks else None,
             }
+            start_snapshot = next((item for item in value["rankingHistory"] if item.get("snapshotKind") == "SEASON_START_BASE"), None)
+            birth_year = int(profile.get("birthYear") or 0)
+            base_points = MAXIMUM_START_POINTS if birth_year == 2013 or start_snapshot is None else float(start_snapshot["listPoints"])
+            value["disciplinePoints"] = season_projection(base_points, value["recordedResults"])
+            value["disciplinePoints"]["baseSource"] = (
+                "MAXIMUM_NEW_ATHLETE" if birth_year == 2013 or start_snapshot is None else "DSV_PREVIOUS_END_LIST"
+            )
 
         athlete = {key: value for key, value in profile.items() if key not in {"starts", "results", "rankings", "raceCounts"}}
         return {"athlete": athlete, "seasons": sorted(seasons.values(), key=lambda item: item["seasonId"], reverse=True)}

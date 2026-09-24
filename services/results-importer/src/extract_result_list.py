@@ -55,22 +55,22 @@ def points_calculations(text: str) -> list[dict[str, Any]]:
     """
     calculations: list[dict[str, Any]] = []
     sections = re.finditer(
-        r"Zuschlagsberechnung\s+(Damen|Herren)/(?P<body>.*?)(?=Zuschlagsberechnung\s+(?:Damen|Herren)/|\Z)",
+        r"Zuschlagsberechnung\s+(Damen|Herren|Mädchen|Maedchen|Buben)(?:/[^\n]*)?\s*(?P<body>.*?)(?=Zuschlagsberechnung\s+(?:Damen|Herren|Mädchen|Maedchen|Buben)|\Z)",
         text,
         re.IGNORECASE | re.DOTALL,
     )
     labels = {
-        "fValue": r"F-Wert:\s*([\d.,]+)",
-        "calculatedPenalty": r"Berechneter Zuschlag:.*?=\s*([\d.,]+)",
-        "roundedPenalty": r"Gerundet:\s*([\d.,]+)",
-        "listPenalty": r"Punktezuschlag:\s*([\d.,]+)",
-        "minimumPenalty": r"Minimumzuschlag:\s*([\d.,]+)",
-        "appliedPenalty": r"Angewandter Zuschlag:\s*([\d.,]+)",
+        "fValue": r"F-Wert:\s*(\d+(?:[.,]\d+)?)",
+        "calculatedPenalty": r"Berechneter Zuschlag:.*?=\s*(\d+(?:[.,]\d+)?)",
+        "roundedPenalty": r"Gerundet:.*?(\d+(?:[.,]\d+)?)",
+        "listPenalty": r"Punktezuschlag:.*?(\d+(?:[.,]\d+)?)",
+        "minimumPenalty": r"Minimumzuschlag:.*?(\d+(?:[.,]\d+)?)",
+        "appliedPenalty": r"Angewandter Zuschlag:.*?(\d+(?:[.,]\d+)?)",
     }
     for section in sections:
         body = section.group("body")
         calculation: dict[str, Any] = {
-            "competitionCategory": "FEMALE" if section.group(1).casefold() == "damen" else "MALE"
+            "competitionCategory": "FEMALE" if section.group(1).casefold() in {"damen", "mädchen", "maedchen"} else "MALE"
         }
         for field, pattern in labels.items():
             match = re.search(pattern, body, re.IGNORECASE | re.DOTALL)
@@ -78,6 +78,61 @@ def points_calculations(text: str) -> list[dict[str, Any]]:
                 calculation[field] = decimal_number(match.group(1))
         calculations.append(calculation)
     return calculations
+
+
+def normalize_federation_points(
+    groups: list[dict[str, Any]], calculations: list[dict[str, Any]], discipline: str
+) -> dict[str, int]:
+    """Normalize printed raw or already-final values to final DSV race points."""
+    fallback_f = {"SL": 730.0, "GS": 1010.0}.get(discipline)
+    by_category = {item["competitionCategory"]: item for item in calculations}
+    entries_by_category: dict[str, list[dict[str, Any]]] = {"FEMALE": [], "MALE": []}
+    for group in groups:
+        category = group.get("competitionCategory")
+        if category in entries_by_category:
+            entries_by_category[category].extend(
+                entry for entry in group.get("entries", [])
+                if entry.get("status") == "CLASSIFIED" and entry.get("officialTimeSeconds") is not None
+            )
+
+    statistics = {"alreadyIncluded": 0, "penaltyAdded": 0, "calculated": 0, "unverified": 0}
+    for category, entries in entries_by_category.items():
+        if not entries:
+            continue
+        calculation = by_category.get(category, {})
+        f_value = calculation.get("fValue") or fallback_f
+        penalty = calculation.get("appliedPenalty")
+        if penalty is None:
+            penalty = calculation.get("roundedPenalty")
+        if penalty is None and calculation.get("calculatedPenalty") is not None:
+            penalty = round(float(calculation["calculatedPenalty"]), 2)
+        if f_value is None or penalty is None:
+            for entry in entries:
+                if entry.get("federationPoints") is not None:
+                    entry["pointsSource"] = "PDF_UNVERIFIED"
+                    statistics["unverified"] += 1
+            continue
+        best_time = min(float(entry["officialTimeSeconds"]) for entry in entries)
+        for entry in entries:
+            raw_points = round((float(entry["officialTimeSeconds"]) / best_time - 1.0) * float(f_value), 2)
+            final_points = round(raw_points + float(penalty), 2)
+            printed = entry.get("federationPoints")
+            entry.update(rawRacePoints=raw_points, appliedPenaltyPoints=round(float(penalty), 2))
+            if printed is not None:
+                entry["printedFederationPoints"] = round(float(printed), 2)
+            if printed is None:
+                entry.update(federationPoints=final_points, pointsSource="CALCULATED_FROM_TIME_AND_PENALTY")
+                statistics["calculated"] += 1
+            elif abs(float(printed) - final_points) <= 0.06:
+                entry.update(federationPoints=round(float(printed), 2), pointsSource="PDF_INCLUDES_PENALTY")
+                statistics["alreadyIncluded"] += 1
+            elif abs(float(printed) - raw_points) <= 0.06:
+                entry.update(federationPoints=final_points, pointsSource="PDF_RAW_PLUS_PENALTY")
+                statistics["penaltyAdded"] += 1
+            else:
+                entry.update(federationPoints=round(float(printed), 2), pointsSource="PDF_UNVERIFIED")
+                statistics["unverified"] += 1
+    return statistics
 
 
 def competition_statistics(text: str) -> dict[str, int] | None:
@@ -228,7 +283,7 @@ def parse_code_unclassified(line: str, target_club: str) -> dict[str, Any] | Non
 
 
 def parse_code_single_classified(line: str, target_club: str) -> dict[str, Any] | None:
-    pattern = rf"^(\d+)\s+(\d+)\s+(\d+)\s+(.+?),\s*(.+?)\s+((?:19|20)\d{{2}})\s+(\S+)\s+(.+?)\s+({TIME_PATTERN})\s+({TIME_PATTERN})\s+({NUMBER_PATTERN})$"
+    pattern = rf"^(\d+)\s+(\d+)\s+(\d+)\s+(.+?),\s*(.+?)\s+((?:19|20)\d{{2}})\s+(\S+)\s+(.+?)\s+({TIME_PATTERN})\s+({TIME_PATTERN})(?:\s+({TIME_PATTERN}))?\s+({NUMBER_PATTERN})$"
     match = re.match(pattern, line)
     if not match:
         return None
@@ -236,8 +291,9 @@ def parse_code_single_classified(line: str, target_club: str) -> dict[str, Any] 
     entry.update({
         "externalAthleteId": match.group(3), "federation": match.group(7),
         "status": "CLASSIFIED", "rank": int(match.group(1)),
-        "officialTimeSeconds": seconds(match.group(10)), "gapSeconds": 0.0,
-        "federationPoints": decimal_number(match.group(11)),
+        "officialTimeSeconds": seconds(match.group(10)),
+        "gapSeconds": seconds(match.group(11)) if match.group(11) else 0.0,
+        "federationPoints": decimal_number(match.group(12)),
         "runResults": [run_result(1, match.group(9))],
     })
     return entry
@@ -257,8 +313,10 @@ def parse_code_single_unclassified(line: str, target_club: str) -> dict[str, Any
     return entry
 
 
-def parse_entry(line: str, source_format: str, target_club: str) -> dict[str, Any] | None:
+def parse_entry(line: str, source_format: str, target_club: str, single_run_table: bool = False) -> dict[str, Any] | None:
     if source_format == FORMAT_RACE_CODE:
+        if single_run_table:
+            return parse_code_single_classified(line, target_club) or parse_code_single_unclassified(line, target_club)
         return (
             parse_code_classified(line, target_club)
             or parse_code_unclassified(line, target_club)
@@ -800,6 +858,7 @@ def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, ta
     current_group: dict[str, Any] | None = None
     in_results = False
     warnings: list[str] = []
+    single_run_table = bool(re.search(r"Zeit-1\s+Laufzeit\s+(?:Diff\s*\[s\]\s+)?Punkte", text, re.IGNORECASE))
 
     if source_format == FORMAT_DSVALPIN:
         if start_list:
@@ -824,7 +883,7 @@ def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, ta
                 break
             if not in_results or current_group is None:
                 continue
-            entry = parse_entry(line, source_format, target_club)
+            entry = parse_entry(line, source_format, target_club, single_run_table)
             if entry:
                 current_group["entries"].append(entry)
             elif re.match(r"^(?:---|\d+)\s+\d+\s+", line):
@@ -852,6 +911,7 @@ def extract_result_list(path: Path, start_list: dict[str, Any] | None = None, ta
     }
     if calculations := points_calculations(text):
         document["pointsCalculations"] = calculations
+        document["pointsNormalization"] = normalize_federation_points(groups, calculations, event.get("discipline", "OTHER"))
     if statistics := competition_statistics(text):
         document["competitionStatistics"] = statistics
 

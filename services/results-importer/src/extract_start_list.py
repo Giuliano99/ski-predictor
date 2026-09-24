@@ -180,9 +180,9 @@ def event_metadata(lines: list[str], text: str) -> dict[str, Any]:
     metadata: dict[str, Any] = {"name": event_name}
     if re.search(r"KidsCross", text, re.IGNORECASE):
         metadata["discipline"] = "KIDS_CROSS"
-    elif re.search(r"Riesenslalom|\(RS\)|Gedächtnisrennen RS", text, re.IGNORECASE):
+    elif (competition_code and competition_code.upper().endswith("MRBR")) or re.search(r"Riesenslalom|\(RS\)|Gedächtnisrennen RS", text, re.IGNORECASE):
         metadata["discipline"] = "GS"
-    elif re.search(r"\bSlalom\b|\bSL\b", text, re.IGNORECASE):
+    elif (competition_code and competition_code.upper().endswith("MSBS")) or re.search(r"\bSlalom\b|\bSL\b", text, re.IGNORECASE):
         metadata["discipline"] = "SL"
     else:
         metadata["discipline"] = "OTHER"

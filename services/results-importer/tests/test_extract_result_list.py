@@ -9,6 +9,7 @@ sys.path.insert(0, str(MODULE_ROOT))
 from extract_result_list import (  # noqa: E402
     finalize_group,
     group_from_line,
+    normalize_federation_points,
     parse_code_classified,
     parse_code_single_classified,
     parse_code_single_unclassified,
@@ -27,6 +28,32 @@ from extract_result_list import (  # noqa: E402
 
 
 class ExtractResultListTests(unittest.TestCase):
+    def test_points_normalization_keeps_total_and_adds_raw_penalty_once(self):
+        groups = [{"competitionCategory": "FEMALE", "entries": [
+            {"status": "CLASSIFIED", "officialTimeSeconds": 100.0, "federationPoints": 25.0},
+            {"status": "CLASSIFIED", "officialTimeSeconds": 110.0, "federationPoints": 101.0},
+            {"status": "CLASSIFIED", "officialTimeSeconds": 120.0, "federationPoints": 202.0},
+        ]}]
+        stats = normalize_federation_points(
+            groups, [{"competitionCategory": "FEMALE", "fValue": 1010.0, "appliedPenalty": 25.0}], "GS"
+        )
+        self.assertEqual(25.0, groups[0]["entries"][0]["federationPoints"])
+        self.assertEqual("PDF_INCLUDES_PENALTY", groups[0]["entries"][0]["pointsSource"])
+        self.assertEqual(126.0, groups[0]["entries"][1]["federationPoints"])
+        self.assertEqual(101.0, groups[0]["entries"][1]["printedFederationPoints"])
+        self.assertEqual("PDF_RAW_PLUS_PENALTY", groups[0]["entries"][1]["pointsSource"])
+        self.assertEqual(1, stats["alreadyIncluded"])
+        self.assertEqual(2, stats["penaltyAdded"])
+
+    def test_dsvalpin_penalty_with_dotted_leader_is_parsed(self):
+        calculations = points_calculations(
+            "Zuschlagsberechnung Mädchen\nF-Wert: 730\nBerechneter Zuschlag: 39,627\n"
+            "Gerundet: ................................ 39,63\n"
+            "Angewandter Zuschlag: .................... 39,63"
+        )
+        self.assertEqual("FEMALE", calculations[0]["competitionCategory"])
+        self.assertEqual(39.63, calculations[0]["appliedPenalty"])
+
     def test_preserves_dsv_points_calculation_summary(self) -> None:
         text = """Bewerbsstatistik
 Gemeldete Teilnehmer: 142
@@ -156,6 +183,15 @@ Angewandter Zuschlag: 25,00"""
         self.assertEqual(len(classified["runResults"]), 1)
         self.assertEqual(dnf["status"], "DNF")
         self.assertTrue(dnf["targetClub"])
+
+    def test_code_single_run_accepts_optional_gap_column(self):
+        entry = parse_code_single_classified(
+            "2 10 32687 STUERZER, Sienna 2013 BSV-MU SC Starnberg 56,88 56,88 1,58 95,27",
+            "Skiteam Oberhaching",
+        )
+        self.assertEqual(56.88, entry["officialTimeSeconds"])
+        self.assertEqual(1.58, entry["gapSeconds"])
+        self.assertEqual(95.27, entry["federationPoints"])
 
     def test_group_percentages_use_official_total(self):
         group = {

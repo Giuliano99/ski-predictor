@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import mimetypes
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,7 +23,7 @@ def classify_path(relative_path: Path) -> tuple[str, str | None, str | None, boo
     folded = [part.casefold() for part in parts]
     kind = "UNKNOWN"
     file_name = relative_path.name.casefold()
-    if "ranglisten" in folded or "rangliste" in file_name:
+    if "ranglisten" in folded or "rangliste" in file_name or re.match(r"dsvsa\d+end", file_name):
         kind = "DSV_RANKING"
     elif "rennanzahl" in folded or "anzahl der gefahrenen" in file_name or "rennanzahl" in file_name:
         kind = "DSV_RACE_COUNT"

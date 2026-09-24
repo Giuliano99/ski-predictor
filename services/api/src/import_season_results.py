@@ -43,6 +43,9 @@ def athlete_rows(service: ExtractionService, season_id: str) -> list[dict]:
             "ageClass": age_class, **season["resultSummary"],
             "listPoints": ranking.get("listPoints"), "ageClassRank": ranking.get("ageClassRank"),
             "birthYearRank": ranking.get("birthYearRank"),
+            "slalomPoints": (season.get("disciplinePoints") or {}).get("slalomPoints"),
+            "giantSlalomPoints": (season.get("disciplinePoints") or {}).get("giantSlalomPoints"),
+            "overallPoints": (season.get("disciplinePoints") or {}).get("overallPoints"),
         })
     return sorted(rows, key=lambda item: (item["ageClass"], item["birthYear"], item["name"]))
 
@@ -84,10 +87,10 @@ def markdown(report: dict) -> str:
     problems = [f"{item['file']}: {item['error']}" for item in report["items"] if item.get("error")]
     problems.extend(report["approvalErrors"])
     lines.extend([f"- {problem}" for problem in problems] or ["- Keine technischen Fehler."])
-    lines.extend(["", "## Oberhachinger U14/U16-Athleten", "", "| Athlet | AK | Jg. | Starts | Gewertet | Podest | Bestes Ergebnis | DNF | DSQ | DNS | Listenpunkte | AK-Rang | Jg.-Rang |", "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"])
+    lines.extend(["", "## Oberhachinger U14/U16-Athleten", "", "| Athlet | AK | Jg. | Starts | Gewertet | Podest | Bestes Ergebnis | DNF | DSQ | DNS | SL | RS | Gesamt | AK-Rang | Jg.-Rang |", "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"])
     for athlete in report["athletes"]:
         value = lambda key: athlete.get(key) if athlete.get(key) is not None else "–"
-        lines.append(f"| {athlete['name']} | {athlete['ageClass']} | {athlete['birthYear']} | {athlete['starts']} | {athlete['classified']} | {athlete['podiums']} | {value('bestRank')} | {athlete['dnf']} | {athlete['dsq']} | {athlete['dns']} | {value('listPoints')} | {value('ageClassRank')} | {value('birthYearRank')} |")
+        lines.append(f"| {athlete['name']} | {athlete['ageClass']} | {athlete['birthYear']} | {athlete['starts']} | {athlete['classified']} | {athlete['podiums']} | {value('bestRank')} | {athlete['dnf']} | {athlete['dsq']} | {athlete['dns']} | {value('slalomPoints')} | {value('giantSlalomPoints')} | {value('overallPoints')} | {value('ageClassRank')} | {value('birthYearRank')} |")
     return "\n".join(lines) + "\n"
 
 

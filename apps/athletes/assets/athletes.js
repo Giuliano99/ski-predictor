@@ -3,7 +3,7 @@ const dom = {
   list: document.querySelector("#athlete-list"), search: document.querySelector("#athlete-search"), athleteSelect: document.querySelector("#athlete-select"),
   profile: document.querySelector("#profile"), empty: document.querySelector("#empty-profile"), notice: document.querySelector("#notice"),
   name: document.querySelector("#profile-name"), meta: document.querySelector("#profile-meta"), id: document.querySelector("#profile-id"), season: document.querySelector("#season-select"),
-  points: document.querySelector("#metric-points"), pointsDate: document.querySelector("#metric-points-date"), ageRank: document.querySelector("#metric-age-rank"), birthRank: document.querySelector("#metric-birth-rank"),
+  overallPoints: document.querySelector("#metric-overall-points"), slPoints: document.querySelector("#metric-sl-points"), gsPoints: document.querySelector("#metric-gs-points"), pointsFormula: document.querySelector("#metric-points-formula"), ageRank: document.querySelector("#metric-age-rank"), birthRank: document.querySelector("#metric-birth-rank"),
   races: document.querySelector("#metric-races"), racesDate: document.querySelector("#metric-races-date"), resultsMetric: document.querySelector("#metric-results"), starts: document.querySelector("#metric-starts"),
   chart: document.querySelector("#points-chart"), change: document.querySelector("#points-change"), ranking: document.querySelector("#ranking-details"), raceCount: document.querySelector("#race-count-details"),
   results: document.querySelector("#results"), resultCount: document.querySelector("#result-count-label"), summary: document.querySelector("#season-summary"), logout: document.querySelector("#logout-button"),
@@ -37,16 +37,16 @@ function renderAthletes() {
 }
 
 function chart(history) {
-  if (!history.length) return `<div class="chart-empty">Für diese Saison ist noch kein Ranglistenstand vorhanden.</div>`;
+  if (!history.length) return `<div class="chart-empty">Für diese Saison ist noch kein punktewirksames Rennergebnis vorhanden.</div>`;
   const width = 780, height = 220, left = 48, right = 24, top = 26, bottom = 38;
-  const values = history.map((item) => Number(item.listPoints));
+  const values = history.map((item) => Number(item.overallPoints));
   const minimum = Math.min(...values), maximum = Math.max(...values), padding = Math.max((maximum - minimum) * .2, 5);
   const low = minimum - padding, high = maximum + padding;
   const x = (index) => history.length === 1 ? width / 2 : left + index * ((width - left - right) / (history.length - 1));
   const y = (value) => top + (high - value) / (high - low) * (height - top - bottom);
-  const points = history.map((item,index) => `${x(index)},${y(Number(item.listPoints))}`).join(" ");
+  const points = history.map((item,index) => `${x(index)},${y(Number(item.overallPoints))}`).join(" ");
   const grid = [0,.5,1].map((part) => { const value = high - (high-low)*part; const yy = y(value); return `<line class="chart-grid" x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}"/><text class="chart-label" x="4" y="${yy+4}">${decimal(value)}</text>`; }).join("");
-  const dots = history.map((item,index) => `<circle class="chart-dot" cx="${x(index)}" cy="${y(Number(item.listPoints))}" r="5"/><text class="chart-value" text-anchor="middle" x="${x(index)}" y="${y(Number(item.listPoints))-12}">${decimal(item.listPoints)}</text><text class="chart-label" text-anchor="middle" x="${x(index)}" y="${height-8}">${date(item.publishedAt).slice(0,5)}</text>`).join("");
+  const dots = history.map((item,index) => `<circle class="chart-dot" cx="${x(index)}" cy="${y(Number(item.overallPoints))}" r="5"/><text class="chart-value" text-anchor="middle" x="${x(index)}" y="${y(Number(item.overallPoints))-12}">${decimal(item.overallPoints)}</text><text class="chart-label" text-anchor="middle" x="${x(index)}" y="${height-8}">${date(item.date).slice(0,5)}</text>`).join("");
   return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Verlauf der DSV-Listenpunkte">${grid}<polyline class="chart-line" points="${points}"/>${dots}</svg>`;
 }
 
@@ -63,24 +63,24 @@ function renderProfile() {
   dom.name.textContent = payload.athlete.displayName; dom.meta.textContent = `Jahrgang ${payload.athlete.birthYear || "–"} · ${payload.athlete.club || "Verein unbekannt"}`;
   dom.id.textContent = payload.athlete.externalIds?.length ? `DSV-ID ${payload.athlete.externalIds.join(", ")}` : "Noch keine DSV-ID hinterlegt";
   dom.season.innerHTML = payload.seasons.map((item) => `<option value="${item.seasonId}">${item.seasonId.replace("-","/")}</option>`).join(""); dom.season.value = state.seasonId;
-  const ranking = season.latestRanking, count = season.latestPublishedRaceCount;
-  dom.points.textContent = decimal(ranking?.listPoints); dom.pointsDate.textContent = ranking ? `Stand ${date(ranking.publishedAt)}` : "Kein Ranglistenstand";
+  const ranking = season.latestRanking, count = season.latestPublishedRaceCount, points = season.disciplinePoints;
+  dom.overallPoints.textContent = decimal(points?.overallPoints); dom.slPoints.textContent = decimal(points?.slalomPoints); dom.gsPoints.textContent = decimal(points?.giantSlalomPoints); dom.pointsFormula.textContent = points?.overallFormula || "Noch keine Berechnung";
   dom.ageRank.textContent = ranking?.ageClassRank ? `#${ranking.ageClassRank}` : "–";
   dom.birthRank.textContent = ranking?.birthYearRank ? `#${ranking.birthYearRank}` : "–";
   dom.races.textContent = count?.raceCount ?? "–"; dom.racesDate.textContent = count ? `Stand ${date(count.observedAt)}` : "Keine offizielle Angabe";
   dom.resultsMetric.textContent = season.recordedResults.length; dom.starts.textContent = `${season.recordedRaceStarts} Starts in der Datenbasis`;
-  dom.chart.innerHTML = chart(season.rankingHistory);
+  dom.chart.innerHTML = chart(points?.history || []);
   dom.change.className = "change";
-  if (season.listPointsChange === null) dom.change.textContent = "Noch kein Vergleich";
-  else { const improved = season.listPointsChange < 0; dom.change.classList.add(improved ? "better" : season.listPointsChange > 0 ? "worse" : ""); dom.change.textContent = `${season.listPointsChange > 0 ? "+" : ""}${decimal(season.listPointsChange)} Punkte`; }
-  const fields = [["Gesamtrang",ranking?.overallRank],["Altersklasse",ranking?.ageClassRank],["Jahrgang",ranking?.birthYearRank],["Basiswert",ranking ? decimal(ranking.basePoints) : null]];
+  if (!points?.history?.length) dom.change.textContent = "Noch kein Rennen";
+  else { const change = points.overallPoints - points.basePoints; const improved = change < 0; dom.change.classList.add(improved ? "better" : change > 0 ? "worse" : ""); dom.change.textContent = `${change > 0 ? "+" : ""}${decimal(change)} Punkte`; }
+  const fields = [["Gesamtrang",ranking?.overallRank],["Altersklasse",ranking?.ageClassRank],["Jahrgang",ranking?.birthYearRank],["Saison-Startwert",points ? decimal(points.basePoints) : null]];
   dom.ranking.innerHTML = fields.map(([label,value]) => `<div><dt>${label}</dt><dd>${value ?? "–"}</dd></div>`).join("");
   dom.raceCount.innerHTML = count ? `<div class="count-card"><span>Veröffentlichter Stand ${date(count.observedAt)}</span><strong>${count.raceCount} Rennen</strong><small>${escapeHtml(count.coverage?.note || "Vollständiger Saisonstand")}</small></div>` : `<div class="chart-empty">Für diese Saison liegt keine veröffentlichte Rennanzahl vor.</div>`;
   const summary = season.resultSummary || {};
   const summaryFields = [["Starts",summary.starts ?? 0],["Gewertet",summary.classified ?? 0],["Podestplätze",summary.podiums ?? 0],["Bestes Ergebnis",summary.bestRank ? `Platz ${summary.bestRank}` : "–"],["DNF",summary.dnf ?? 0],["DSQ",summary.dsq ?? 0],["DNS",summary.dns ?? 0]];
   dom.summary.innerHTML = summaryFields.map(([label,value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
   dom.resultCount.textContent = `${season.recordedResults.length} Ergebnis${season.recordedResults.length === 1 ? "" : "se"}`;
-  dom.results.innerHTML = season.recordedResults.length ? season.recordedResults.map((item) => `<article class="result-row"><span class="result-date">${date(item.race.date)}</span><div class="result-race"><strong>${escapeHtml(item.race.name)}</strong><small>${escapeHtml(item.group.label)} · ${escapeHtml(item.race.discipline || "–")}</small></div><div class="result-value"><small>Platz</small><strong>${item.rank ?? "–"}</strong></div><div class="result-value"><small>Rennpunkte</small><strong>${decimal(item.federationPoints)}</strong></div><div class="result-value"><small>Zeit</small><strong>${seconds(item.officialTimeSeconds)}</strong></div><span class="result-status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></article>`).join("") : `<div class="chart-empty">Für diese Saison sind noch keine Rennergebnisse importiert.</div>`;
+  dom.results.innerHTML = season.recordedResults.length ? season.recordedResults.map((item) => `<article class="result-row"><span class="result-date">${date(item.race.date)}</span><div class="result-race"><strong>${escapeHtml(item.race.name)}</strong><small>${escapeHtml(item.group.label)} · ${escapeHtml(item.race.discipline || "–")}${item.appliedPenaltyPoints != null ? ` · ${decimal(item.rawRacePoints)} + ${decimal(item.appliedPenaltyPoints)} Zuschlag` : ""}</small></div><div class="result-value"><small>Platz</small><strong>${item.rank ?? "–"}</strong></div><div class="result-value"><small>DSV-Punkte</small><strong>${decimal(item.federationPoints)}</strong></div><div class="result-value"><small>Zeit</small><strong>${seconds(item.officialTimeSeconds)}</strong></div><span class="result-status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></article>`).join("") : `<div class="chart-empty">Für diese Saison sind noch keine Rennergebnisse importiert.</div>`;
 }
 
 async function selectAthlete(id) {

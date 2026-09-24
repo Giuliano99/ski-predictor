@@ -56,6 +56,18 @@ class ExtractDsvSnapshotTests(unittest.TestCase):
         self.assertEqual(131.75, result["basePoints"])
         self.assertEqual(103.66, result["listPoints"])
 
+    def test_club_end_list_row_keeps_start_points_and_ranks(self):
+        row = words(
+            ("33759", 25), ("GAUDLITZ", 62), ("Julian", 164), ("2012", 253),
+            ("M", 294), ("999,00", 341), ("137,53", 411), ("233", 477),
+            ("93", 523), ("38", 561),
+        )
+        result = MODULE.parse_club_end_list_row(row, "Skiteam Oberhaching")
+        self.assertEqual("33759", result["externalAthleteId"])
+        self.assertEqual(137.53, result["listPoints"])
+        self.assertEqual(93, result["ageClassRank"])
+        self.assertEqual(38, result["birthYearRank"])
+
     def test_season_is_derived_from_snapshot_date(self):
         self.assertEqual("2025-2026", MODULE.season_for(datetime(2026, 4, 12)))
         self.assertEqual("2026-2027", MODULE.season_for(datetime(2026, 9, 13)))
