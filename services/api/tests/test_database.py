@@ -13,9 +13,21 @@ SOURCE_DIRECTORY = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SOURCE_DIRECTORY))
 
 from database import Database, SQLiteDatabase, database_url  # noqa: E402
+from database_cli import source_document_text  # noqa: E402
 
 
 class DatabaseConfigurationTests(unittest.TestCase):
+    def test_reads_utf8_and_cp1252_source_text(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            utf8_path = root / "ranking-utf8.txt"
+            cp1252_path = root / "ranking-cp1252.txt"
+            utf8_path.write_bytes("Schülerpunkte".encode("utf-8-sig"))
+            cp1252_path.write_bytes("Schülerpunkte".encode("cp1252"))
+
+            self.assertEqual(source_document_text(utf8_path), "Schülerpunkte")
+            self.assertEqual(source_document_text(cp1252_path), "Schülerpunkte")
+
     def test_environment_overrides_local_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

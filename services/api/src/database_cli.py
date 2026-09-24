@@ -21,6 +21,18 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def source_document_text(path: Path) -> str:
+    if path.suffix.casefold() == ".pdf":
+        from extract_start_list import extract_pdf_text
+        _, text = extract_pdf_text(path)
+        return text
+    payload = path.read_bytes()
+    try:
+        return payload.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return payload.decode("cp1252", errors="replace")
+
+
 def import_existing(database: Database, catalog: DocumentCatalog) -> dict[str, int]:
     documents = catalog.documents()
     by_id = {document.document_id: document for document in documents}
@@ -41,8 +53,7 @@ def import_existing(database: Database, catalog: DocumentCatalog) -> dict[str, i
         raw = read_json(directory / "raw.json")
         normalized = read_json(directory / "normalized.json")
         review = job.get("review", {})
-        from extract_start_list import extract_pdf_text
-        _, source_text = extract_pdf_text(document.path)
+        source_text = source_document_text(document.path)
         database.save_extraction(job, document, raw, normalized, review, source_text)
         extractions += 1
         if job["status"] == "APPROVED":
