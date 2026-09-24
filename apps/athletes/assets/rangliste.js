@@ -1,4 +1,4 @@
-const state = { user: null, items: [], sortKey: "birthYear", sortDirection: "desc" };
+const state = { items: [], sortKey: "birthYear", sortDirection: "desc" };
 const dom = {
   season: document.querySelector("#overview-season"), filters: [...document.querySelectorAll("[data-filter]")],
   sortButtons: [...document.querySelectorAll("[data-sort]")], reset: document.querySelector("#reset-filters"), body: document.querySelector("#overview-body"),
@@ -9,10 +9,8 @@ function escapeHtml(value) { const node = document.createElement("div"); node.te
 function decimal(value) { return Number.isFinite(Number(value)) ? Number(value).toLocaleString("de-DE", { minimumFractionDigits:2, maximumFractionDigits:2 }) : "–"; }
 
 async function request(url, options = {}) {
-  if (options.method && options.method !== "GET" && state.user?.csrfToken) options.headers = { ...(options.headers || {}), "X-CSRF-Token":state.user.csrfToken };
   const response = await fetch(url, options); let body = {};
   try { body = await response.json(); } catch { body = {}; }
-  if (response.status === 401 || response.status === 403) { window.location.replace("/login/?next=/athleten/teamuebersicht.html"); throw new Error("Bitte anmelden."); }
   if (!response.ok) throw new Error(body.error?.message || `Fehler ${response.status}`);
   return body;
 }
@@ -36,7 +34,7 @@ function render() {
   const items = sortedItems(filteredItems()); dom.count.textContent = items.length;
   dom.sortButtons.forEach((button) => { button.dataset.indicator = button.dataset.sort === state.sortKey ? (state.sortDirection === "asc" ? "▲" : "▼") : ""; });
   dom.body.innerHTML = items.map((item) => `<tr>
-    <td data-label="Athlet"><a class="athlete-link" href="/athleten/?athlete=${encodeURIComponent(item.athleteId)}"><strong>${escapeHtml(item.displayName)}</strong><small>${escapeHtml(item.fullName)}</small></a></td>
+    <td data-label="Athlet"><a class="athlete-link" href="/athleten/?athlete=${encodeURIComponent(item.athleteId)}"><strong>${escapeHtml(item.displayName)}</strong></a></td>
     <td data-label="Jahrgang">${escapeHtml(item.birthYear || "–")}</td><td data-label="AK">${escapeHtml(item.ageClass)}</td>
     <td data-label="Basiswert">${decimal(item.basePoints)}</td><td data-label="Aktuelle Punkte"><strong>${decimal(item.overallPoints)}</strong></td>
     <td data-label="SL">${decimal(item.slalomPoints)}</td><td data-label="RS">${decimal(item.giantSlalomPoints)}</td>
@@ -54,7 +52,6 @@ async function loadOverview() {
 
 async function initialize() {
   try {
-    const identity = await request("/api/v1/auth/me"); state.user = identity.user;
     const collections = await request("/api/v1/collections");
     const seasons = [...new Set(collections.items.map((item) => item.seasonId).filter(Boolean))].sort().reverse();
     const now = new Date(), start = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1, current = `${start}-${start + 1}`;

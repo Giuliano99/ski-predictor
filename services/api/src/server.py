@@ -7,6 +7,7 @@ import hmac
 import ipaddress
 import json
 import mimetypes
+import os
 import re
 import threading
 import urllib.parse
@@ -42,7 +43,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.23.0"
+API_VERSION = "1.24.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -249,6 +250,27 @@ class ApiHandler(BaseHTTPRequestHandler):
         except ValueError:
             return self.client_address[0]
 
+    def is_public_athlete_host(self) -> bool:
+        configured = str(getattr(self.server, "athlete_public_host", "")).strip().casefold()  # type: ignore[attr-defined]
+        requested = self.headers.get("Host", "").split(":", 1)[0].strip().casefold()
+        return bool(configured and requested == configured)
+
+    @staticmethod
+    def is_public_athlete_api(parts: list[str]) -> bool:
+        return (
+            parts == ["api", "v1", "collections"]
+            or parts == ["api", "v1", "athletes"]
+            or (len(parts) == 5 and parts[:3] == ["api", "v1", "athletes"] and parts[4] == "analytics")
+            or (len(parts) == 5 and parts[:3] == ["api", "v1", "athlete-seasons"] and parts[4] == "overview")
+        )
+
+    @staticmethod
+    def public_athlete(value: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: value.get(key)
+            for key in ("id", "displayName", "birthYear", "club", "gender", "externalIds")
+        }
+
     def send_api_error(self, status: HTTPStatus, code: str, message: str) -> None:
         self.send_json({"error": {"code": code, "message": message}}, status)
 
@@ -295,6 +317,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
         try:
             if not parts:
+                if self.is_public_athlete_host():
+                    self.redirect("/athleten/")
+                    return
                 body = documentation_page(self.server.server_port)
                 self.send_response(HTTPStatus.OK)
                 self.common_headers("text/html; charset=utf-8", len(body))
@@ -326,8 +351,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_file(DASHBOARD_DIRECTORY / "assets" / Path(parts[2]).name)
                 return
             if parts[0] == "athleten":
+                protected_import = parts[1:] in (["import.html"], ["assets", "import.js"])
                 user = self.server.auth.authenticate(self.headers.get("Cookie"))  # type: ignore[attr-defined]
-                if not user or user.get("role") != "GAME_MASTER":
+                if (not self.is_public_athlete_host() or protected_import) and (not user or user.get("role") != "GAME_MASTER"):
                     self.redirect("/login/?next=/athleten/")
                     return
                 relative = Path(*parts[1:]) if len(parts) > 1 else Path("index.html")
@@ -370,9 +396,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.send_json({"user": user, "authentication": "required" if self.server.auth.enabled else "disabled"})
                 return
             if parts[:2] == ["api", "v1"]:
-                role = None if len(parts) > 2 and parts[2] == "predictor" else "GAME_MASTER"
-                if not self.authenticated_user(role):
-                    return
+                public_athlete_api = self.is_public_athlete_host() and self.is_public_athlete_api(parts)
+                if not public_athlete_api:
+                    role = None if len(parts) > 2 and parts[2] == "predictor" else "GAME_MASTER"
+                    if not self.authenticated_user(role):
+                        return
             if parts == ["api", "v1", "admin", "data-quality"]:
                 if not self.server.database:  # type: ignore[attr-defined]
                     raise DatabaseError("Die Datenbank ist nicht aktiviert.")
@@ -426,11 +454,20 @@ class ApiHandler(BaseHTTPRequestHandler):
                 self.send_json({"items": races, "total": len(races)})
                 return
             if parts == ["api", "v1", "athletes"]:
-                athletes = self.extractions.athletes(boolean_filter(first(query, "targetClub")))
+                target_club = True if self.is_public_athlete_host() else boolean_filter(first(query, "targetClub"))
+                athletes = self.extractions.athletes(target_club)
+                if self.is_public_athlete_host():
+                    athletes = [self.public_athlete(item) for item in athletes]
                 self.send_json({"items": athletes, "total": len(athletes)})
                 return
             if len(parts) == 5 and parts[:3] == ["api", "v1", "athlete-seasons"] and parts[4] == "overview":
-                self.send_json(self.extractions.athlete_season_overview(parts[3]))
+                payload = self.extractions.athlete_season_overview(parts[3])
+                if self.is_public_athlete_host():
+                    payload["items"] = [
+                        {key: value for key, value in item.items() if key != "fullName"}
+                        for item in payload.get("items", [])
+                    ]
+                self.send_json(payload)
                 return
             if len(parts) in {4, 5} and parts[:3] == ["api", "v1", "athletes"]:
                 athlete = self.extractions.athlete(parts[3])
@@ -447,7 +484,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                     self.send_json({"athlete": {key: value for key, value in athlete.items() if key not in {"starts", "results", "rankings", "raceCounts"}}, "items": athlete["raceCounts"], "total": len(athlete["raceCounts"])})
                     return
                 if parts[4] == "analytics":
-                    self.send_json(self.extractions.athlete_analytics(parts[3]))
+                    payload = self.extractions.athlete_analytics(parts[3])
+                    if self.is_public_athlete_host():
+                        payload["athlete"] = self.public_athlete(payload["athlete"])
+                    self.send_json(payload)
                     return
             if len(parts) == 4 and parts[:3] == ["api", "v1", "races"]:
                 self.send_json(self.extractions.race(parts[3]))
@@ -654,6 +694,7 @@ class ApiServer(ThreadingHTTPServer):
         self.catalog = catalog
         self.database = database
         self.auth = AuthService(database)
+        self.athlete_public_host = os.environ.get("SKI_ATHLETE_PUBLIC_HOST", "")
         self.extractions = ExtractionService(catalog, database=database)
 
     def sync_predictor(self) -> dict[str, int]:

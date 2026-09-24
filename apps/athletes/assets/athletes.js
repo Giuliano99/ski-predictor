@@ -1,4 +1,4 @@
-const state = { athletes: [], selectedId: null, analytics: null, seasonId: null, user: null };
+const state = { athletes: [], selectedId: null, analytics: null, seasonId: null };
 const dom = {
   list: document.querySelector("#athlete-list"), search: document.querySelector("#athlete-search"), athleteSelect: document.querySelector("#athlete-select"),
   profile: document.querySelector("#profile"), empty: document.querySelector("#empty-profile"), notice: document.querySelector("#notice"),
@@ -34,17 +34,15 @@ function formulaCards(points) {
 }
 
 async function request(url, options = {}) {
-  if (options.method && options.method !== "GET" && state.user?.csrfToken) options.headers = { ...(options.headers || {}), "X-CSRF-Token": state.user.csrfToken };
   const response = await fetch(url, options); let body = {};
   try { body = await response.json(); } catch { body = {}; }
-  if (response.status === 401 || response.status === 403) { window.location.replace("/login/?next=/athleten/"); throw new Error("Bitte anmelden."); }
   if (!response.ok) throw new Error(body.error?.message || `Fehler ${response.status}`);
   return body;
 }
 
 function filteredAthletes() {
   const query = dom.search.value.trim().toLocaleLowerCase("de");
-  return state.athletes.filter((athlete) => !query || `${athlete.fullName} ${athlete.birthYear}`.toLocaleLowerCase("de").includes(query));
+  return state.athletes.filter((athlete) => !query || `${athlete.displayName} ${athlete.birthYear}`.toLocaleLowerCase("de").includes(query));
 }
 
 function renderAthletes() {
@@ -130,7 +128,6 @@ async function selectAthlete(id) {
 
 async function initialize() {
   try {
-    const identity = await request("/api/v1/auth/me"); state.user = identity.user;
     const payload = await request("/api/v1/athletes?targetClub=true");
     const now = new Date(), seasonStart = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
     state.athletes = payload.items.filter((athlete) => Number(athlete.birthYear) >= seasonStart - 16 && Number(athlete.birthYear) <= seasonStart - 12);

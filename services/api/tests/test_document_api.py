@@ -202,6 +202,7 @@ class DocumentApiTests(unittest.TestCase):
     def test_authentication_enforces_player_and_game_master_roles(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
             "SKI_AUTH_REQUIRED": "1", "SKI_REGISTRATION_CODE": "invite-test",
+            "SKI_ATHLETE_PUBLIC_HOST": "ski.gg-apps.de",
         }, clear=False), patch("server.all_weekends", return_value=[]):
             root = Path(directory)
             database = SQLiteDatabase(root / "auth.sqlite3")
@@ -229,6 +230,21 @@ class DocumentApiTests(unittest.TestCase):
             try:
                 with self.assertRaises(urllib.error.HTTPError) as unauthorized:
                     urllib.request.urlopen(f"{base_url}/api/v1/weekends")
+                public_athletes_request = urllib.request.Request(
+                    f"{base_url}/api/v1/athletes?targetClub=true", headers={"Host": "ski.gg-apps.de"}
+                )
+                with urllib.request.urlopen(public_athletes_request) as response:
+                    public_athletes = json.load(response)
+                public_page_request = urllib.request.Request(
+                    f"{base_url}/athleten/", headers={"Host": "ski.gg-apps.de"}
+                )
+                with urllib.request.urlopen(public_page_request) as response:
+                    public_page_status = response.status
+                protected_import_request = urllib.request.Request(
+                    f"{base_url}/athleten/import.html", headers={"Host": "ski.gg-apps.de"}
+                )
+                with urllib.request.urlopen(protected_import_request) as response:
+                    protected_import_url = response.geturl()
                 registration_opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
                 registration = urllib.request.Request(
                     f"{base_url}/api/v1/auth/register",
@@ -286,6 +302,10 @@ class DocumentApiTests(unittest.TestCase):
                 thread.join(timeout=2)
 
         self.assertEqual(unauthorized.exception.code, 401)
+        self.assertEqual(public_athletes["total"], len(public_athletes["items"]))
+        self.assertTrue(all("fullName" not in item for item in public_athletes["items"]))
+        self.assertEqual(public_page_status, 200)
+        self.assertIn("/login/?next=/athleten/", protected_import_url)
         self.assertEqual(registration_status, 201)
         self.assertEqual(registered_session["id"], registered["id"])
         self.assertEqual(forbidden.exception.code, 403)
