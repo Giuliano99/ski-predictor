@@ -19,11 +19,14 @@ def person(name: str, external_id: str | None = None) -> dict:
     return value
 
 
-def artifact(document_id: str, people: list[dict]) -> dict:
+def artifact(document_id: str, people: list[dict], gender: str | None = None) -> dict:
     entries = []
     for item in people:
         entries.append(dict(item))
-    return {"documentId": document_id, "documentType": "START_LIST", "groups": [{"starters": entries}]}
+    group = {"starters": entries}
+    if gender:
+        group["competitionCategory"] = gender
+    return {"documentId": document_id, "documentType": "START_LIST", "groups": [group]}
 
 
 class AthleteIdentityRegistryTests(unittest.TestCase):
@@ -59,6 +62,19 @@ class AthleteIdentityRegistryTests(unittest.TestCase):
         self.assertEqual(merged["id"], first["athleteId"])
         self.assertEqual(canonical, first["athleteId"])
         self.assertEqual(athlete_count, 1)
+
+    def test_registers_gender_from_an_unambiguous_competition_group(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            registry = AthleteIdentityRegistry(Path(directory) / "athletes.json")
+            athlete = person("Anna Beispiel", "10042")
+            identity = registry.resolve(athlete)
+            registry.register_artifact(artifact(
+                "doc-one", [athlete | {"athleteId": identity["athleteId"]}], "FEMALE"
+            ))
+
+            stored = registry.athlete(identity["athleteId"])
+
+        self.assertEqual(stored["gender"], "FEMALE")
 
 
 if __name__ == "__main__":

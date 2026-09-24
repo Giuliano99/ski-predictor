@@ -10,13 +10,12 @@
   <body>
     <header class="topbar">
       <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
-      <nav><a class="active" href="/athleten/">Übersicht</a><a href="/athleten/import.html">Datenimport</a><button id="logout-button" type="button">Abmelden</button></nav>
+      <nav><a class="active" href="/athleten/">Athleten</a><a href="/athleten/teamuebersicht.html">Teamübersicht</a><a href="/athleten/punkte-erklaert.html">Punkte erklärt</a><a href="/athleten/import.html">Datenimport</a></nav>
     </header>
 
     <main>
       <section class="intro">
         <div><span class="eyebrow">U14 und U16</span><h1>Entwicklung auf einen Blick</h1><p>Rennergebnisse, Rennanzahl, DSV-Punkte und veröffentlichte Ranglistenstände aus einer gemeinsamen Datenbasis.</p></div>
-        <div class="source-note"><strong>Nachvollziehbare Daten</strong><span>Jeder Wert bleibt mit Saison und Stichtag verbunden.</span></div>
       </section>
 
       <div class="notice" id="notice" hidden></div>
@@ -34,12 +33,13 @@
           </header>
 
           <div class="metric-grid">
+            <article><span>Basiswert</span><strong id="metric-base-points">–</strong><small id="metric-base-note">Startwert der Saison</small></article>
             <article><span>Gesamtpunkte</span><strong id="metric-overall-points">–</strong><small id="metric-points-formula">Noch keine Berechnung</small></article>
-            <article><span>Slalom Punkte</span><strong id="metric-sl-points">–</strong><small>Aktueller bester Wert</small></article>
-            <article><span>Riesenslalom Punkte</span><strong id="metric-gs-points">–</strong><small>Aktueller bester Wert</small></article>
-            <article><span>Altersklasse</span><strong id="metric-age-rank">–</strong><small>Rang in Deutschland</small></article>
-            <article><span>Jahrgang</span><strong id="metric-birth-rank">–</strong><small>Rang in Deutschland</small></article>
-            <article><span>Offizielle Rennanzahl</span><strong id="metric-races">–</strong><small id="metric-races-date">Kein Stand</small></article>
+            <article><span>Bestes SL-Ergebnis</span><strong id="metric-sl-points">–</strong><small>Punkte aus dem besten Rennen</small></article>
+            <article><span>Bestes RS-Ergebnis</span><strong id="metric-gs-points">–</strong><small>Punkte aus dem besten Rennen</small></article>
+            <article><span>Rang Altersklasse</span><strong id="metric-age-rank">–</strong><small id="metric-age-rank-label">Deutschland</small></article>
+            <article><span>Rang Jahrgang</span><strong id="metric-birth-rank">–</strong><small id="metric-birth-rank-label">Deutschland</small></article>
+            <article><span>Rennanzahl</span><strong id="metric-races">–</strong><small id="metric-races-date">Kein Stand</small></article>
             <article><span>Vorhandene Ergebnisse</span><strong id="metric-results">0</strong><small id="metric-starts">0 Starts erfasst</small></article>
           </div>
 
@@ -47,6 +47,13 @@
             <div class="panel-head"><div><span class="eyebrow">Verlauf</span><h3>Berechnete Gesamtpunkte</h3></div><span class="change" id="points-change">Noch kein Rennen</span></div>
             <div class="chart" id="points-chart"></div>
             <p class="panel-note">Niedrigere Punkte sind besser. Die Verbesserungsliste verwendet jeweils das Minimum aus Basiswert, Basiswert mit SLbest oder RSbest, SLbest mit RSbest sowie einem einzelnen Ergebnis plus 30.</p>
+          </section>
+
+          <section class="panel formula-panel">
+            <div class="panel-head"><div><span class="eyebrow">Nachvollziehbar</span><h3>Geprüfte Punkteformeln</h3></div></div>
+            <p class="formula-context" id="formula-context"></p>
+            <div class="formula-candidates" id="formula-candidates"></div>
+            <p class="panel-note">Der niedrigste Wert wird für die Verbesserungsliste verwendet. „+ 30“ ist eine alternative Formel und kein pauschaler Zuschlag auf jedes Rennergebnis.</p>
           </section>
 
           <section class="split-grid">

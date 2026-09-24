@@ -295,6 +295,110 @@ def extract_club_end_list(path: Path, target_club: str) -> dict[str, Any]:
     }
 
 
+def read_text_file(path: Path) -> str:
+    for encoding in ("utf-8-sig", "cp1252"):
+        try:
+            return path.read_text(encoding=encoding)
+        except UnicodeDecodeError:
+            continue
+    raise ValueError(f"Zeichenkodierung von {path.name} nicht erkannt")
+
+
+def parse_text_start_row(line: str) -> dict[str, Any] | None:
+    if len(line) < 104 or not re.fullmatch(r"\d{5}", line[0:5]):
+        return None
+    birth_year = line[44:48].strip()
+    points = line[97:103].strip()
+    gender = line[105:106].strip()
+    if not re.fullmatch(r"\d{4}", birth_year) or not re.fullmatch(r"\d+(?:[.,]\d{2})", points) or gender not in {"F", "M"}:
+        return None
+    return {
+        "externalAthleteId": line[0:5],
+        "lastName": clean_text(line[10:30]),
+        "firstName": clean_text(line[30:44]),
+        "birthYear": int(birth_year),
+        "gender": "FEMALE" if gender == "F" else "MALE",
+        "club": clean_text(line[54:84]),
+        "federation": clean_text(line[84:97]),
+        "basePoints": float(points.replace(",", ".")),
+        "listPoints": float(points.replace(",", ".")),
+        "overallRank": None,
+        "ageClassRank": None,
+        "birthYearRank": None,
+    }
+
+
+def assign_competition_ranks(entries: list[dict[str, Any]], field: str) -> None:
+    previous_points: float | None = None
+    current_rank = 0
+    for position, entry in enumerate(sorted(entries, key=lambda item: (item["listPoints"], item["lastName"], item["firstName"])), start=1):
+        if previous_points is None or entry["listPoints"] != previous_points:
+            current_rank = position
+            previous_points = entry["listPoints"]
+        entry[field] = current_rank
+
+
+def add_text_start_ranks(entries: list[dict[str, Any]], season_end_year: int) -> None:
+    for gender in {entry["gender"] for entry in entries}:
+        gender_entries = [entry for entry in entries if entry["gender"] == gender]
+        assign_competition_ranks(gender_entries, "overallRank")
+        for birth_year in {entry["birthYear"] for entry in gender_entries}:
+            birth_year_entries = [entry for entry in gender_entries if entry["birthYear"] == birth_year]
+            assign_competition_ranks(birth_year_entries, "birthYearRank")
+        for age_class, ages in (("U14", {13, 14}), ("U16", {15, 16})):
+            age_class_entries = [entry for entry in gender_entries if season_end_year - entry["birthYear"] in ages]
+            if age_class_entries:
+                assign_competition_ranks(age_class_entries, "ageClassRank")
+                for entry in age_class_entries:
+                    entry["ageClass"] = age_class
+
+
+def extract_text_start_list(path: Path, target_club: str) -> dict[str, Any]:
+    raw_text = read_text_file(path)
+    entries_by_gender: dict[str, list[dict[str, Any]]] = {"FEMALE": [], "MALE": []}
+    for line in raw_text.splitlines():
+        entry = parse_text_start_row(line)
+        if entry:
+            entries_by_gender[entry["gender"]].append(entry)
+    all_entries = entries_by_gender["FEMALE"] + entries_by_gender["MALE"]
+    if not all_entries:
+        raise ValueError(f"Keine DSV-Startwerte in {path.name} erkannt")
+    identifier = document_id(path, raw_text)
+    year_match = re.fullmatch(r"DSVSA(\d{2})\d+", identifier, re.IGNORECASE)
+    if not year_match:
+        raise ValueError(f"Keine DSV-Saison in {path.name} erkannt")
+    end_year = 2000 + int(year_match.group(1))
+    add_text_start_ranks(all_entries, end_year + 1)
+    target = target_club.casefold()
+    target_entries = [entry for entry in all_entries if entry["club"].casefold() == target]
+    return {
+        "schemaVersion": 1,
+        "documentType": RANKING,
+        "source": source_metadata(path, "DSV_SEASON_START_TXT", 1),
+        "rawText": raw_text,
+        "snapshot": {
+            "documentId": identifier,
+            "seasonId": f"{end_year}-{end_year + 1}",
+            "publishedAt": f"{end_year}-07-01T00:00:00",
+            "timezone": "Europe/Berlin",
+            "snapshotKind": "SEASON_START_BASE",
+            "sourceSeasonId": f"{end_year - 1}-{end_year}",
+        },
+        "sections": [
+            {"scope": "OVERALL", "label": "Saison-Startwerte", "gender": gender, "entries": entries}
+            for gender, entries in entries_by_gender.items() if entries
+        ],
+        "statistics": {
+            "sections": sum(bool(entries) for entries in entries_by_gender.values()),
+            "entries": len(all_entries),
+            "uniqueAthletes": len({entry["externalAthleteId"] for entry in all_entries}),
+            "targetClubEntries": len(target_entries),
+            "targetClubUniqueAthletes": len({entry["externalAthleteId"] for entry in target_entries}),
+        },
+        "warnings": [],
+    }
+
+
 def parse_count_row(words: list[dict[str, Any]]) -> dict[str, Any] | None:
     athlete_id = column_text(words, 60, 100)
     if not re.fullmatch(r"\d{5}", athlete_id):
@@ -383,6 +487,8 @@ def extract_race_count(path: Path, target_club: str) -> dict[str, Any]:
 
 
 def detect_document_type(path: Path) -> str:
+    if path.suffix.casefold() == ".txt":
+        return CLUB_END_LIST
     with pdfplumber.open(path) as pdf:
         sample = clean_text("\n".join((page.extract_text() or "") for page in pdf.pages[:2]))
     if "Rennanzahl U14" in sample or "AnzRen" in sample:
@@ -402,6 +508,8 @@ def extract(path: Path, requested_type: str, target_club: str) -> dict[str, Any]
     if document_type == RACE_COUNT:
         return extract_race_count(path, target_club)
     if document_type == CLUB_END_LIST:
+        if path.suffix.casefold() == ".txt":
+            return extract_text_start_list(path, target_club)
         return extract_club_end_list(path, target_club)
     raise ValueError(f"Nicht unterstützter DSV-Dokumenttyp: {document_type}")
 

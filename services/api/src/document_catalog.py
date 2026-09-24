@@ -23,7 +23,12 @@ def classify_path(relative_path: Path) -> tuple[str, str | None, str | None, boo
     folded = [part.casefold() for part in parts]
     kind = "UNKNOWN"
     file_name = relative_path.name.casefold()
-    if "ranglisten" in folded or "rangliste" in file_name or re.match(r"dsvsa\d+end", file_name):
+    if (
+        "ranglisten" in folded
+        or "rangliste" in file_name
+        or re.match(r"dsvsa\d+(?:end)?(?:\.[^.]+)?$", file_name)
+        or bool(re.match(r"dsvsa\d+end(?:_|\.|$)", file_name))
+    ):
         kind = "DSV_RANKING"
     elif "rennanzahl" in folded or "anzahl der gefahrenen" in file_name or "rennanzahl" in file_name:
         kind = "DSV_RACE_COUNT"
@@ -121,7 +126,9 @@ class DocumentCatalog:
         if not self.storage_root.is_dir():
             return []
         documents = []
-        for path in self.storage_root.rglob("*.pdf"):
+        for path in self.storage_root.rglob("*"):
+            if path.suffix.casefold() not in {".pdf", ".txt"}:
+                continue
             if not path.is_file():
                 continue
             try:

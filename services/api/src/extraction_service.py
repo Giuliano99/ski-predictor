@@ -17,7 +17,7 @@ from typing import Any
 from athlete_identity import AthleteIdentityError, AthleteIdentityRegistry
 from database import Database
 from document_catalog import Document, DocumentCatalog
-from dsv_points import MAXIMUM_START_POINTS, season_projection
+from dsv_points import MAXIMUM_START_POINTS, adjusted_season_base, round_points, season_projection
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
@@ -30,7 +30,7 @@ from extract_start_list import extract_pdf_text, extract_start_list, slugify  # 
 from extract_dsv_snapshot import extract as extract_dsv_snapshot  # noqa: E402
 
 
-EXTRACTION_VERSION = "ski-predictor-extractor-v5.2-dsv-points-raw"
+EXTRACTION_VERSION = "ski-predictor-extractor-v5.6-season-bases"
 JOB_STATUSES = {"PENDING", "PROCESSING", "REVIEW_REQUIRED", "APPROVED", "SUPERSEDED", "FAILED"}
 
 
@@ -263,13 +263,26 @@ class ExtractionService:
         if document.season_id and snapshot.get("seasonId") != document.season_id:
             snapshot["sourceSeasonId"] = snapshot.get("sourceSeasonId") or snapshot.get("seasonId")
             snapshot["seasonId"] = document.season_id
+        source = {key: value for key, value in extracted.get("source", {}).items() if key != "rawText"}
+        if source.get("format") == "DSV_CLUB_END_LIST_PDF" and snapshot.get("snapshotKind") == "SEASON_START_BASE":
+            for section in sections:
+                gender = section.get("gender")
+                for person in section.get("entries", []):
+                    previous_end_points = float(person["listPoints"])
+                    adjusted, correction = adjusted_season_base(previous_end_points, snapshot["seasonId"], gender)
+                    person.update({
+                        "previousEndListPoints": round_points(previous_end_points),
+                        "seasonCorrectionPoints": correction,
+                        "basePoints": adjusted,
+                        "listPoints": adjusted,
+                    })
+            snapshot["baseDerivation"] = "PREVIOUS_END_LIST_PLUS_SEASON_CORRECTION"
         timestamp = snapshot.get("publishedAt") or snapshot.get("observedAt")
         snapshot_id = stable_id("dsv-snapshot", {
             "type": extracted["documentType"],
             "documentId": snapshot.get("documentId"),
             "timestamp": timestamp,
         })
-        source = {key: value for key, value in extracted.get("source", {}).items() if key != "rawText"}
         normalized = {
             "schemaVersion": 1,
             "extractionVersion": EXTRACTION_VERSION,
@@ -602,7 +615,7 @@ class ExtractionService:
     def athletes(self, target_club: bool | None = None) -> list[dict[str, Any]]:
         return self.identities.public_athletes(target_club)
 
-    def athlete(self, athlete_id: str) -> dict[str, Any]:
+    def athlete(self, athlete_id: str, artifacts: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         try:
             athlete = self.identities.athlete(athlete_id)
         except AthleteIdentityError as error:
@@ -611,7 +624,8 @@ class ExtractionService:
         results = []
         rankings = []
         race_counts = []
-        for artifact in self._approved_artifacts():
+        race_count_coverages = []
+        for artifact in artifacts if artifacts is not None else self._approved_artifacts():
             if artifact["documentType"] == "START_LIST":
                 for group in artifact["groups"]:
                     for entry in group.get("starters", []):
@@ -626,13 +640,26 @@ class ExtractionService:
                 for section in artifact["sections"]:
                     for entry in section.get("entries", []):
                         if entry.get("athleteId") == athlete["id"]:
-                            rankings.append({"snapshot": artifact["snapshot"], "section": {key: section.get(key) for key in ("scope", "label", "gender", "ageClass", "birthYear")}, "ranking": entry})
+                            rankings.append({
+                                "snapshot": artifact["snapshot"],
+                                "sourceFormat": artifact.get("source", {}).get("format"),
+                                "section": {key: section.get(key) for key in ("scope", "label", "gender", "ageClass", "birthYear")},
+                                "ranking": entry,
+                            })
             elif artifact["documentType"] == "DSV_RACE_COUNT":
+                race_count_coverages.append({
+                    "snapshot": artifact["snapshot"],
+                    "coverage": artifact.get("coverage"),
+                    "sections": [
+                        {key: section.get(key) for key in ("ageClass", "minimumIncludedRaces", "maximumRaces")}
+                        for section in artifact["sections"]
+                    ],
+                })
                 for section in artifact["sections"]:
                     for entry in section.get("entries", []):
                         if entry.get("athleteId") == athlete["id"]:
                             race_counts.append({"snapshot": artifact["snapshot"], "coverage": artifact.get("coverage"), "ageClass": section.get("ageClass"), "raceCount": entry})
-        return athlete | {"starts": starts, "results": results, "rankings": rankings, "raceCounts": race_counts}
+        return athlete | {"starts": starts, "results": results, "rankings": rankings, "raceCounts": race_counts, "raceCountCoverages": race_count_coverages}
 
     @staticmethod
     def _season_for_date(value: str | None) -> str | None:
@@ -642,14 +669,15 @@ class ExtractionService:
         start = year if month >= 7 else year - 1
         return f"{start}-{start + 1}"
 
-    def athlete_analytics(self, athlete_id: str) -> dict[str, Any]:
-        profile = self.athlete(athlete_id)
+    def athlete_analytics(self, athlete_id: str, artifacts: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+        profile = self.athlete(athlete_id, artifacts)
         seasons: dict[str, dict[str, Any]] = {}
 
         def season(value: str) -> dict[str, Any]:
             return seasons.setdefault(value, {
                 "seasonId": value, "recordedResults": [], "rankingHistory": [],
-                "raceCountHistory": [], "recordedRaceStarts": 0,
+                "raceCountHistory": [], "raceCountCoverageHistory": [], "recordedRaceStarts": 0,
+                "reportedDns": 0,
             })
 
         for item in profile["results"]:
@@ -669,9 +697,14 @@ class ExtractionService:
                 "pointsSource": result.get("pointsSource"),
                 "officialTimeSeconds": result.get("officialTimeSeconds"), "started": started,
             }
-            season(season_id)["recordedResults"].append(compact)
+            season_value = season(season_id)
             if started:
-                season(season_id)["recordedRaceStarts"] += 1
+                season_value["recordedResults"].append(compact)
+                season_value["recordedRaceStarts"] += 1
+            else:
+                # DNS remains in the approved raw extraction for auditability,
+                # but it is not an athlete result because no race was started.
+                season_value["reportedDns"] += 1
 
         ranking_by_snapshot: dict[str, dict[str, Any]] = {}
         scope_priority = {"OVERALL": 0, "AGE_CLASS": 1, "BIRTH_YEAR": 2}
@@ -682,9 +715,12 @@ class ExtractionService:
                 "snapshotId": snapshot_id, "documentId": snapshot.get("documentId"),
                 "publishedAt": snapshot.get("publishedAt"), "seasonId": snapshot["seasonId"],
                 "snapshotKind": snapshot.get("snapshotKind"),
+                "sourceFormat": item.get("sourceFormat"),
                 "scope": item["section"],
                 "basePoints": item["ranking"].get("basePoints"),
                 "listPoints": item["ranking"].get("listPoints"),
+                "previousEndListPoints": item["ranking"].get("previousEndListPoints"),
+                "seasonCorrectionPoints": item["ranking"].get("seasonCorrectionPoints"),
                 "overallRank": item["ranking"].get("overallRank"),
                 "ageClassRank": item["ranking"].get("ageClassRank"),
                 "birthYearRank": item["ranking"].get("birthYearRank"),
@@ -705,15 +741,41 @@ class ExtractionService:
                 "coverage": item.get("coverage"),
             })
 
+        for item in profile.get("raceCountCoverages", []):
+            snapshot = item["snapshot"]
+            season(snapshot["seasonId"])["raceCountCoverageHistory"].append({
+                "snapshotId": snapshot["id"], "documentId": snapshot.get("documentId"),
+                "observedAt": snapshot.get("observedAt"), "coverage": item.get("coverage"),
+                "sections": item.get("sections", []),
+            })
+
         for value in seasons.values():
             value["recordedResults"].sort(key=lambda item: item["race"].get("date") or "")
             value["rankingHistory"].sort(key=lambda item: item.get("publishedAt") or "")
             value["raceCountHistory"].sort(key=lambda item: item.get("observedAt") or "")
+            value["raceCountCoverageHistory"].sort(key=lambda item: item.get("observedAt") or "")
             value["latestRanking"] = value["rankingHistory"][-1] if value["rankingHistory"] else None
             value["latestPublishedRaceCount"] = value["raceCountHistory"][-1] if value["raceCountHistory"] else None
+            latest_coverage = value["raceCountCoverageHistory"][-1] if value["raceCountCoverageHistory"] else None
+            official_count = value["latestPublishedRaceCount"]
+            if official_count:
+                value["raceCountOverview"] = {**official_count, "source": "DSV_OFFICIAL"}
+            else:
+                season_end_year = int(value["seasonId"].split("-")[1])
+                athlete_age = season_end_year - int(profile.get("birthYear") or 0)
+                age_class = "U14" if athlete_age in {13, 14} else "U16" if athlete_age in {15, 16} else None
+                coverage_section = next((item for item in (latest_coverage or {}).get("sections", []) if item.get("ageClass") == age_class), None)
+                value["raceCountOverview"] = {
+                    "raceCount": value["recordedRaceStarts"], "source": "IMPORTED_RESULTS",
+                    "observedAt": max((item["race"].get("date") or "" for item in value["recordedResults"]), default=None),
+                    "ageClass": age_class,
+                    "officialMinimumIncludedRaces": (coverage_section or {}).get("minimumIncludedRaces"),
+                    "maximumRaces": (coverage_section or {}).get("maximumRaces"),
+                    "coverage": (latest_coverage or {}).get("coverage"),
+                }
             if len(value["rankingHistory"]) >= 2:
                 first, last = value["rankingHistory"][0], value["rankingHistory"][-1]
-                value["listPointsChange"] = round(last["listPoints"] - first["listPoints"], 2)
+                value["listPointsChange"] = round_points(last["listPoints"] - first["listPoints"])
             else:
                 value["listPointsChange"] = None
             statuses = {status: 0 for status in ("CLASSIFIED", "DNS", "DNF", "DSQ")}
@@ -726,20 +788,65 @@ class ExtractionService:
                 "documents": len(value["recordedResults"]),
                 "starts": value["recordedRaceStarts"],
                 "classified": statuses["CLASSIFIED"],
-                "dns": statuses["DNS"], "dnf": statuses["DNF"], "dsq": statuses["DSQ"],
+                "dns": value.pop("reportedDns", 0), "dnf": statuses["DNF"], "dsq": statuses["DSQ"],
                 "podiums": sum(rank <= 3 for rank in classified_ranks),
                 "bestRank": min(classified_ranks) if classified_ranks else None,
             }
             start_snapshot = next((item for item in value["rankingHistory"] if item.get("snapshotKind") == "SEASON_START_BASE"), None)
-            birth_year = int(profile.get("birthYear") or 0)
-            base_points = MAXIMUM_START_POINTS if birth_year == 2013 or start_snapshot is None else float(start_snapshot["listPoints"])
-            value["disciplinePoints"] = season_projection(base_points, value["recordedResults"])
+            if start_snapshot is None:
+                base_points = MAXIMUM_START_POINTS
+            elif start_snapshot.get("seasonCorrectionPoints") is not None:
+                base_points = float(start_snapshot["listPoints"])
+            elif start_snapshot.get("sourceFormat") == "DSV_CLUB_END_LIST_PDF":
+                previous_end_points = float(start_snapshot["listPoints"])
+                base_points, correction = adjusted_season_base(
+                    previous_end_points, value["seasonId"], profile.get("gender") or "MALE"
+                )
+                start_snapshot["previousEndListPoints"] = previous_end_points
+                start_snapshot["seasonCorrectionPoints"] = correction
+                start_snapshot["listPoints"] = base_points
+            else:
+                base_points = float(start_snapshot["listPoints"])
+            value["disciplinePoints"] = season_projection(base_points, value["recordedResults"], value["seasonId"])
             value["disciplinePoints"]["baseSource"] = (
-                "MAXIMUM_NEW_ATHLETE" if birth_year == 2013 or start_snapshot is None else "DSV_PREVIOUS_END_LIST"
+                "MAXIMUM_NEW_ATHLETE" if start_snapshot is None else "DSV_SEASON_START_LIST"
             )
+            if start_snapshot:
+                value["disciplinePoints"]["previousEndListPoints"] = start_snapshot.get("previousEndListPoints")
+                value["disciplinePoints"]["seasonCorrectionPoints"] = start_snapshot.get("seasonCorrectionPoints")
 
-        athlete = {key: value for key, value in profile.items() if key not in {"starts", "results", "rankings", "raceCounts"}}
+        athlete = {key: value for key, value in profile.items() if key not in {"starts", "results", "rankings", "raceCounts", "raceCountCoverages"}}
         return {"athlete": athlete, "seasons": sorted(seasons.values(), key=lambda item: item["seasonId"], reverse=True)}
+
+    def athlete_season_overview(self, season_id: str) -> dict[str, Any]:
+        if not re.fullmatch(r"\d{4}-\d{4}", season_id):
+            raise ExtractionError("Die Saison muss das Format JJJJ-JJJJ haben.")
+        artifacts = self._approved_artifacts()
+        season_end_year = int(season_id.split("-")[1])
+        items = []
+        for athlete in self.athletes(True):
+            birth_year = athlete.get("birthYear")
+            age = season_end_year - int(birth_year or 0)
+            age_class = "U14" if age in {13, 14} else "U16" if age in {15, 16} else None
+            if not age_class:
+                continue
+            analytics = self.athlete_analytics(athlete["id"], artifacts)
+            selected = next((item for item in analytics["seasons"] if item["seasonId"] == season_id), None)
+            if not selected:
+                continue
+            points = selected.get("disciplinePoints") or {}
+            ranking = selected.get("latestRanking") or {}
+            items.append({
+                "athleteId": athlete["id"], "displayName": athlete.get("displayName"),
+                "fullName": athlete.get("fullName"), "birthYear": birth_year, "ageClass": age_class,
+                "gender": athlete.get("gender") or (ranking.get("scope") or {}).get("gender"),
+                "basePoints": points.get("basePoints"), "overallPoints": points.get("overallPoints"),
+                "slalomPoints": points.get("slalomPoints"), "giantSlalomPoints": points.get("giantSlalomPoints"),
+                "birthYearRank": ranking.get("birthYearRank"), "ageClassRank": ranking.get("ageClassRank"),
+                "recordedRaceStarts": selected.get("recordedRaceStarts", 0),
+            })
+        items.sort(key=lambda item: (-(item.get("birthYear") or 0), item.get("birthYearRank") or 1_000_000, item.get("displayName") or ""))
+        return {"seasonId": season_id, "items": items, "total": len(items)}
 
     def merge_athletes(self, source_id: str, target_id: str) -> dict[str, Any]:
         try:

@@ -42,7 +42,7 @@ from workflow_service import (
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
-API_VERSION = "1.15.0"
+API_VERSION = "1.23.0"
 MAX_JSON_BYTES = 256 * 1024
 LOCAL_ORIGIN_PATTERN = re.compile(r"^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$")
 DASHBOARD_DIRECTORY = WORKSPACE / "apps" / "game-master"
@@ -132,6 +132,7 @@ def openapi_document(port: int) -> dict[str, Any]:
             "/athletes/{athleteId}/rankings": {"get": {"summary": "DSV-Ranglistenstände eines Athleten", "responses": {"200": {"description": "Ranglistenstände"}}}},
             "/athletes/{athleteId}/race-counts": {"get": {"summary": "Veröffentlichte Rennanzahlstände eines Athleten", "responses": {"200": {"description": "Rennanzahlstände"}}}},
             "/athletes/{athleteId}/analytics": {"get": {"summary": "Saisonweise Athletenübersicht", "responses": {"200": {"description": "Ergebnisse, Punkteverlauf und Ranglistenstände"}}}},
+            "/athlete-seasons/{seasonId}/overview": {"get": {"summary": "Punkteübersicht aller Vereinsathleten", "responses": {"200": {"description": "Basiswert, aktuelle Punkte und Ränge"}}}},
             "/athlete-identities/merge": {"post": {"summary": "Doppelte Athletenidentitäten zusammenführen", "responses": {"200": {"description": "Zusammengeführt"}}}},
             "/predictor/rounds/current": {"get": {"summary": "Aktuelle öffentliche Tipprunde", "responses": {"200": {"description": "Tipprunde"}}}},
             "/predictor/rounds/{tipRoundId}/submissions": {
@@ -427,6 +428,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             if parts == ["api", "v1", "athletes"]:
                 athletes = self.extractions.athletes(boolean_filter(first(query, "targetClub")))
                 self.send_json({"items": athletes, "total": len(athletes)})
+                return
+            if len(parts) == 5 and parts[:3] == ["api", "v1", "athlete-seasons"] and parts[4] == "overview":
+                self.send_json(self.extractions.athlete_season_overview(parts[3]))
                 return
             if len(parts) in {4, 5} and parts[:3] == ["api", "v1", "athletes"]:
                 athlete = self.extractions.athlete(parts[3])

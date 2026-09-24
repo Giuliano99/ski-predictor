@@ -10,7 +10,7 @@
   <body>
     <header class="topbar">
       <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
-      <nav><a href="/athleten/">Übersicht</a><a class="active" href="/athleten/import.html">Datenimport</a><button id="logout-button" type="button">Abmelden</button></nav>
+      <nav><a href="/athleten/">Athleten</a><a href="/athleten/teamuebersicht.html">Teamübersicht</a><a href="/athleten/punkte-erklaert.html">Punkte erklärt</a><a class="active" href="/athleten/import.html">Datenimport</a></nav>
     </header>
 
     <main class="import-main">
@@ -21,11 +21,11 @@
 
       <div class="notice" id="notice" hidden></div>
       <section class="import-panel">
-        <div class="panel-head"><div><span class="eyebrow">Neue Datei</span><h2>PDF hochladen</h2></div><span class="status-badge" id="import-status">BEREIT</span></div>
+        <div class="panel-head"><div><span class="eyebrow">Neue Datei</span><h2>DSV-Datei hochladen</h2></div><span class="status-badge" id="import-status">BEREIT</span></div>
         <form class="import-form" id="import-form">
           <label><span>Saison</span><input id="import-season" name="seasonId" pattern="\d{4}-\d{4}" placeholder="2025-2026" required /></label>
           <label><span>Dokumentart</span><select id="import-category" name="category"><option value="rankings">DSV-Rangliste</option><option value="race-counts">Rennanzahl-Liste</option></select></label>
-          <label class="file-picker"><span>PDF-Datei</span><input id="import-file" name="file" type="file" accept=".pdf,application/pdf" required /></label>
+          <label class="file-picker"><span>PDF- oder TXT-Datei</span><input id="import-file" name="file" type="file" accept=".pdf,.txt,application/pdf,text/plain" required /></label>
           <button class="primary-button" type="submit">Hochladen und prüfen</button>
         </form>
         <p class="selected-file" id="selected-file">Noch keine Datei ausgewählt.</p>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DSV-Schülerpunkte einfach für Eltern erklärt" />
+    <title>Punkte erklärt | Athletenanalyse</title>
+    <link rel="stylesheet" href="/athleten/assets/athletes.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
+      <nav><a href="/athleten/">Athleten</a><a href="/athleten/teamuebersicht.html">Teamübersicht</a><a class="active" href="/athleten/punkte-erklaert.html">Punkte erklärt</a><a href="/athleten/import.html">Datenimport</a></nav>
+    </header>
+
+    <main class="explanation-main">
+      <section class="intro">
+        <div><span class="eyebrow">Für Eltern erklärt</span><h1>So funktionieren DSV-Schülerpunkte</h1><p>Das Wichtigste zuerst: Weniger Punkte sind besser. Platz eins bedeutet aber nicht automatisch null Punkte.</p></div>
+        <div class="source-note"><strong>U14 und U16</strong><span>Vereinfachte Erklärung nach dem Reglement 2026/27.</span></div>
+      </section>
+
+      <section class="explanation-steps">
+        <article class="explanation-card"><span class="step-number">1</span><div><h2>Der Basiswert ist der Saisonstart</h2><p>Neue Athleten beginnen mit 999,00 Punkten. Bei erfahrenen Athleten entsteht der Basiswert aus der letzten Saison-Endliste und dem vom DSV festgelegten Korrekturwert.</p><div class="example-strip"><span>Marlene E. 2026/27</span><strong>109,23 Punkte</strong></div></div></article>
+        <article class="explanation-card"><span class="step-number">2</span><div><h2>Jedes Rennen liefert einen Punktewert</h2><p>Der Punktewert berücksichtigt den Zeitrückstand und den offiziellen Rennzuschlag. Deshalb können zwei gleich platzierte Ergebnisse bei unterschiedlichen Rennen verschieden viele Punkte bringen.</p><div class="compare"><div><small>Besser</small><strong>70 Punkte</strong></div><div><small>Schlechter</small><strong>140 Punkte</strong></div></div></div></article>
+        <article class="explanation-card"><span class="step-number">3</span><div><h2>SL und RS werden getrennt gesammelt</h2><p>Für kleine Radien zählt das beste MSBS-Ergebnis als SLbest. Für große Radien zählt das beste MRBR-Ergebnis als RSbest. „Bestes Ergebnis“ bedeutet immer: der niedrigste Punktewert.</p><div class="discipline-pair"><div><span>SLbest</span><strong>100,00</strong></div><div><span>RSbest</span><strong>90,00</strong></div></div></div></article>
+        <article class="explanation-card"><span class="step-number">4</span><div><h2>Die günstigste erlaubte Formel gewinnt</h2><p>Der DSV vergleicht den Basiswert mit mehreren Kombinationen. Der niedrigste Wert wird veröffentlicht. Ein Athlet kann sich während der Saison daher verbessern, aber nicht über ein schwaches Rennen verschlechtern.</p><div class="formula-list"><code>BAS</code><code>½ × (BAS + SLbest)</code><code>½ × (BAS + RSbest)</code><code>½ × (SLbest + RSbest)</code><code>SLbest + 30</code><code>RSbest + 30</code></div></div></article>
+      </section>
+
+      <section class="panel parent-example">
+        <div class="panel-head"><div><span class="eyebrow">Konkretes Beispiel</span><h2>Marlene verbessert sich Schritt für Schritt</h2></div></div>
+        <div class="calculation-flow">
+          <article><span>Saisonstart</span><strong>109,23</strong><small>Basiswert</small></article><i>→</i>
+          <article><span>Erster Slalom</span><strong>100,00</strong><small>Neuer Gesamtwert: 104,62</small></article><i>→</i>
+          <article><span>Erster Riesenslalom</span><strong>90,00</strong><small>Neuer Gesamtwert: 95,00</small></article>
+        </div>
+        <p>Nach dem Slalom zählt ½ × (109,23 + 100,00) = 104,62. Nach dem Riesenslalom ist ½ × (100,00 + 90,00) = 95,00 die günstigste Formel.</p>
+      </section>
+
+      <section class="split-grid explanation-notes">
+        <article class="panel"><span class="eyebrow">Warum +30?</span><h2>Eine Disziplin darf fehlen</h2><p>Liegt nur ein gutes SL- oder RS-Ergebnis vor, kann dieses Ergebnis plus 30 Punkte verwendet werden. Der Aufschlag verhindert, dass ein einzelnes außergewöhnliches Rennen ohne zweite Disziplin zu stark zählt.</p></article>
+        <article class="panel"><span class="eyebrow">Wichtig</span><h2>Rennpunkte sind keine Platzpunkte</h2><p>Entscheidend sind Zeitrückstand und Rennzuschlag. Die Ranglistenpunkte werden anschließend aus den besten persönlichen Rennergebnissen berechnet.</p></article>
+      </section>
+    </main>
+    <script src="/athleten/assets/pages.js"></script>
+  </body>
+</html>

@@ -56,6 +56,14 @@ class DocumentCatalogTests(unittest.TestCase):
             ("DSV_RANKING", "2026-2027", None, False),
         )
         self.assertEqual(
+            classify_path(Path("saisons/2026-2027/ranglisten/DSVSA2639.txt")),
+            ("DSV_RANKING", "2026-2027", None, False),
+        )
+        self.assertEqual(
+            classify_path(Path("saisons/2025-2026/ergebnislisten/DSVSA25end_ Liste nach Vereinen.pdf")),
+            ("DSV_RANKING", "2025-2026", None, False),
+        )
+        self.assertEqual(
             classify_path(Path("saisons/2025-2026/rennanzahl/Anzahl der gefahrenen Rennen.pdf")),
             ("DSV_RACE_COUNT", "2025-2026", None, False),
         )
@@ -373,6 +381,7 @@ class DocumentApiTests(unittest.TestCase):
             server.extractions.start.return_value = ({"jobId": "extract-test", "status": "PENDING"}, True)
             server.extractions.races.return_value = [{"id": "race-test", "name": "Testpokal"}]
             server.extractions.athletes.return_value = [{"id": "athlete-test", "displayName": "Anna A."}]
+            server.extractions.athlete_season_overview.return_value = {"seasonId": "2026-2027", "items": [{"athleteId": "athlete-test", "overallPoints": 100.0}], "total": 1}
             server.extractions.merge_athletes.return_value = {"id": "athlete-target", "displayName": "Anna A."}
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
@@ -391,6 +400,8 @@ class DocumentApiTests(unittest.TestCase):
                     race_payload = json.load(response)
                 with urllib.request.urlopen(f"{base_url}/api/v1/athletes?targetClub=true") as response:
                     athlete_payload = json.load(response)
+                with urllib.request.urlopen(f"{base_url}/api/v1/athlete-seasons/2026-2027/overview") as response:
+                    overview_payload = json.load(response)
                 merge_request = urllib.request.Request(
                     f"{base_url}/api/v1/athlete-identities/merge",
                     data=json.dumps({"sourceAthleteId": "athlete-source", "targetAthleteId": "athlete-target"}).encode("utf-8"),
@@ -406,6 +417,8 @@ class DocumentApiTests(unittest.TestCase):
         self.assertTrue(extraction_payload["created"])
         self.assertEqual(race_payload["items"][0]["id"], "race-test")
         self.assertEqual(athlete_payload["items"][0]["id"], "athlete-test")
+        self.assertEqual(overview_payload["items"][0]["overallPoints"], 100.0)
+        server.extractions.athlete_season_overview.assert_called_once_with("2026-2027")
         self.assertEqual(merge_payload["athlete"]["id"], "athlete-target")
 
 

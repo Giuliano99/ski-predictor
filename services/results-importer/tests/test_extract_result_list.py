@@ -278,6 +278,22 @@ Angewandter Zuschlag: 25,00"""
         self.assertTrue(groups[0]["entries"][1]["targetClub"])
         self.assertEqual(groups[0]["entries"][2]["status"], "DNS")
 
+    def test_dsvalpin_does_not_assign_cancelled_category_to_previous_gender(self):
+        groups, warnings = parse_dsvalpin_without_start_list([
+            "U16 weiblich",
+            "54 NITSCHE Magdalena 30853 10 SC GARMISCH BSV-WF 8,82 47,38 1.",
+            "Nicht am Start",
+            "104 TEICH Alexander 30246 13 BSV-MU Skiteam Oberhaching",
+        ], {"name": "Skiliga Bayern", "date": "2026-02-14"}, "Skiteam Oberhaching")
+
+        alexander_group = next(
+            group for group in groups
+            if any(entry["fullName"] == "Alexander TEICH" for entry in group["entries"])
+        )
+        self.assertEqual(alexander_group["ageClass"], "U14")
+        self.assertEqual(alexander_group["competitionCategory"], "MIXED")
+        self.assertIn("keiner Geschlechtsklasse sicher zuordenbar", warnings[0])
+
     def test_official_dsv_table_can_be_read_without_start_list(self):
         groups, warnings = parse_official_dsv_table([
             "Mädchen",

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Teamübersicht der Athleten des Skiteams Oberhaching" />
+    <title>Teamübersicht | Athletenanalyse</title>
+    <link rel="stylesheet" href="/athleten/assets/athletes.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/athleten/"><img src="/tippspiel/public/images/skiteam-logo.png" alt="Skiteam Oberhaching" /><span>Athleten<strong>Analyse</strong></span></a>
+      <nav><a href="/athleten/">Athleten</a><a class="active" href="/athleten/teamuebersicht.html">Teamübersicht</a><a href="/athleten/punkte-erklaert.html">Punkte erklärt</a><a href="/athleten/import.html">Datenimport</a></nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div><span class="eyebrow">Skiteam Oberhaching</span><h1>Das Team im Vergleich</h1><p>Basiswerte, aktuelle Punkte und Platzierungen aller U14- und U16-Athleten auf einer Seite.</p></div>
+        <label class="overview-season"><span>Saison</span><select id="overview-season"></select></label>
+      </section>
+
+      <div class="notice" id="notice" hidden></div>
+      <section class="overview-toolbar panel">
+        <div><span class="eyebrow">Spaltenfilter</span><h2>Ansicht eingrenzen</h2></div>
+        <div class="overview-summary"><strong id="overview-count">0</strong><span>Athleten</span></div>
+        <button class="secondary-button" id="reset-filters" type="button">Filter zurücksetzen</button>
+      </section>
+
+      <section class="panel column-filter-panel" aria-label="Filter für die Teamübersicht">
+        <label><span>Geschlecht</span><select data-filter="gender"><option value="">Alle</option><option value="FEMALE">Mädchen</option><option value="MALE">Buben</option></select></label>
+        <label><span>Altersklasse</span><select data-filter="ageClass"><option value="">Alle</option><option value="U14">U14</option><option value="U16">U16</option></select></label>
+      </section>
+
+      <section class="panel overview-panel">
+        <div class="table-scroll">
+          <table class="athlete-table">
+            <thead><tr><th><button data-sort="displayName" type="button">Athlet</button></th><th><button data-sort="birthYear" type="button">Jahrgang</button></th><th><button data-sort="ageClass" type="button">AK</button></th><th><button data-sort="basePoints" type="button">Basiswert</button></th><th><button data-sort="overallPoints" type="button">Aktuelle Punkte</button></th><th><button data-sort="slalomPoints" type="button">SL</button></th><th><button data-sort="giantSlalomPoints" type="button">RS</button></th><th><button data-sort="birthYearRank" type="button">Rang Jahrgang</button></th><th><button data-sort="ageClassRank" type="button">Rang AK</button></th></tr></thead>
+            <tbody id="overview-body"><tr><td colspan="9">Daten werden geladen …</td></tr></tbody>
+          </table>
+        </div>
+        <p class="panel-note">Die Spaltenüberschriften sortieren die Tabelle. Niedrigere Punkte und niedrigere Ränge sind besser.</p>
+      </section>
+    </main>
+    <script src="/athleten/assets/rangliste.js"></script>
+  </body>
+</html>

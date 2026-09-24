@@ -545,10 +545,11 @@ def result_list_overview(tip_round_id: str) -> dict[str, Any]:
     }
 
 
-def safe_filename(name: str, suffix: str) -> str:
+def safe_filename(name: str, suffix: str | tuple[str, ...]) -> str:
     cleaned = SAFE_FILENAME_PATTERN.sub("_", Path(urllib.parse.unquote(name)).name.strip())
-    if not cleaned or Path(cleaned).suffix.casefold() != suffix:
-        raise WorkflowError(f"Erlaubt sind nur {suffix}-Dateien.")
+    allowed = (suffix,) if isinstance(suffix, str) else suffix
+    if not cleaned or Path(cleaned).suffix.casefold() not in allowed:
+        raise WorkflowError(f"Erlaubt sind nur {' oder '.join(allowed)}-Dateien.")
     return cleaned
 
 
@@ -580,12 +581,13 @@ def upload_athlete_data_file(storage_root: Path, category: str, season_id: str, 
     first_year, second_year = map(int, season_id.split("-"))
     if second_year != first_year + 1:
         raise WorkflowError("Die Saison muss aus zwei aufeinanderfolgenden Jahren bestehen.")
-    directories = {"rankings": "ranglisten", "race-counts": "rennanzahl"}
+    directories = {"rankings": ("ranglisten", (".pdf", ".txt")), "race-counts": ("rennanzahl", (".pdf",))}
     if category not in directories:
         raise WorkflowError("Unbekannte DSV-Dokumentart.")
     if not content or len(content) > MAX_UPLOAD_BYTES:
-        raise WorkflowError("Die PDF-Datei ist leer oder zu groß.")
-    destination = storage_root.resolve() / "saisons" / season_id / directories[category] / safe_filename(filename, ".pdf")
+        raise WorkflowError("Die Datei ist leer oder zu groß.")
+    directory, suffixes = directories[category]
+    destination = storage_root.resolve() / "saisons" / season_id / directory / safe_filename(filename, suffixes)
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists():
         raise WorkflowError(f"Die Datei {destination.name} ist bereits vorhanden.")

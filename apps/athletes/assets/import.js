@@ -4,7 +4,7 @@ const statuses = { PENDING: "Wartet", PROCESSING: "Wird ausgelesen", REVIEW_REQU
 const dom = {
   form: document.querySelector("#import-form"), season: document.querySelector("#import-season"), category: document.querySelector("#import-category"),
   file: document.querySelector("#import-file"), selectedFile: document.querySelector("#selected-file"), jobs: document.querySelector("#import-jobs"), actions: document.querySelector("#import-actions"),
-  notice: document.querySelector("#notice"), status: document.querySelector("#import-status"), busy: document.querySelector("#busy"), busyLabel: document.querySelector("#busy-label"), logout: document.querySelector("#logout-button"),
+  notice: document.querySelector("#notice"), status: document.querySelector("#import-status"), busy: document.querySelector("#busy"), busyLabel: document.querySelector("#busy-label"),
 };
 
 function escapeHtml(value) { const node = document.createElement("div"); node.textContent = String(value ?? ""); return node.innerHTML; }
@@ -66,8 +66,8 @@ async function poll(token) {
 
 async function upload(event) {
   event.preventDefault(); const file = dom.file.files?.[0];
-  if (!file) { showNotice("Bitte eine PDF-Datei auswählen.", true); return; }
-  setBusy("PDF wird gespeichert und ausgelesen");
+  if (!file) { showNotice("Bitte eine PDF- oder TXT-Datei auswählen.", true); return; }
+  setBusy("Datei wird gespeichert und ausgelesen");
   try {
     const url = `/api/v1/athlete-data/files/${encodeURIComponent(dom.category.value)}?seasonId=${encodeURIComponent(dom.season.value)}&filename=${encodeURIComponent(file.name)}`;
     const payload = await request(url, { method:"POST", headers:{ "Content-Type":file.type || "application/pdf" }, body:file });
@@ -76,7 +76,7 @@ async function upload(event) {
 }
 
 async function extract(documentId) {
-  setBusy("PDF wird ausgelesen");
+  setBusy("Datei wird ausgelesen");
   try { const payload = await request(`/api/v1/documents/${documentId}/extract`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" }); showNotice(payload.created ? "Die automatische Prüfung wurde gestartet." : "Es liegt bereits eine aktuelle Prüfung vor."); clearBusy(); await poll(++state.pollToken); }
   catch (error) { showNotice(error.message, true); clearBusy(); await refresh(); }
 }
@@ -114,5 +114,4 @@ dom.form.addEventListener("submit", upload);
 dom.file.addEventListener("change", () => { dom.selectedFile.textContent = dom.file.files?.[0]?.name || "Noch keine Datei ausgewählt."; });
 document.querySelector("#refresh-button").addEventListener("click", () => refresh().catch((error) => showNotice(error.message, true)));
 document.querySelector("#import-season-results").addEventListener("click", importSeasonResults);
-dom.logout.addEventListener("click", async () => { try { await request("/api/v1/auth/logout", { method:"POST" }); } finally { window.location.replace("/login/"); } });
 initialize();

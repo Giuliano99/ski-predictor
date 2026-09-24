@@ -153,6 +153,7 @@ class ExtractionServiceTests(unittest.TestCase):
             athletes = service.athletes(target_club=True)
             profile = service.athlete(athletes[0]["id"])
             analytics = service.athlete_analytics(athletes[0]["id"])
+            overview = service.athlete_season_overview("2029-2030")
 
         self.assertTrue(created)
         self.assertEqual(completed["status"], "REVIEW_REQUIRED")
@@ -162,6 +163,67 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(profile["rankings"][0]["snapshot"]["seasonId"], "2029-2030")
         self.assertEqual(analytics["seasons"][0]["latestRanking"]["overallRank"], 42)
         self.assertIsNone(analytics["seasons"][0]["listPointsChange"])
+        self.assertEqual(athletes[0]["gender"], "FEMALE")
+        self.assertEqual(overview["items"][0]["gender"], "FEMALE")
+
+    def test_previous_end_list_is_adjusted_to_official_season_base(self) -> None:
+        raw = {
+            "documentType": "DSV_RANKING",
+            "source": {"fileName": "DSVSA25end.pdf", "format": "DSV_CLUB_END_LIST_PDF"},
+            "snapshot": {
+                "documentId": "DSVSA25", "seasonId": "2024-2025",
+                "publishedAt": "2025-04-21T12:00:00",
+                "snapshotKind": "SEASON_START_BASE", "sourceSeasonId": "2024-2025",
+            },
+            "sections": [{
+                "scope": "OVERALL", "label": "Saison-Startwerte", "gender": "MALE",
+                "entries": [{
+                    "externalAthleteId": "33759", "firstName": "Julian", "lastName": "GAUDLITZ",
+                    "birthYear": 2012, "club": "Skiteam Oberhaching",
+                    "basePoints": 999.0, "listPoints": 137.53,
+                }],
+            }],
+            "statistics": {"sections": 1, "entries": 1, "uniqueAthletes": 1, "targetClubEntries": 1, "targetClubUniqueAthletes": 1},
+            "warnings": [],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            document = self.document(root / "DSVSA25end.pdf", "DSV_RANKING", "doc-ranking")
+            document = replace(document, season_id="2025-2026")
+            service = ExtractionService(FakeCatalog([document]), root / "extractions")
+            normalized = service._normalize_snapshot(document, raw)
+
+        julian = normalized["sections"][0]["entries"][0]
+        self.assertEqual(julian["previousEndListPoints"], 137.53)
+        self.assertEqual(julian["seasonCorrectionPoints"], -5.78)
+        self.assertEqual(julian["listPoints"], 131.75)
+
+    def test_analytics_adjusts_legacy_end_list_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            service = ExtractionService(FakeCatalog([]), Path(directory) / "extractions")
+            athlete = {
+                "id": "athlete-julian", "displayName": "Julian G.", "birthYear": 2012,
+                "gender": "MALE", "externalIds": ["33759"],
+            }
+            rankings = [{
+                "snapshot": {
+                    "id": "snapshot-start", "documentId": "DSVSA25", "seasonId": "2025-2026",
+                    "publishedAt": "2025-04-21T12:00:00", "snapshotKind": "SEASON_START_BASE",
+                },
+                "sourceFormat": "DSV_CLUB_END_LIST_PDF",
+                "section": {"scope": "OVERALL", "label": "Saison-Startwerte", "gender": "MALE"},
+                "ranking": {"basePoints": 137.53, "listPoints": 137.53},
+            }]
+            with patch.object(service, "athlete", return_value={
+                **athlete, "starts": [], "results": [], "rankings": rankings,
+                "raceCounts": [], "raceCountCoverages": [],
+            }):
+                analytics = service.athlete_analytics(athlete["id"])
+
+        season = analytics["seasons"][0]
+        self.assertEqual(season["disciplinePoints"]["basePoints"], 131.75)
+        self.assertEqual(season["disciplinePoints"]["previousEndListPoints"], 137.53)
+        self.assertEqual(season["disciplinePoints"]["seasonCorrectionPoints"], -5.78)
 
     def test_approves_all_ready_documents_of_a_weekend(self) -> None:
         def raw(filename: str) -> dict:
@@ -192,7 +254,7 @@ class ExtractionServiceTests(unittest.TestCase):
     def test_analytics_calculates_points_change_between_snapshots(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             service = ExtractionService(FakeCatalog([]), Path(directory) / "extractions")
-            athlete = {"id": "athlete-test", "displayName": "Anna B.", "externalIds": ["12345"]}
+            athlete = {"id": "athlete-test", "displayName": "Anna B.", "birthYear": 2017, "externalIds": ["12345"]}
             rankings = []
             for snapshot_id, published_at, points in (
                 ("snapshot-one", "2030-08-01T10:00:00", 100.0),
@@ -208,7 +270,12 @@ class ExtractionServiceTests(unittest.TestCase):
                 {"race": {"date": "2031-01-11", "name": "Rennen 2"}, "event": {}, "group": {}, "result": {"status": "DNF"}},
                 {"race": {"date": "2031-01-12", "name": "Rennen 3"}, "event": {}, "group": {}, "result": {"status": "DNS"}},
             ]
-            with patch.object(service, "athlete", return_value={**athlete, "starts": [], "results": results, "rankings": rankings, "raceCounts": []}):
+            race_count_coverages = [{
+                "snapshot": {"id": "race-count", "documentId": "race-count", "seasonId": "2030-2031", "observedAt": "2031-04-12T12:00:00"},
+                "coverage": {"isCompleteSeasonField": False, "note": "Nur Athleten ab Mindestwert."},
+                "sections": [{"ageClass": "U14", "minimumIncludedRaces": 17, "maximumRaces": 20}],
+            }]
+            with patch.object(service, "athlete", return_value={**athlete, "starts": [], "results": results, "rankings": rankings, "raceCounts": [], "raceCountCoverages": race_count_coverages}):
                 analytics = service.athlete_analytics(athlete["id"])
 
         season = analytics["seasons"][0]
@@ -219,6 +286,11 @@ class ExtractionServiceTests(unittest.TestCase):
         self.assertEqual(season["resultSummary"]["bestRank"], 2)
         self.assertEqual(season["resultSummary"]["dnf"], 1)
         self.assertEqual(season["resultSummary"]["dns"], 1)
+        self.assertEqual(len(season["recordedResults"]), 2)
+        self.assertNotIn("DNS", [result["status"] for result in season["recordedResults"]])
+        self.assertEqual(season["raceCountOverview"]["raceCount"], 2)
+        self.assertEqual(season["raceCountOverview"]["source"], "IMPORTED_RESULTS")
+        self.assertEqual(season["raceCountOverview"]["officialMinimumIncludedRaces"], 17)
 
     def test_approval_reconciles_parallel_documents_by_external_id(self) -> None:
         def raw(name: str, filename: str) -> dict:

@@ -619,19 +619,71 @@ def parse_dsvalpin(lines: list[str], start_list: dict[str, Any], target_club: st
     return [group for group in groups if group["entries"]], warnings
 
 
-def group_for_start_number(groups: list[dict[str, Any]], start_number: int) -> dict[str, Any] | None:
-    """Infer a group from the contiguous start-number blocks in a result list."""
+def group_for_start_number(
+    groups: list[dict[str, Any]], start_number: int, maximum_extrapolation: int = 10
+) -> dict[str, Any] | None:
+    """Infer a group from nearby contiguous start-number blocks.
+
+    DSValpin prints all DNS/DNF/DSQ entries in shared sections. The last
+    classified group must not be extrapolated indefinitely: a completely
+    cancelled category can otherwise inherit the preceding category.
+    """
     ranges = []
     for group in groups:
-        numbers = [entry["startNumber"] for entry in group["entries"]]
-        if numbers:
-            ranges.append((min(numbers), max(numbers), group))
+        classified_numbers = [
+            entry["startNumber"] for entry in group["entries"]
+            if entry.get("status") == "CLASSIFIED"
+        ]
+        if classified_numbers:
+            ranges.append((min(classified_numbers), max(classified_numbers), group))
     containing = [item for item in ranges if item[0] <= start_number <= item[1]]
     if containing:
         return min(containing, key=lambda item: item[1] - item[0])[2]
     if not ranges:
         return None
-    return min(ranges, key=lambda item: min(abs(start_number - item[0]), abs(start_number - item[1])))[2]
+    nearest = min(ranges, key=lambda item: min(abs(start_number - item[0]), abs(start_number - item[1])))
+    distance = min(abs(start_number - nearest[0]), abs(start_number - nearest[1]))
+    return nearest[2] if distance <= maximum_extrapolation else None
+
+
+def unassigned_status_group(
+    groups: list[dict[str, Any]], entry: dict[str, Any], event: dict[str, Any]
+) -> dict[str, Any]:
+    """Create an honest fallback group when a global status table is ambiguous."""
+    birth_year = int(entry["birthYear"])
+    age_class = next(
+        (
+            group.get("ageClass")
+            for group in groups
+            if birth_year in (group.get("birthYears") or []) and group.get("ageClass")
+        ),
+        None,
+    )
+    if age_class is None and re.fullmatch(r"\d{4}-\d{2}-\d{2}", event.get("date") or ""):
+        race_year, race_month = int(event["date"][:4]), int(event["date"][5:7])
+        season_end_year = race_year + 1 if race_month >= 7 else race_year
+        season_age = season_end_year - birth_year
+        if season_age in {13, 14}:
+            age_class = "U14"
+        elif season_age in {15, 16}:
+            age_class = "U16"
+    age_class = age_class or "UNKNOWN"
+    group_id = f"{age_class.casefold()}-mixed-{birth_year}"
+    existing = next((group for group in groups if group["id"] == group_id), None)
+    if existing:
+        return existing
+    template = next((group for group in groups if group.get("ageClass") == age_class), None)
+    created = {
+        "id": group_id,
+        "label": f"{age_class} nicht zugeordnet Jg {birth_year}",
+        "ageClass": age_class,
+        "competitionCategory": "MIXED",
+        "birthYears": [birth_year],
+        "classificationMethod": (template or {}).get("classificationMethod", "SUM_OF_RUNS"),
+        "entries": [],
+    }
+    groups.append(created)
+    return created
 
 
 def parse_dsvalpin_without_start_list(lines: list[str], event: dict[str, Any], target_club: str) -> tuple[list[dict[str, Any]], list[str]]:
@@ -741,10 +793,14 @@ def parse_dsvalpin_without_start_list(lines: list[str], event: dict[str, Any], t
         index += 3
     for entry in unassigned:
         target = group_for_start_number(groups, entry["startNumber"])
-        if target:
-            target["entries"].append(entry)
-        else:
-            warnings.append(f"Keine Wertungsgruppe für Startnummer {entry['startNumber']} gefunden")
+        if target is None:
+            target = unassigned_status_group(groups, entry, event)
+            if not target["entries"]:
+                warnings.append(
+                    f"Statuszeilen keiner Geschlechtsklasse sicher zuordenbar; "
+                    f"als {target['label']} gespeichert"
+                )
+        target["entries"].append(entry)
     return [group for group in groups if group["entries"]], list(dict.fromkeys(warnings))
 
 
@@ -822,10 +878,14 @@ def parse_official_dsv_table(lines: list[str], event: dict[str, Any], target_clu
         index += 2
     for entry in unassigned:
         target = group_for_start_number(groups, entry["startNumber"])
-        if target:
-            target["entries"].append(entry)
-        else:
-            warnings.append(f"Keine Wertungsgruppe für Startnummer {entry['startNumber']} gefunden")
+        if target is None:
+            target = unassigned_status_group(groups, entry, event)
+            if not target["entries"]:
+                warnings.append(
+                    f"Statuszeilen keiner Geschlechtsklasse sicher zuordenbar; "
+                    f"als {target['label']} gespeichert"
+                )
+        target["entries"].append(entry)
     return [group for group in groups if group["entries"]], list(dict.fromkeys(warnings))
 
 

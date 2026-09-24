@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -78,6 +79,36 @@ class ExtractDsvSnapshotTests(unittest.TestCase):
     def test_document_id_is_found_before_filename_separator(self):
         path = Path("DSVSA2616_ Anzahl Rennen.pdf")
         self.assertEqual("DSVSA2616", MODULE.document_id(path, ""))
+
+    def test_extracts_season_start_values_from_dsv_text_list(self):
+        line = "32924     AFFOLTER            Jakob         2012      Skiteam Oberhaching           BSV-MU       999.00  M"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "DSVSA2639.txt"
+            path.write_text(line + "\n", encoding="utf-8")
+            result = MODULE.extract(path, "DSV_RANKING", "Skiteam Oberhaching")
+
+        self.assertEqual("2026-2027", result["snapshot"]["seasonId"])
+        self.assertEqual("SEASON_START_BASE", result["snapshot"]["snapshotKind"])
+        self.assertEqual(1, result["statistics"]["targetClubUniqueAthletes"])
+        entry = result["sections"][0]["entries"][0]
+        self.assertEqual("32924", entry["externalAthleteId"])
+        self.assertEqual(999.0, entry["listPoints"])
+        self.assertEqual("Skiteam Oberhaching", entry["club"])
+        self.assertEqual("U16", entry["ageClass"])
+        self.assertEqual(1, entry["ageClassRank"])
+        self.assertEqual(1, entry["birthYearRank"])
+
+    def test_text_start_ranks_are_split_by_gender_age_class_and_birth_year(self):
+        entries = [
+            {"gender": "FEMALE", "birthYear": 2013, "listPoints": 50.0, "lastName": "A", "firstName": "A"},
+            {"gender": "FEMALE", "birthYear": 2014, "listPoints": 60.0, "lastName": "B", "firstName": "B"},
+            {"gender": "FEMALE", "birthYear": 2013, "listPoints": 60.0, "lastName": "C", "firstName": "C"},
+            {"gender": "MALE", "birthYear": 2013, "listPoints": 40.0, "lastName": "D", "firstName": "D"},
+        ]
+        MODULE.add_text_start_ranks(entries, 2027)
+        self.assertEqual([1, 2, 2], [entry["ageClassRank"] for entry in entries[:3]])
+        self.assertEqual([1, 1, 2], [entry["birthYearRank"] for entry in entries[:3]])
+        self.assertEqual(1, entries[3]["ageClassRank"])
 
 
 if __name__ == "__main__":

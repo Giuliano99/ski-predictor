@@ -136,6 +136,16 @@ class AthleteIdentityRegistry:
                     document_id = artifact.get("documentId")
                     if document_id and document_id not in athlete["sourceDocumentIds"]:
                         athlete["sourceDocumentIds"].append(document_id)
+                    gender = person.get("gender") or group.get("gender") or group.get("competitionCategory")
+                    if gender in {"FEMALE", "MALE"}:
+                        current_gender = athlete.get("gender")
+                        if current_gender is None:
+                            athlete["gender"] = gender
+                        elif current_gender != gender:
+                            conflicts = athlete.setdefault("genderConflicts", [])
+                            conflict = {"value": gender, "documentId": document_id}
+                            if conflict not in conflicts:
+                                conflicts.append(conflict)
             atomic_json(self.path, registry)
 
     def public_athletes(self, target_club: bool | None = None) -> list[dict[str, Any]]:
@@ -174,6 +184,8 @@ class AthleteIdentityRegistry:
                 for value in source.get(field, []):
                     if value not in target.setdefault(field, []):
                         target[field].append(value)
+            if not target.get("gender") and source.get("gender") in {"FEMALE", "MALE"}:
+                target["gender"] = source["gender"]
             registry["redirects"][source_id] = target_id
             atomic_json(self.path, registry)
         return self.athlete(target_id)
