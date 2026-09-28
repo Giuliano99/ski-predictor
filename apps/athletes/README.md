@@ -17,6 +17,8 @@ In einer Umgebung mit aktivierter Authentifizierung benötigen Benutzer die Roll
 
 Die Seite zeigt ausschließlich Athleten des Skiteams Oberhaching aus den Altersjahrgängen der U14 und U16. Ergebnisse, veröffentlichte Rennanzahlen und Ranglistenstände werden saisonweise getrennt dargestellt.
 
+Die Rangentwicklung zeigt für jeden freigegebenen DSV-Stichtag den Rang in der Altersklasse und im Jahrgang. Pro Kalendertag zählt der zeitlich neueste Stand. Täglich hochgeladene Ranglisten bleiben auch dann getrennt erhalten, wenn der Quelldateiname gleich bleibt; unterschiedliche Inhalte werden automatisch mit einem stabilen Versionszusatz gespeichert.
+
 Der Punkteverlauf verwendet veröffentlichte DSV-Listenstände. Mit einem einzelnen Listenstand wird ein Punkt, aber noch keine Veränderung angezeigt. Ab dem zweiten Stand derselben Saison wird die Differenz berechnet. Negative Werte bedeuten eine Verbesserung.
 
 ## Ergebnislisten einer Saison

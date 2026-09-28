@@ -6,6 +6,7 @@ const dom = {
   basePoints: document.querySelector("#metric-base-points"), baseNote: document.querySelector("#metric-base-note"), overallPoints: document.querySelector("#metric-overall-points"), slPoints: document.querySelector("#metric-sl-points"), gsPoints: document.querySelector("#metric-gs-points"), pointsFormula: document.querySelector("#metric-points-formula"), formulaContext: document.querySelector("#formula-context"), formulaCandidates: document.querySelector("#formula-candidates"), ageRank: document.querySelector("#metric-age-rank"), ageRankLabel: document.querySelector("#metric-age-rank-label"), birthRank: document.querySelector("#metric-birth-rank"), birthRankLabel: document.querySelector("#metric-birth-rank-label"),
   races: document.querySelector("#metric-races"), racesDate: document.querySelector("#metric-races-date"), resultsMetric: document.querySelector("#metric-results"), starts: document.querySelector("#metric-starts"),
   chart: document.querySelector("#points-chart"), change: document.querySelector("#points-change"), ranking: document.querySelector("#ranking-details"), raceCount: document.querySelector("#race-count-details"),
+  rankingCharts: document.querySelector("#ranking-charts"), rankingSnapshotCount: document.querySelector("#ranking-snapshot-count"),
   results: document.querySelector("#results"), resultCount: document.querySelector("#result-count-label"), summary: document.querySelector("#season-summary"),
 };
 
@@ -67,6 +68,50 @@ function chart(history) {
   return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Verlauf der DSV-Listenpunkte">${grid}<polyline class="chart-line" points="${points}"/>${dots}</svg>`;
 }
 
+function dailyRankingHistory(history) {
+  const latestByDay = new Map();
+  [...(history || [])].sort((left, right) => String(left.publishedAt || "").localeCompare(String(right.publishedAt || ""))).forEach((item) => {
+    if (!item.publishedAt) return;
+    latestByDay.set(String(item.publishedAt).slice(0, 10), item);
+  });
+  return [...latestByDay.values()];
+}
+
+function rankTrend(first, current) {
+  const change = Number(first) - Number(current);
+  if (!change) return { text:"Unverändert", className:"" };
+  return change > 0
+    ? { text:`${change} ${change === 1 ? "Platz" : "Plätze"} verbessert`, className:"better" }
+    : { text:`${Math.abs(change)} ${Math.abs(change) === 1 ? "Platz" : "Plätze"} zurück`, className:"worse" };
+}
+
+function rankingChart(history, key, label) {
+  const entries = history.filter((item) => Number.isInteger(Number(item[key])) && Number(item[key]) > 0);
+  if (!entries.length) return `<article class="rank-chart-card"><div class="rank-chart-head"><span>${label}</span><strong>–</strong></div><div class="chart-empty">Für diese Rangart liegt noch kein Stichtag vor.</div></article>`;
+  const width = 560, height = 220, left = 45, right = 20, top = 26, bottom = 38;
+  const values = entries.map((item) => Number(item[key]));
+  const minimum = Math.min(...values), maximum = Math.max(...values), padding = Math.max(Math.ceil((maximum - minimum) * .15), 1);
+  const low = Math.max(1, minimum - padding), high = Math.max(low + 1, maximum + padding);
+  const x = (index) => entries.length === 1 ? width / 2 : left + index * ((width - left - right) / (entries.length - 1));
+  const y = (value) => top + (value - low) / (high - low) * (height - top - bottom);
+  const ticks = [...new Set([low, Math.round((low + high) / 2), high])];
+  const grid = ticks.map((value) => { const yy = y(value); return `<line class="chart-grid" x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}"/><text class="chart-label" x="4" y="${yy+4}">#${value}</text>`; }).join("");
+  const labelStep = Math.max(1, Math.ceil(entries.length / 5));
+  const dates = entries.map((item, index) => index === 0 || index === entries.length - 1 || index % labelStep === 0 ? `<text class="chart-label" text-anchor="middle" x="${x(index)}" y="${height-8}">${date(item.publishedAt).slice(0,5)}</text>` : "").join("");
+  const dots = entries.map((item, index) => `<circle class="rank-chart-dot" cx="${x(index)}" cy="${y(Number(item[key]))}" r="4"><title>${date(item.publishedAt)} · Platz ${item[key]}</title></circle>`).join("");
+  const points = entries.map((item,index) => `${x(index)},${y(Number(item[key]))}`).join(" ");
+  const latest = entries[entries.length - 1], first = values[0], current = values[values.length - 1], trend = rankTrend(first, current);
+  return `<article class="rank-chart-card"><div class="rank-chart-head"><div><span>${label}</span><small>Aktueller Stand ${date(latest.publishedAt)}</small></div><strong>#${current}</strong><em class="rank-trend ${trend.className}">${trend.text}</em></div><div class="rank-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${label} im Saisonverlauf">${grid}<polyline class="rank-chart-line" points="${points}"/>${dots}${dates}</svg></div></article>`;
+}
+
+function renderRankingDevelopment(history) {
+  const daily = dailyRankingHistory(history);
+  dom.rankingSnapshotCount.textContent = daily.length ? `${daily.length} Stichtag${daily.length === 1 ? "" : "e"}` : "Noch kein Stichtag";
+  dom.rankingCharts.innerHTML = daily.length
+    ? rankingChart(daily, "ageClassRank", "Rang in der Altersklasse") + rankingChart(daily, "birthYearRank", "Rang im Jahrgang")
+    : '<div class="chart-empty ranking-chart-empty">Noch keine freigegebene DSV-Rangliste für diese Saison vorhanden.</div>';
+}
+
 function selectedSeason() { return state.analytics?.seasons.find((item) => item.seasonId === state.seasonId); }
 
 function preferredSeasonId(seasons, requestedSeasonId) {
@@ -101,6 +146,7 @@ function renderProfile() {
   dom.races.textContent = count?.raceCount ?? "–"; dom.racesDate.textContent = count?.source === "DSV_OFFICIAL" ? `Offizieller Stand ${date(count.observedAt)}` : count ? "Aus importierten Ergebnissen" : "Keine Angabe";
   dom.resultsMetric.textContent = season.recordedResults.length; dom.starts.textContent = `${season.recordedRaceStarts} Starts in der Datenbasis`;
   dom.chart.innerHTML = chart(points?.history || []);
+  renderRankingDevelopment(season.rankingHistory || []);
   dom.change.className = "change";
   const raceHistory = points?.history?.filter((item) => item.pointKind !== "SEASON_START") || [];
   if (!points?.history?.length) dom.change.textContent = "Noch kein Startwert";

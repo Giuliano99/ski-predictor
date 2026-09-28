@@ -62,6 +62,33 @@ class SubmissionServiceTests(unittest.TestCase):
             self.assertEqual(stored.read_bytes(), b"%PDF snapshot")
 
         self.assertEqual(response["storageReference"], "storage://saisons/2026-2027/ranglisten/DSVSA2638_ Ranglisten.pdf")
+        self.assertFalse(response["versioned"])
+
+    def test_versions_daily_dsv_snapshot_with_reused_filename(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow_service.upload_athlete_data_file(
+                root, "rankings", "2026-2027", "DSVSA2638_ Ranglisten.pdf", b"%PDF day one"
+            )
+            response = workflow_service.upload_athlete_data_file(
+                root, "rankings", "2026-2027", "DSVSA2638_ Ranglisten.pdf", b"%PDF day two"
+            )
+            stored = root / response["storageReference"].removeprefix("storage://")
+
+            self.assertTrue(response["versioned"])
+            self.assertRegex(stored.name, r"DSVSA2638_ Ranglisten__version-[a-f0-9]{10}\.pdf")
+            self.assertEqual(stored.read_bytes(), b"%PDF day two")
+
+    def test_rejects_identical_daily_dsv_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow_service.upload_athlete_data_file(
+                root, "rankings", "2026-2027", "ranking.pdf", b"%PDF unchanged"
+            )
+            with self.assertRaisesRegex(workflow_service.WorkflowError, "identischem Inhalt"):
+                workflow_service.upload_athlete_data_file(
+                    root, "rankings", "2026-2027", "ranking.pdf", b"%PDF unchanged"
+                )
 
     def test_rejects_invalid_snapshot_season(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

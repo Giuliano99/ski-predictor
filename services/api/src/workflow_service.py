@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -589,12 +590,23 @@ def upload_athlete_data_file(storage_root: Path, category: str, season_id: str, 
     directory, suffixes = directories[category]
     destination = storage_root.resolve() / "saisons" / season_id / directory / safe_filename(filename, suffixes)
     destination.parent.mkdir(parents=True, exist_ok=True)
+    versioned = False
     if destination.exists():
-        raise WorkflowError(f"Die Datei {destination.name} ist bereits vorhanden.")
+        if destination.read_bytes() == content:
+            raise WorkflowError(f"Die Datei {destination.name} ist bereits mit identischem Inhalt vorhanden.")
+        digest = hashlib.sha256(content).hexdigest()[:10]
+        destination = destination.with_name(f"{destination.stem}__version-{digest}{destination.suffix}")
+        versioned = True
+        if destination.exists():
+            raise WorkflowError(f"Diese Version von {filename} ist bereits vorhanden.")
     destination.write_bytes(content)
     return {
-        "message": f"{destination.name} wurde abgelegt und wird jetzt geprüft.",
+        "message": (
+            f"{destination.name} wurde als neue Tagesversion abgelegt und wird jetzt geprüft."
+            if versioned else f"{destination.name} wurde abgelegt und wird jetzt geprüft."
+        ),
         "storageReference": f"storage://{destination.relative_to(storage_root.resolve()).as_posix()}",
+        "versioned": versioned,
     }
 
 
