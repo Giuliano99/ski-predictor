@@ -38,5 +38,88 @@ main { max-width:1440px; margin:0 auto; padding:34px 28px 70px; }
 @media (max-width:1050px) { .metric-grid { grid-template-columns:repeat(3,1fr); }.season-summary { grid-template-columns:repeat(4,1fr); }.result-row { grid-template-columns:85px minmax(150px,1fr) 60px 75px 75px 70px; gap:9px; } }
 @media (max-width:800px) { main { padding:22px 16px 55px; }.intro { align-items:flex-start; flex-direction:column; }.source-note { max-width:none; }.workspace { grid-template-columns:1fr; }.athlete-browser { position:static; padding:14px; }.search { display:none; }.athlete-list { display:none; }.mobile-athlete-select { display:grid; }.profile-head { align-items:flex-start; flex-direction:column; }.season-select,.overview-season { width:100%; }.split-grid,.ranking-chart-grid { grid-template-columns:1fr; }.formula-candidates { grid-template-columns:1fr 1fr; }.overview-toolbar { grid-template-columns:1fr auto; }.overview-toolbar > div:first-child { grid-column:1/-1; }.overview-summary { text-align:left; }.column-filter-panel { grid-template-columns:repeat(2,minmax(0,1fr)); }.calculation-flow { grid-template-columns:1fr; }.calculation-flow i { text-align:center; transform:rotate(90deg); } }
 @media (max-width:900px) { .import-form { grid-template-columns:1fr 1fr; } }
-@media (max-width:590px) { body { font-size:16px; }.topbar { min-height:0; padding:12px; align-items:flex-start; flex-direction:column; gap:12px; }.brand img { width:50px; height:44px; }.brand strong { font-size:18px; }.topbar nav { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:7px; }.topbar nav a { min-width:0; min-height:46px; padding:6px 8px; justify-content:center; text-align:center; font-size:13px; line-height:1.2; }.intro { padding:21px 17px; }.intro h1 { font-size:30px; }.intro p { font-size:14px; }.workspace { margin-top:16px; gap:14px; }.mobile-athlete-select select,.season-select select { min-height:48px; }.profile-head h2 { font-size:28px; overflow-wrap:anywhere; }.metric-grid { grid-template-columns:1fr 1fr; gap:9px; }.metric-grid article { min-width:0; min-height:116px; padding:14px 12px; }.metric-grid span { font-size:10px; line-height:1.25; }.metric-grid strong { font-size:25px; overflow-wrap:anywhere; }.metric-grid small { font-size:11px; line-height:1.35; }.panel,.profile-head,.import-panel { padding:19px 15px; }.panel-head { align-items:flex-start; flex-direction:column; gap:10px; }.ranking-details,.season-summary,.formula-candidates { grid-template-columns:1fr; }.formula-context { font-size:13px; overflow-wrap:anywhere; }.formula-candidates code { font-size:13px; overflow-wrap:anywhere; }.rank-chart-card { padding:14px 10px; }.rank-chart { overflow-x:auto; }.rank-chart svg { min-width:520px; }.result-row { margin-top:10px; padding:15px; background:var(--snow); border:0; grid-template-columns:1fr 1fr; gap:10px; }.result-race { grid-column:1/-1; }.result-value { text-align:left; }.result-status { align-self:start; justify-self:start; }.chart { margin-left:-10px; margin-right:-10px; overflow-x:auto; }.chart svg { min-width:650px; }.import-form,.import-job,.overview-toolbar,.column-filter-panel { grid-template-columns:1fr; }.import-form button,.import-job button,.overview-toolbar button { width:100%; min-height:46px; }.import-job details { grid-column:1; }.overview-toolbar > div:first-child { grid-column:1; }.athlete-table thead { display:none; }.athlete-table,.athlete-table tbody,.athlete-table tr,.athlete-table td { display:block; width:100%; }.athlete-table tr { margin-bottom:12px; padding:13px 15px; background:var(--snow); }.athlete-table td { padding:7px 0; border:0; display:flex; justify-content:space-between; gap:16px; text-align:right; white-space:normal; }.athlete-table td::before { content:attr(data-label); color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; }.athlete-table td:first-child { margin-bottom:7px; padding-bottom:10px; border-bottom:1px solid var(--line); }.explanation-card { padding:20px 17px; grid-template-columns:38px 1fr; gap:12px; }.step-number { width:36px; height:36px; }.example-strip { align-items:flex-start; flex-direction:column; }.compare,.discipline-pair { grid-template-columns:1fr; } }
-@media (max-width:380px) { main { padding-left:10px; padding-right:10px; }.metric-grid { grid-template-columns:1fr; }.topbar nav a { font-size:12px; }.intro h1 { font-size:27px; } }
+@media (max-width:590px) {
+  html,body { width:100%; max-width:100%; overflow-x:hidden; }
+  body { font-size:16px; line-height:1.55; }
+  .topbar { min-height:0; padding:12px; align-items:flex-start; flex-direction:column; gap:12px; }
+  .brand { gap:10px; }
+  .brand img { width:50px; height:44px; }
+  .brand strong { font-size:18px; }
+  .topbar nav { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  .topbar nav a { min-width:0; min-height:48px; padding:7px 5px; justify-content:center; text-align:center; font-size:13px; line-height:1.2; overflow-wrap:anywhere; }
+  main { width:100%; max-width:none; padding:14px 12px 48px; }
+  .intro { padding:20px 16px; border-radius:16px; }
+  .intro h1 { font-size:28px; }
+  .intro p { font-size:15px; line-height:1.5; }
+  .workspace { width:100%; min-width:0; margin-top:14px; gap:14px; }
+  .workspace > *,.profile,.profile > *,.panel,.split-grid > * { min-width:0; max-width:100%; }
+  .athlete-browser { padding:14px; border-radius:14px; }
+  .mobile-athlete-select span,.season-select span { font-size:12px; }
+  .mobile-athlete-select select,.season-select select { min-height:50px; padding:11px 12px; font-size:16px; }
+  .profile { width:100%; gap:12px; }
+  .profile-head { padding:18px 16px; border-radius:14px; gap:16px; }
+  .profile-head h2 { font-size:27px; line-height:1.15; overflow-wrap:anywhere; }
+  .profile-head p { font-size:13px; }
+  .eyebrow { font-size:12px; }
+  .metric-grid { grid-template-columns:1fr; gap:10px; }
+  .metric-grid article { min-width:0; min-height:0; padding:17px 16px; border-radius:14px; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"label value" "note value"; column-gap:14px; align-items:center; }
+  .metric-grid span { grid-area:label; font-size:12px; line-height:1.3; }
+  .metric-grid strong { grid-area:value; margin:0; font-size:28px; text-align:right; overflow-wrap:anywhere; }
+  .metric-grid small { grid-area:note; margin-top:3px; font-size:13px; line-height:1.4; }
+  .panel,.import-panel { padding:18px 15px; border-radius:14px; }
+  .panel-head { align-items:flex-start; flex-direction:column; gap:10px; }
+  .panel h3 { font-size:21px; line-height:1.25; }
+  .change { padding:7px 11px; font-size:12px; }
+  .panel-note { font-size:13px; line-height:1.5; }
+  .chart { min-height:190px; margin:15px 0 0; overflow:hidden; }
+  .chart svg { width:100%; min-width:0; height:auto; min-height:190px; }
+  .chart-label { font-size:11px; }
+  .chart-value { font-size:12px; }
+  .chart-empty { min-height:150px; padding:18px; }
+  .ranking-details,.formula-candidates { grid-template-columns:1fr; }
+  .ranking-details { gap:8px; }
+  .ranking-details div,.count-card { padding:15px; border-radius:11px; }
+  .ranking-details dt { font-size:11px; }
+  .ranking-details dd { font-size:22px; }
+  .count-card span,.count-card small { font-size:13px; }
+  .season-summary { grid-template-columns:1fr 1fr; gap:8px; }
+  .season-summary div { min-width:0; padding:14px; border-radius:11px; }
+  .season-summary dt { font-size:11px; line-height:1.3; }
+  .season-summary dd { font-size:22px; }
+  .formula-context { font-size:14px; overflow-wrap:anywhere; }
+  .formula-candidates article { padding:16px; border-radius:11px; }
+  .formula-candidates span,.formula-candidates small { font-size:11px; }
+  .formula-candidates code { font-size:14px; overflow-wrap:anywhere; }
+  .formula-candidates strong { font-size:25px; }
+  .results { margin-top:10px; }
+  .result-row { margin-top:10px; padding:15px; background:var(--snow); border:0; border-radius:12px; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 8px; align-items:start; }
+  .result-date { grid-column:1/3; align-self:center; font-size:13px; font-weight:700; }
+  .result-race { grid-column:1/-1; padding:11px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .result-race strong { font-size:15px; line-height:1.4; }
+  .result-race small { font-size:13px; line-height:1.45; }
+  .result-value { min-width:0; text-align:left; }
+  .result-value small { font-size:10px; }
+  .result-value strong { margin-top:2px; font-size:16px; overflow-wrap:anywhere; }
+  .result-status { grid-column:3; grid-row:1; align-self:start; justify-self:end; font-size:11px; }
+  .rank-chart-card { padding:15px 10px; border-radius:11px; }
+  .rank-chart-head span { font-size:13px; }
+  .rank-chart-head small,.rank-trend { font-size:12px; }
+  .rank-chart { overflow:hidden; }
+  .rank-chart svg { width:100%; min-width:0; height:auto; min-height:190px; }
+  .empty-profile { min-height:240px; padding:34px 20px; border-radius:14px; }
+  .import-form,.import-job,.overview-toolbar,.column-filter-panel { grid-template-columns:1fr; }
+  .import-form button,.import-job button,.overview-toolbar button { width:100%; min-height:48px; }
+  .import-job details { grid-column:1; }
+  .overview-toolbar > div:first-child { grid-column:1; }
+  .athlete-table thead { display:none; }
+  .athlete-table,.athlete-table tbody,.athlete-table tr,.athlete-table td { display:block; width:100%; }
+  .athlete-table tr { margin-bottom:12px; padding:13px 15px; background:var(--snow); border-radius:11px; }
+  .athlete-table td { padding:7px 0; border:0; display:flex; justify-content:space-between; gap:16px; text-align:right; white-space:normal; }
+  .athlete-table td::before { content:attr(data-label); color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; }
+  .athlete-table td:first-child { margin-bottom:7px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+  .explanation-card { padding:20px 17px; grid-template-columns:38px 1fr; gap:12px; border-radius:14px; }
+  .step-number { width:36px; height:36px; }
+  .example-strip { align-items:flex-start; flex-direction:column; }
+  .compare,.discipline-pair { grid-template-columns:1fr; }
+}
+@media (max-width:380px) { main { padding-left:9px; padding-right:9px; }.topbar { padding-left:9px; padding-right:9px; }.topbar nav a { font-size:12px; }.intro h1 { font-size:26px; }.season-summary { grid-template-columns:1fr; } }
