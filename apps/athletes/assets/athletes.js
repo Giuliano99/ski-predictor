@@ -1,8 +1,9 @@
+const PREFERRED_ATHLETE_STORAGE_KEY = "ski-athletes.preferred-athlete-id.v1";
 const state = { athletes: [], selectedId: null, analytics: null, seasonId: null };
 const dom = {
   list: document.querySelector("#athlete-list"), search: document.querySelector("#athlete-search"), athleteSelect: document.querySelector("#athlete-select"),
   profile: document.querySelector("#profile"), empty: document.querySelector("#empty-profile"), notice: document.querySelector("#notice"),
-  name: document.querySelector("#profile-name"), meta: document.querySelector("#profile-meta"), id: document.querySelector("#profile-id"), season: document.querySelector("#season-select"),
+  name: document.querySelector("#profile-name"), meta: document.querySelector("#profile-meta"), id: document.querySelector("#profile-id"), season: document.querySelector("#season-select"), preferredAthleteButton: document.querySelector("#preferred-athlete-button"), preferredAthleteHint: document.querySelector("#preferred-athlete-hint"),
   basePoints: document.querySelector("#metric-base-points"), baseNote: document.querySelector("#metric-base-note"), overallPoints: document.querySelector("#metric-overall-points"), slPoints: document.querySelector("#metric-sl-points"), gsPoints: document.querySelector("#metric-gs-points"), pointsFormula: document.querySelector("#metric-points-formula"), formulaContext: document.querySelector("#formula-context"), formulaCandidates: document.querySelector("#formula-candidates"), ageRank: document.querySelector("#metric-age-rank"), ageRankLabel: document.querySelector("#metric-age-rank-label"), birthRank: document.querySelector("#metric-birth-rank"), birthRankLabel: document.querySelector("#metric-birth-rank-label"),
   races: document.querySelector("#metric-races"), racesDate: document.querySelector("#metric-races-date"), resultsMetric: document.querySelector("#metric-results"), starts: document.querySelector("#metric-starts"),
   chart: document.querySelector("#points-chart"), change: document.querySelector("#points-change"), ranking: document.querySelector("#ranking-details"), raceCount: document.querySelector("#race-count-details"),
@@ -16,6 +17,15 @@ function date(value) { if (!value) return "Kein Stichtag"; return new Intl.DateT
 function seconds(value) { if (!Number.isFinite(Number(value))) return "–"; const minutes = Math.floor(value / 60); return `${minutes}:${(value % 60).toFixed(2).padStart(5,"0")}`; }
 function ageClass(seasonId, birthYear) { const endYear = Number(String(seasonId || "").split("-")[1]), age = endYear - Number(birthYear); return [13,14].includes(age) ? "U14" : [15,16].includes(age) ? "U16" : null; }
 function signedDecimal(value) { return (Number(value) >= 0 ? "+" : "") + decimal(value); }
+function preferredAthleteId() { try { return localStorage.getItem(PREFERRED_ATHLETE_STORAGE_KEY); } catch { return null; } }
+function storePreferredAthleteId(value) { try { if (value) localStorage.setItem(PREFERRED_ATHLETE_STORAGE_KEY, value); else localStorage.removeItem(PREFERRED_ATHLETE_STORAGE_KEY); } catch { /* Browser ohne lokalen Speicher */ } }
+function renderPreferredAthleteControl() {
+  const active = Boolean(state.selectedId && preferredAthleteId() === state.selectedId);
+  dom.preferredAthleteButton.classList.toggle("active", active);
+  dom.preferredAthleteButton.setAttribute("aria-pressed", String(active));
+  dom.preferredAthleteButton.textContent = active ? "★ Startathlet festgelegt" : "☆ Als Startathlet festlegen";
+  dom.preferredAthleteHint.textContent = active ? "Wird beim nächsten Besuch zuerst angezeigt." : "Die Auswahl wird auf diesem Gerät gespeichert.";
+}
 function expandedFormula(formula, points) {
   return String(formula || "")
     .replaceAll("SLbest", decimal(points.bestSlalomResult))
@@ -131,6 +141,7 @@ function renderProfile() {
   dom.profile.hidden = false; dom.empty.hidden = true;
   dom.name.textContent = payload.athlete.displayName; dom.meta.textContent = `Jahrgang ${payload.athlete.birthYear || "–"} · ${payload.athlete.club || "Verein unbekannt"}`;
   dom.id.textContent = payload.athlete.externalIds?.length ? `DSV-ID ${payload.athlete.externalIds.join(", ")}` : "Noch keine DSV-ID hinterlegt";
+  renderPreferredAthleteControl();
   dom.season.innerHTML = payload.seasons.map((item) => `<option value="${item.seasonId}">${item.seasonId.replace("-","/")}</option>`).join(""); dom.season.value = state.seasonId;
   const ranking = season.latestRanking, count = season.raceCountOverview || season.latestPublishedRaceCount, points = season.disciplinePoints;
   dom.basePoints.textContent = decimal(points?.basePoints); dom.overallPoints.textContent = decimal(points?.overallPoints); dom.slPoints.textContent = decimal(points?.slalomPoints); dom.gsPoints.textContent = decimal(points?.giantSlalomPoints); dom.pointsFormula.textContent = points?.overallFormula || "Noch keine Berechnung";
@@ -178,7 +189,8 @@ async function initialize() {
     const now = new Date(), seasonStart = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
     state.athletes = payload.items.filter((athlete) => Number(athlete.birthYear) >= seasonStart - 16 && Number(athlete.birthYear) <= seasonStart - 12);
     const requestedId = new URLSearchParams(window.location.search).get("athlete");
-    const initial = state.athletes.find((athlete) => athlete.id === requestedId) || state.athletes[0];
+    const storedId = preferredAthleteId();
+    const initial = state.athletes.find((athlete) => athlete.id === requestedId) || state.athletes.find((athlete) => athlete.id === storedId) || state.athletes[0];
     renderAthletes(); if (initial) await selectAthlete(initial.id);
   } catch (error) { dom.notice.textContent = error.message; dom.notice.hidden = false; }
 }
@@ -186,4 +198,5 @@ async function initialize() {
 dom.search.addEventListener("input", renderAthletes);
 dom.athleteSelect.addEventListener("change", () => selectAthlete(dom.athleteSelect.value));
 dom.season.addEventListener("change", () => { state.seasonId = dom.season.value; renderProfile(); });
+dom.preferredAthleteButton.addEventListener("click", () => { storePreferredAthleteId(preferredAthleteId() === state.selectedId ? null : state.selectedId); renderPreferredAthleteControl(); });
 initialize();

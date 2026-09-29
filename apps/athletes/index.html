@@ -29,7 +29,11 @@
         <section class="profile" id="profile" hidden>
           <header class="profile-head">
             <div><span class="eyebrow" id="profile-meta">Skiteam Oberhaching</span><h2 id="profile-name">Athlet</h2><p id="profile-id"></p></div>
-            <label class="season-select"><span>Saison</span><select id="season-select"></select></label>
+            <div class="profile-actions">
+              <label class="season-select"><span>Saison</span><select id="season-select"></select></label>
+              <button class="preference-button" id="preferred-athlete-button" type="button" aria-pressed="false">☆ Als Startathlet festlegen</button>
+              <small class="preference-hint" id="preferred-athlete-hint" aria-live="polite">Die Auswahl wird auf diesem Gerät gespeichert.</small>
+            </div>
           </header>
 
           <div class="metric-grid">
